@@ -91,4 +91,15 @@ final class BookingApiControllerTest extends ModuleTestCase
 
         $response->assertUnprocessable();
     }
+
+    public function test_slots_rejects_datetime_with_json_error(): void
+    {
+        $response = $this->getJson(route('bookings.api.slots', [
+            'resource_id' => $this->resource->id,
+            'date' => '2026-03-01T10:30:00',
+        ]));
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors(['date']);
+    }
 }

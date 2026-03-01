@@ -67,7 +67,9 @@ const fetchEvents = async (
             end: info.endStr,
         });
 
-        const response = await fetch(`/reservas/api/events?${params}`);
+        const response = await fetch(`/reservas/api/events?${params}`, {
+            headers: { Accept: 'application/json' },
+        });
         if (!response.ok) {
             throw new Error('Failed to fetch booking events');
         }
@@ -106,7 +108,7 @@ const fetchEvents = async (
 };
 
 const handleDateClick = (info: DateClickInfo): void => {
-    emit('dateSelect', info.dateStr);
+    emit('dateSelect', info.dateStr.slice(0, 10));
 };
 
 const handleEventClick = (info: EventClickArg): void => {

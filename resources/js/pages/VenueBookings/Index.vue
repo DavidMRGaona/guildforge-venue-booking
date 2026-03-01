@@ -121,11 +121,13 @@ async function onDateSelect(date: string): Promise<void> {
             date,
         });
 
+        const jsonHeaders = { headers: { Accept: 'application/json' } };
+
         const [slotsResponse, eligibilityResult] = await Promise.all([
-            fetch(`/reservas/api/slots?${params}`),
+            fetch(`/reservas/api/slots?${params}`, jsonHeaders),
             isAuthenticated.value
-                ? fetch(`/reservas/api/eligibility?${params}`).then((r) =>
-                      r.ok ? r.json() : null
+                ? fetch(`/reservas/api/eligibility?${params}`, jsonHeaders).then(
+                      (r) => (r.ok ? r.json() : null)
                   )
                 : Promise.resolve(null),
         ]);
@@ -166,7 +168,9 @@ async function onEventSelect(bookingId: string): Promise<void> {
     selectedBooking.value = null;
 
     try {
-        const response = await fetch(`/reservas/api/bookings/${bookingId}`);
+        const response = await fetch(`/reservas/api/bookings/${bookingId}`, {
+            headers: { Accept: 'application/json' },
+        });
         if (!response.ok) {
             throw new Error('Failed to fetch booking detail');
         }

@@ -8,6 +8,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Modules\VenueBookings\Filament\Resources\BookingResource;
 
 final class BookingCreatedNotification extends Notification implements ShouldQueue
 {
@@ -44,7 +45,7 @@ final class BookingCreatedNotification extends Notification implements ShouldQue
             ->line('**'.__('venue-bookings::messages.emails.booking_created.resource').':** '.$this->resourceName)
             ->line('**'.__('venue-bookings::messages.emails.booking_created.date').':** '.$this->date)
             ->line('**'.__('venue-bookings::messages.emails.booking_created.time').':** '.$this->startTime.' - '.$this->endTime)
-            ->action(__('venue-bookings::messages.emails.booking_created.view_booking'), url('/admin/venue-bookings/bookings/'.$this->bookingId));
+            ->action(__('venue-bookings::messages.emails.booking_created.view_booking'), BookingResource::getUrl('edit', ['record' => $this->bookingId]));
     }
 
     /**
