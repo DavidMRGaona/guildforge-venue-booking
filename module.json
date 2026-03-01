@@ -1,0 +1,31 @@
+{
+  "name": "venue-bookings",
+  "displayName": "Reservas del local",
+  "version": "1.0.0-beta",
+  "namespace": "Modules\\VenueBookings",
+  "provider": "VenueBookingsServiceProvider",
+  "description": "Sistema de reservas del local para gestionar espacios y horarios",
+  "author": "GuildForge",
+  "requires": {
+    "php": ">=8.2",
+    "laravel": ">=12.0"
+  },
+  "dependencies": [],
+  "provides": {
+    "permissions": [
+      "bookings.view_any",
+      "bookings.view",
+      "bookings.create",
+      "bookings.cancel_own",
+      "bookings.cancel_any",
+      "bookings.manage",
+      "bookings.settings"
+    ],
+    "routes": [
+      "web"
+    ],
+    "filament": true,
+    "frontend": true,
+    "inertia_share": true
+  }
+}
