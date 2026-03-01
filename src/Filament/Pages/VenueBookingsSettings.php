@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Filament\Pages;
 
-use App\Application\Modules\Services\ModuleManagerServiceInterface;
-use App\Domain\Modules\ValueObjects\ModuleName;
+use App\Application\Services\SettingsServiceInterface;
 use App\Filament\Concerns\SafeModuleNavigation;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Grid;
@@ -65,9 +64,12 @@ final class VenueBookingsSettings extends Page implements HasForms
         return auth()->user()?->isAdmin() ?? false;
     }
 
-    public function mount(ModuleManagerServiceInterface $moduleManager): void
+    public function mount(SettingsServiceInterface $settingsService): void
     {
-        $settings = $moduleManager->getSettings(new ModuleName('venue-bookings'));
+        $value = $settingsService->get('module_settings:venue-bookings');
+        $settings = ($value !== null && $value !== '')
+            ? (json_decode((string) $value, true) ?? [])
+            : [];
 
         $defaults = config('venue-bookings', []);
 
@@ -265,11 +267,17 @@ final class VenueBookingsSettings extends Page implements HasForms
             ->statePath('data');
     }
 
-    public function save(ModuleManagerServiceInterface $moduleManager): void
+    public function save(SettingsServiceInterface $settingsService): void
     {
         $formData = $this->form->getState();
 
-        $moduleManager->updateSettings(new ModuleName('venue-bookings'), $formData);
+        $settingsService->set(
+            'module_settings:venue-bookings',
+            json_encode($formData, JSON_THROW_ON_ERROR),
+        );
+
+        // Update in-memory config for the current request
+        config()->set('modules.settings.venue-bookings', $formData);
 
         Notification::make()
             ->title(__('common.saved'))

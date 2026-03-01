@@ -9,6 +9,7 @@ use App\Application\Modules\DTOs\NavigationItemDTO;
 use App\Application\Modules\DTOs\PagePrefixDTO;
 use App\Application\Modules\DTOs\PermissionDTO;
 use App\Application\Modules\DTOs\SlotRegistrationDTO;
+use App\Application\Services\SettingsServiceInterface;
 use App\Modules\ModuleServiceProvider;
 use Illuminate\Support\Facades\Event;
 use Inertia\Inertia;
@@ -18,6 +19,7 @@ use Modules\VenueBookings\Application\Services\BookingQueryServiceInterface;
 use Modules\VenueBookings\Application\Services\BookingServiceInterface;
 use Modules\VenueBookings\Application\Services\ModuleIntegrationServiceInterface;
 use Modules\VenueBookings\Application\Services\SlotAvailabilityServiceInterface;
+use Modules\VenueBookings\Console\Commands\MigrateSettingsToDatabase;
 use Modules\VenueBookings\Console\Commands\SendBookingRemindersCommand;
 use Modules\VenueBookings\Domain\Events\BookingCancelled;
 use Modules\VenueBookings\Domain\Events\BookingConfirmed;
@@ -52,6 +54,8 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
     {
         parent::register();
 
+        $this->loadSettingsFromDatabase();
+
         // Repository bindings
         $this->app->bind(BookableResourceRepositoryInterface::class, EloquentBookableResourceRepository::class);
         $this->app->bind(BookingRepositoryInterface::class, EloquentBookingRepository::class);
@@ -61,7 +65,13 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
         $this->app->bind(BookingServiceInterface::class, BookingService::class);
         $this->app->bind(BookingQueryServiceInterface::class, BookingQueryService::class);
         $this->app->bind(BookingEligibilityServiceInterface::class, BookingEligibilityService::class);
-        $this->app->bind(SlotAvailabilityServiceInterface::class, SlotAvailabilityService::class);
+        $this->app->bind(SlotAvailabilityServiceInterface::class, function ($app) {
+            return new SlotAvailabilityService(
+                $app->make(OperatingScheduleRepositoryInterface::class),
+                $app->make(BookingRepositoryInterface::class),
+                $app->make(\Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader::class),
+            );
+        });
         $this->app->bind(BookingFieldConfigServiceInterface::class, BookingFieldConfigService::class);
         $this->app->bind(ModuleIntegrationServiceInterface::class, ModuleIntegrationService::class);
     }
@@ -73,6 +83,24 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
         $this->registerEventListeners();
         $this->registerCommands();
         $this->shareProfileBookings();
+    }
+
+    private function loadSettingsFromDatabase(): void
+    {
+        try {
+            $settingsService = app(SettingsServiceInterface::class);
+            $value = $settingsService->get('module_settings:venue-bookings');
+
+            if ($value !== null && $value !== '') {
+                $decoded = json_decode((string) $value, true);
+                if (is_array($decoded)) {
+                    config()->set('modules.settings.venue-bookings', $decoded);
+                }
+            }
+        } catch (\Throwable) {
+            // DB unavailable (fresh install, migration in progress).
+            // File-based settings from parent::register() remain as fallback.
+        }
     }
 
     private function registerEventListeners(): void
@@ -102,6 +130,7 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
     {
         if ($this->app->runningInConsole()) {
             $this->commands([
+                MigrateSettingsToDatabase::class,
                 SendBookingRemindersCommand::class,
             ]);
         }

@@ -17,9 +17,11 @@ use Modules\VenueBookings\Domain\Events\BookingConfirmed;
 use Modules\VenueBookings\Domain\Events\BookingCreated;
 use Modules\VenueBookings\Domain\Events\BookingNoShow;
 use Modules\VenueBookings\Domain\Events\BookingRejected;
+use Modules\VenueBookings\Domain\Exceptions\MinimumSlotsNotMetException;
 use Modules\VenueBookings\Domain\Exceptions\SlotUnavailableException;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
+use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\OperatingScheduleModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories\EloquentBookingRepository;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories\EloquentOperatingScheduleRepository;
 use Modules\VenueBookings\Infrastructure\Services\BookingService;
@@ -43,16 +45,20 @@ final class BookingServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->bookingRepository = new EloquentBookingRepository();
+        $this->bookingRepository = new EloquentBookingRepository;
         $slotAvailabilityService = new SlotAvailabilityService(
-            new EloquentOperatingScheduleRepository(),
+            new EloquentOperatingScheduleRepository,
             $this->bookingRepository,
+            new BookingSettingsReader,
         );
+
+        $scheduleRepository = new EloquentOperatingScheduleRepository;
 
         $this->service = new BookingService(
             $this->bookingRepository,
             $slotAvailabilityService,
-            new BookingSettingsReader(),
+            new BookingSettingsReader,
+            $scheduleRepository,
         );
 
         $this->resource = BookableResourceModel::create([
@@ -332,6 +338,68 @@ final class BookingServiceTest extends TestCase
             return $event->bookingId === $bookingId
                 && $event->userId === $this->user->id;
         });
+    }
+
+    public function test_it_throws_when_booking_has_fewer_than_minimum_consecutive_slots(): void
+    {
+        Event::fake();
+        config()->set('venue-bookings.approval_mode', 'auto_confirm');
+
+        // Create schedule with min_consecutive_slots = 3
+        OperatingScheduleModel::create([
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'resource_id' => $this->resource->id,
+            'slot_duration_minutes' => 60,
+            'min_consecutive_slots' => 3,
+            'max_consecutive_slots' => 6,
+            'day_schedules' => [
+                ['day_of_week' => 1, 'open_time' => '10:00', 'close_time' => '20:00', 'is_enabled' => true],
+            ],
+        ]);
+
+        // Try to book only 1 slot (10:00-11:00) — should fail because min is 3
+        $dto = new CreateBookingDTO(
+            resourceId: $this->resource->id,
+            userId: $this->user->id,
+            date: '2026-03-16',
+            startTime: '10:00',
+            endTime: '11:00',
+        );
+
+        $this->expectException(MinimumSlotsNotMetException::class);
+
+        $this->service->createBooking($dto);
+    }
+
+    public function test_it_allows_booking_when_meeting_minimum_consecutive_slots(): void
+    {
+        Event::fake();
+        config()->set('venue-bookings.approval_mode', 'auto_confirm');
+
+        // Create schedule with min_consecutive_slots = 2
+        OperatingScheduleModel::create([
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'resource_id' => $this->resource->id,
+            'slot_duration_minutes' => 60,
+            'min_consecutive_slots' => 2,
+            'max_consecutive_slots' => 6,
+            'day_schedules' => [
+                ['day_of_week' => 1, 'open_time' => '10:00', 'close_time' => '20:00', 'is_enabled' => true],
+            ],
+        ]);
+
+        // Book 2 slots (10:00-12:00) — exactly meets minimum
+        $dto = new CreateBookingDTO(
+            resourceId: $this->resource->id,
+            userId: $this->user->id,
+            date: '2026-03-16',
+            startTime: '10:00',
+            endTime: '12:00',
+        );
+
+        $result = $this->service->createBooking($dto);
+
+        $this->assertEquals(BookingStatus::Confirmed, $result->status);
     }
 
     public function test_it_marks_booking_as_no_show(): void

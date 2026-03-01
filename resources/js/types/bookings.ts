@@ -11,6 +11,8 @@ export interface BookableResource {
     sort_order: number;
     scheduling_mode: 'time_slots' | 'time_blocks';
     field_definitions: FieldDefinition[];
+    min_consecutive_slots: number;
+    max_consecutive_slots: number;
 }
 
 export interface BookingListItem {

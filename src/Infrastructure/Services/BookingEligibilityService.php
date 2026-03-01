@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Infrastructure\Services;
 
+use Carbon\CarbonImmutable;
 use Modules\VenueBookings\Application\DTOs\Response\BookingEligibilityDTO;
 use Modules\VenueBookings\Application\Services\BookingEligibilityServiceInterface;
 use Modules\VenueBookings\Domain\Repositories\BookingRepositoryInterface;
@@ -13,8 +14,7 @@ final readonly class BookingEligibilityService implements BookingEligibilityServ
     public function __construct(
         private BookingRepositoryInterface $bookingRepository,
         private BookingSettingsReader $settingsReader,
-    ) {
-    }
+    ) {}
 
     public function canUserBook(string $userId, string $resourceId, string $date): BookingEligibilityDTO
     {
@@ -51,11 +51,16 @@ final readonly class BookingEligibilityService implements BookingEligibilityServ
      */
     private function checkMinAdvanceTime(string $date, array &$reasons): void
     {
+        $tz = $this->settingsReader->getTimezone();
         $minAdvanceMinutes = $this->settingsReader->getMinAdvanceMinutes();
-        $bookingDate = strtotime($date);
-        $minDate = strtotime("+{$minAdvanceMinutes} minutes");
+        $now = CarbonImmutable::now($tz);
+        $cutoff = $now->addMinutes($minAdvanceMinutes);
 
-        if ($bookingDate < $minDate) {
+        // Use end of day (23:59:59) for the date-level eligibility check.
+        // Slot-level time filtering is handled by SlotAvailabilityService.
+        $endOfBookingDay = CarbonImmutable::parse($date, $tz)->endOfDay();
+
+        if ($endOfBookingDay->lt($cutoff)) {
             $reasons[] = __('venue-bookings::messages.eligibility.too_soon', [
                 'minutes' => $minAdvanceMinutes,
             ]);
@@ -67,11 +72,12 @@ final readonly class BookingEligibilityService implements BookingEligibilityServ
      */
     private function checkMaxFutureDays(string $date, array &$reasons): void
     {
+        $tz = $this->settingsReader->getTimezone();
         $maxFutureDays = $this->settingsReader->getMaxFutureDays();
-        $bookingDate = strtotime($date);
-        $maxDate = strtotime("+{$maxFutureDays} days");
+        $bookingDate = CarbonImmutable::parse($date, $tz)->startOfDay();
+        $maxDate = CarbonImmutable::now($tz)->addDays($maxFutureDays)->endOfDay();
 
-        if ($bookingDate > $maxDate) {
+        if ($bookingDate->gt($maxDate)) {
             $reasons[] = __('venue-bookings::messages.eligibility.too_far', [
                 'days' => $maxFutureDays,
             ]);

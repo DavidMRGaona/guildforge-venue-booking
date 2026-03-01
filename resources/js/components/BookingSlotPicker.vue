@@ -7,10 +7,14 @@ interface Props {
     slots: BookingSlot[];
     selectedSlots: BookingSlot[];
     schedulingMode?: 'time_slots' | 'time_blocks';
+    minConsecutiveSlots?: number;
+    maxConsecutiveSlots?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     schedulingMode: 'time_slots',
+    minConsecutiveSlots: 1,
+    maxConsecutiveSlots: 4,
 });
 
 const emit = defineEmits<{
@@ -81,8 +85,32 @@ function areConsecutive(slots: BookingSlot[]): boolean {
     return true;
 }
 
+function isDisabledByConsecutive(slot: BookingSlot): boolean {
+    if (isBlockMode.value || props.selectedSlots.length === 0) return false;
+    if (isSelected(slot)) return false;
+
+    // Max consecutive reached — disable all unselected slots
+    if (props.selectedSlots.length >= props.maxConsecutiveSlots) return true;
+
+    // Only allow slots adjacent to the current contiguous block
+    const indices = props.selectedSlots
+        .map((s) => getSlotIndex(s))
+        .sort((a, b) => a - b);
+
+    const minIndex = indices[0];
+    const maxIndex = indices[indices.length - 1];
+    if (minIndex === undefined || maxIndex === undefined) return false;
+
+    const slotIndex = getSlotIndex(slot);
+    return slotIndex !== minIndex - 1 && slotIndex !== maxIndex + 1;
+}
+
+function isDisabled(slot: BookingSlot): boolean {
+    return !slot.is_available || isDisabledByConsecutive(slot);
+}
+
 function toggleSlot(slot: BookingSlot): void {
-    if (!slot.is_available) return;
+    if (isDisabled(slot)) return;
 
     consecutiveError.value = false;
 
@@ -132,6 +160,14 @@ function formatBlockTime(slot: BookingSlot): string {
             {{ isBlockMode ? t('booking_calendar.select_block') : t('booking_calendar.select_slots') }}
         </h3>
 
+        <!-- Min consecutive hint (only in time_slots mode when min > 1) -->
+        <p
+            v-if="!isBlockMode && props.minConsecutiveSlots > 1"
+            class="mb-3 text-sm text-base-secondary"
+        >
+            {{ t('booking_calendar.min_consecutive_required', { min: props.minConsecutiveSlots }) }}
+        </p>
+
         <!-- Consecutive error (only in time_slots mode) -->
         <div
             v-if="consecutiveError && !isBlockMode"
@@ -151,15 +187,15 @@ function formatBlockTime(slot: BookingSlot): string {
                     v-for="slot in slots"
                     :key="slot.start_time + '-' + slot.end_time"
                     type="button"
-                    :disabled="!slot.is_available"
+                    :disabled="isDisabled(slot)"
                     :aria-pressed="isSelected(slot)"
                     :class="[
                         'flex items-center justify-between rounded-lg border px-4 py-3 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 dark:focus:ring-offset-page',
                         isSelected(slot)
                             ? 'border-primary-600 bg-primary-600 text-white'
-                            : slot.is_available
-                                ? 'border-default bg-surface text-base-primary hover:border-primary-400 hover:bg-primary-light'
-                                : 'cursor-not-allowed border-default bg-muted text-base-muted',
+                            : isDisabled(slot)
+                                ? 'cursor-not-allowed border-default bg-muted text-base-muted'
+                                : 'border-default bg-surface text-base-primary hover:border-primary-400 hover:bg-primary-light',
                     ]"
                     @click="toggleSlot(slot)"
                 >
@@ -202,16 +238,19 @@ function formatBlockTime(slot: BookingSlot): string {
                     v-for="slot in slots"
                     :key="slot.start_time"
                     type="button"
-                    :disabled="!slot.is_available"
+                    :disabled="isDisabled(slot)"
                     :aria-pressed="isSelected(slot)"
                     :class="[
                         'rounded-lg border px-3 py-2 text-center text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 dark:focus:ring-offset-page',
                         isSelected(slot)
                             ? 'border-primary-600 bg-primary-600 text-white'
-                            : slot.is_available
-                                ? 'border-default bg-surface text-base-primary hover:border-primary-400 hover:bg-primary-light'
-                                : 'cursor-not-allowed border-default bg-muted text-base-muted line-through',
+                            : !slot.is_available
+                                ? 'cursor-not-allowed border-default bg-muted text-base-muted line-through'
+                                : isDisabledByConsecutive(slot)
+                                    ? 'cursor-not-allowed border-default bg-muted text-base-muted opacity-50'
+                                    : 'border-default bg-surface text-base-primary hover:border-primary-400 hover:bg-primary-light',
                     ]"
+                    :title="isDisabledByConsecutive(slot) ? t('booking_calendar.max_consecutive_reached') : undefined"
                     @click="toggleSlot(slot)"
                 >
                     {{ slot.start_time.slice(0, 5) }}

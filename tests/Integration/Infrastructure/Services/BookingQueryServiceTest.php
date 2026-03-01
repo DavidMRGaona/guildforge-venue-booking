@@ -18,6 +18,7 @@ use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\OperatingSc
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories\EloquentBookingRepository;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories\EloquentOperatingScheduleRepository;
 use Modules\VenueBookings\Infrastructure\Services\BookingQueryService;
+use Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader;
 use Modules\VenueBookings\Infrastructure\Services\SlotAvailabilityService;
 use Tests\TestCase;
 
@@ -37,7 +38,7 @@ final class BookingQueryServiceTest extends TestCase
 
         $bookingRepository = new EloquentBookingRepository();
         $scheduleRepository = new EloquentOperatingScheduleRepository();
-        $slotAvailabilityService = new SlotAvailabilityService($scheduleRepository, $bookingRepository);
+        $slotAvailabilityService = new SlotAvailabilityService($scheduleRepository, $bookingRepository, new BookingSettingsReader());
 
         $this->service = new BookingQueryService(
             $bookingRepository,

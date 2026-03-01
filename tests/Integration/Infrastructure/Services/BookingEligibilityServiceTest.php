@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\VenueBookings\Tests\Integration\Infrastructure\Services;
 
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
@@ -29,8 +30,8 @@ final class BookingEligibilityServiceTest extends TestCase
         parent::setUp();
 
         $this->service = new BookingEligibilityService(
-            new EloquentBookingRepository(),
-            new BookingSettingsReader(),
+            new EloquentBookingRepository,
+            new BookingSettingsReader,
         );
 
         $this->resource = BookableResourceModel::create([
@@ -47,6 +48,7 @@ final class BookingEligibilityServiceTest extends TestCase
         config()->set('venue-bookings.max_active_bookings_per_user', 10);
         config()->set('venue-bookings.min_advance_minutes', 0);
         config()->set('venue-bookings.max_future_days', 365);
+        config()->set('venue-bookings.timezone', 'UTC');
     }
 
     public function test_it_returns_eligible_when_all_checks_pass(): void
@@ -157,18 +159,37 @@ final class BookingEligibilityServiceTest extends TestCase
         $this->assertEmpty($result->reasons);
     }
 
-    public function test_today_date_with_advance_setting_is_ineligible(): void
+    public function test_today_date_with_advance_setting_is_eligible(): void
     {
         config()->set('venue-bookings.min_advance_minutes', 60);
 
-        // Today's date — strtotime gives midnight, which is always before now + 60 min
-        $date = now()->toDateString();
+        // Travel to early morning so end-of-day (23:59:59) is well beyond cutoff
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 8, 0));
+
+        $date = '2026-03-16'; // same as "today"
 
         $result = $this->service->canUserBook($this->user->id, $this->resource->id, $date);
 
-        // Today at midnight is always in the past, so booking "today" with 60 min advance
-        // should fail (the date-level check can't know about specific slot times)
-        $this->assertFalse($result->canBook, 'Today date should be ineligible since midnight is before now + 60 min');
+        // End of day (23:59:59) is after 08:00 + 60 min = 09:00, so today is eligible.
+        // Slot-level filtering is handled separately by SlotAvailabilityService.
+        $this->assertTrue($result->canBook, 'Today should be eligible since end-of-day is after cutoff');
+        $this->assertEmpty($result->reasons);
+    }
+
+    public function test_date_is_ineligible_when_entire_day_is_before_cutoff(): void
+    {
+        config()->set('venue-bookings.min_advance_minutes', 1440); // 24 hours
+
+        // Travel to midday — cutoff is tomorrow midday, so today's end-of-day (23:59:59) < cutoff
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 12, 0));
+
+        $date = '2026-03-16';
+
+        $result = $this->service->canUserBook($this->user->id, $this->resource->id, $date);
+
+        // End of day 23:59:59 < 12:00 + 1440 min (= tomorrow 12:00), so ineligible
+        $this->assertFalse($result->canBook, 'Today should be ineligible when entire day is before cutoff');
+        $this->assertNotEmpty($result->reasons);
     }
 
     public function test_it_does_not_count_cancelled_bookings_toward_limit(): void

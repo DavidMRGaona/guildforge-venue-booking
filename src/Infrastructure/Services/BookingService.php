@@ -17,8 +17,10 @@ use Modules\VenueBookings\Domain\Events\BookingConfirmed;
 use Modules\VenueBookings\Domain\Events\BookingCreated;
 use Modules\VenueBookings\Domain\Events\BookingNoShow;
 use Modules\VenueBookings\Domain\Events\BookingRejected;
+use Modules\VenueBookings\Domain\Exceptions\MinimumSlotsNotMetException;
 use Modules\VenueBookings\Domain\Exceptions\SlotUnavailableException;
 use Modules\VenueBookings\Domain\Repositories\BookingRepositoryInterface;
+use Modules\VenueBookings\Domain\Repositories\OperatingScheduleRepositoryInterface;
 use Modules\VenueBookings\Domain\ValueObjects\BookableResourceId;
 use Modules\VenueBookings\Domain\ValueObjects\BookingFieldValue;
 use Modules\VenueBookings\Domain\ValueObjects\BookingId;
@@ -30,12 +32,15 @@ final readonly class BookingService implements BookingServiceInterface
         private BookingRepositoryInterface $bookingRepository,
         private SlotAvailabilityServiceInterface $slotAvailabilityService,
         private BookingSettingsReader $settingsReader,
-    ) {
-    }
+        private OperatingScheduleRepositoryInterface $scheduleRepository,
+    ) {}
 
     public function createBooking(CreateBookingDTO $dto): BookingResponseDTO
     {
         $timeRange = new TimeRange($dto->startTime, $dto->endTime);
+        $resourceId = BookableResourceId::fromString($dto->resourceId);
+
+        $this->validateMinConsecutiveSlots($resourceId, $timeRange);
 
         if (! $this->slotAvailabilityService->isSlotAvailable($dto->resourceId, $dto->date, $timeRange)) {
             throw SlotUnavailableException::forTimeRange($dto->date, $dto->startTime, $dto->endTime);
@@ -52,7 +57,7 @@ final readonly class BookingService implements BookingServiceInterface
 
         $booking = new Booking(
             id: BookingId::generate(),
-            resourceId: BookableResourceId::fromString($dto->resourceId),
+            resourceId: $resourceId,
             userId: $dto->userId,
             date: $dto->date,
             timeRange: $timeRange,
@@ -63,7 +68,7 @@ final readonly class BookingService implements BookingServiceInterface
             campaignId: $dto->campaignId,
             fieldValues: $fieldValues,
             confirmedAt: $initialStatus === BookingStatus::Confirmed
-                ? new \DateTimeImmutable()
+                ? new \DateTimeImmutable
                 : null,
         );
 
@@ -144,5 +149,27 @@ final readonly class BookingService implements BookingServiceInterface
         BookingNoShow::dispatch($booking->id->value, $booking->userId);
 
         return BookingResponseDTO::fromEntity($booking);
+    }
+
+    private function validateMinConsecutiveSlots(BookableResourceId $resourceId, TimeRange $timeRange): void
+    {
+        $schedule = $this->scheduleRepository->findByResource($resourceId);
+
+        if ($schedule === null || $schedule->minConsecutiveSlots <= 1) {
+            return;
+        }
+
+        $startSeconds = (int) strtotime($timeRange->startTime) - (int) strtotime('00:00');
+        $endSeconds = (int) strtotime($timeRange->endTime) - (int) strtotime('00:00');
+
+        if ($endSeconds <= $startSeconds) {
+            $endSeconds += 86400;
+        }
+
+        $slotCount = (int) (($endSeconds - $startSeconds) / ($schedule->slotDurationMinutes * 60));
+
+        if ($slotCount < $schedule->minConsecutiveSlots) {
+            throw MinimumSlotsNotMetException::forResource($schedule->minConsecutiveSlots, $slotCount);
+        }
     }
 }

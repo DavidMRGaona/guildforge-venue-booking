@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Infrastructure\Services;
 
+use Carbon\CarbonImmutable;
 use Modules\VenueBookings\Application\Services\SlotAvailabilityServiceInterface;
 use Modules\VenueBookings\Domain\Repositories\BookingRepositoryInterface;
 use Modules\VenueBookings\Domain\Repositories\OperatingScheduleRepositoryInterface;
@@ -16,8 +17,8 @@ final readonly class SlotAvailabilityService implements SlotAvailabilityServiceI
     public function __construct(
         private OperatingScheduleRepositoryInterface $scheduleRepository,
         private BookingRepositoryInterface $bookingRepository,
-    ) {
-    }
+        private BookingSettingsReader $settingsReader,
+    ) {}
 
     /**
      * @return array<BookingSlot>
@@ -34,7 +35,23 @@ final readonly class SlotAvailabilityService implements SlotAvailabilityServiceI
         $slots = $schedule->generateSlotsForDate($date);
         $bookings = $this->bookingRepository->getByResourceAndDate($resourceIdVO, $date);
 
-        return array_map(function (BookingSlot $slot) use ($bookings): BookingSlot {
+        $tz = $this->settingsReader->getTimezone();
+        $now = CarbonImmutable::now($tz);
+        $isToday = $now->toDateString() === $date;
+        $cutoffTime = $isToday
+            ? $now->addMinutes($this->settingsReader->getMinAdvanceMinutes())->format('H:i')
+            : null;
+
+        return array_map(function (BookingSlot $slot) use ($bookings, $cutoffTime): BookingSlot {
+            if ($cutoffTime !== null && $slot->startTime < $cutoffTime) {
+                return new BookingSlot(
+                    startTime: $slot->startTime,
+                    endTime: $slot->endTime,
+                    isAvailable: false,
+                    label: $slot->label,
+                );
+            }
+
             foreach ($bookings as $booking) {
                 if (! $booking->status->isFinal()) {
                     $slotRange = new TimeRange($slot->startTime, $slot->endTime);

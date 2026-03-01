@@ -276,6 +276,30 @@ final class OperatingScheduleTest extends TestCase
         $this->assertEquals('Mañana', $slots[0]->label);
     }
 
+    public function test_it_generates_slots_for_full_day_schedule(): void
+    {
+        // 2026-03-02 is a Monday (dayOfWeek 1)
+        // 00:00–23:59 with 60-min slots should produce 24 slots (00:00–01:00 … 23:00–00:00)
+        $schedule = $this->createScheduleWithDays(
+            daySchedules: [
+                new DaySchedule(dayOfWeek: 1, openTime: '00:00', closeTime: '23:59', isEnabled: true),
+            ],
+            slotDurationMinutes: 60,
+        );
+
+        $slots = $schedule->generateSlotsForDate('2026-03-02');
+
+        $this->assertCount(24, $slots);
+
+        // First slot: 00:00-01:00
+        $this->assertEquals('00:00', $slots[0]->startTime);
+        $this->assertEquals('01:00', $slots[0]->endTime);
+
+        // Last slot: 23:00-00:00
+        $this->assertEquals('23:00', $slots[23]->startTime);
+        $this->assertEquals('00:00', $slots[23]->endTime);
+    }
+
     public function test_scheduling_mode_defaults_to_time_slots(): void
     {
         $schedule = new OperatingSchedule(

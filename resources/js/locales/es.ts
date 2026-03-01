@@ -31,6 +31,8 @@ export default {
         no_past: 'No tienes reservas anteriores',
         slot_unavailable: 'No disponible',
         consecutive_only: 'Solo se pueden seleccionar turnos consecutivos',
+        min_consecutive_required: 'Selecciona al menos {min} turnos consecutivos',
+        max_consecutive_reached: 'Máximo de turnos consecutivos alcanzado',
         loading: 'Cargando...',
         error: 'Error al cargar los datos',
         eligibility_warning: 'No puedes realizar reservas',

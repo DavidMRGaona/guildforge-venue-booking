@@ -31,6 +31,8 @@ final class BookingCalendarController extends Controller
             function ($r) use ($user) {
                 $schedule = $this->scheduleRepository->findByResource($r->id);
                 $schedulingMode = $schedule !== null ? $schedule->schedulingMode->value : 'time_slots';
+                $minConsecutiveSlots = $schedule !== null ? $schedule->minConsecutiveSlots : 1;
+                $maxConsecutiveSlots = $schedule !== null ? $schedule->maxConsecutiveSlots : 4;
 
                 $visibleFields = $this->fieldConfigService->getVisibleFields($r->id->value, $user);
                 $fieldDefs = array_map(
@@ -38,7 +40,7 @@ final class BookingCalendarController extends Controller
                     $visibleFields,
                 );
 
-                return BookableResourceResponseDTO::fromEntity($r, $schedulingMode, $fieldDefs)->toArray();
+                return BookableResourceResponseDTO::fromEntity($r, $schedulingMode, $fieldDefs, $minConsecutiveSlots, $maxConsecutiveSlots)->toArray();
             },
             $resources,
         );

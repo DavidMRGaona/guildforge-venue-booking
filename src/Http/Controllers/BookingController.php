@@ -17,6 +17,7 @@ use Modules\VenueBookings\Application\Services\BookingServiceInterface;
 use Modules\VenueBookings\Domain\Exceptions\BookingLimitExceededException;
 use Modules\VenueBookings\Domain\Exceptions\BookingNotCancellableException;
 use Modules\VenueBookings\Domain\Exceptions\BookingNotFoundException;
+use Modules\VenueBookings\Domain\Exceptions\MinimumSlotsNotMetException;
 use Modules\VenueBookings\Domain\Exceptions\SlotUnavailableException;
 use Modules\VenueBookings\Domain\Exceptions\TooFarToBookException;
 use Modules\VenueBookings\Domain\Exceptions\TooSoonToBookException;
@@ -96,6 +97,8 @@ final class BookingController extends Controller
             return back()->with('error', __('venue-bookings::messages.frontend.too_soon'));
         } catch (TooFarToBookException) {
             return back()->with('error', __('venue-bookings::messages.frontend.too_far'));
+        } catch (MinimumSlotsNotMetException) {
+            return back()->with('error', __('venue-bookings::messages.frontend.minimum_slots_not_met'));
         }
     }
 

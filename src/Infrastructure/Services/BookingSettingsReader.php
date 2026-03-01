@@ -79,6 +79,14 @@ final readonly class BookingSettingsReader
             ?? config('venue-bookings.time_block_presets', []);
     }
 
+    public function getTimezone(): string
+    {
+        $tz = config('modules.settings.venue-bookings.timezone')
+            ?? config('venue-bookings.timezone');
+
+        return is_string($tz) && $tz !== '' ? $tz : config('app.timezone', 'UTC');
+    }
+
     public function isReminderEnabled(): bool
     {
         return (bool) (config('modules.settings.venue-bookings.notifications.reminder_enabled')

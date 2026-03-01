@@ -22,6 +22,8 @@ final readonly class BookableResourceResponseDTO
         public int $sortOrder,
         public string $schedulingMode = 'time_slots',
         public array $fieldDefinitions = [],
+        public int $minConsecutiveSlots = 1,
+        public int $maxConsecutiveSlots = 4,
     ) {}
 
     /**
@@ -31,6 +33,8 @@ final readonly class BookableResourceResponseDTO
         BookableResource $resource,
         string $schedulingMode = 'time_slots',
         array $fieldDefinitions = [],
+        int $minConsecutiveSlots = 1,
+        int $maxConsecutiveSlots = 4,
     ): self {
         return new self(
             id: $resource->id->value,
@@ -42,6 +46,8 @@ final readonly class BookableResourceResponseDTO
             sortOrder: $resource->sortOrder,
             schedulingMode: $schedulingMode,
             fieldDefinitions: $fieldDefinitions,
+            minConsecutiveSlots: $minConsecutiveSlots,
+            maxConsecutiveSlots: $maxConsecutiveSlots,
         );
     }
 
@@ -63,6 +69,8 @@ final readonly class BookableResourceResponseDTO
             'sort_order' => $this->sortOrder,
             'scheduling_mode' => $this->schedulingMode,
             'field_definitions' => $this->fieldDefinitions,
+            'min_consecutive_slots' => $this->minConsecutiveSlots,
+            'max_consecutive_slots' => $this->maxConsecutiveSlots,
         ];
     }
 }

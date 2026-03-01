@@ -23,8 +23,7 @@ final class OperatingSchedule
         public int $maxConsecutiveSlots = 4,
         public array $daySchedules = [],
         public SchedulingMode $schedulingMode = SchedulingMode::TimeSlots,
-    ) {
-    }
+    ) {}
 
     public function isOperatingOn(int $dayOfWeek): bool
     {
@@ -69,7 +68,7 @@ final class OperatingSchedule
             $closeTime += 86400;
         }
 
-        while (($currentTime + $durationSeconds) <= $closeTime) {
+        while ($currentTime < $closeTime) {
             $startTime = date('H:i', $currentTime);
             $endTime = date('H:i', $currentTime + $durationSeconds);
 

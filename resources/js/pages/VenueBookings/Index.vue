@@ -61,6 +61,14 @@ const currentFieldDefinitions = computed(() =>
     currentResource.value?.field_definitions ?? []
 );
 
+const currentMinConsecutiveSlots = computed(() =>
+    currentResource.value?.min_consecutive_slots ?? 1
+);
+
+const currentMaxConsecutiveSlots = computed(() =>
+    currentResource.value?.max_consecutive_slots ?? 4
+);
+
 const bookingStartTime = computed(() => {
     if (selectedSlots.value.length === 0) return '';
     if (currentSchedulingMode.value === 'time_blocks') {
@@ -288,8 +296,19 @@ async function onEventSelect(bookingId: string): Promise<void> {
                     :slots="slots"
                     :selected-slots="selectedSlots"
                     :scheduling-mode="currentSchedulingMode"
+                    :min-consecutive-slots="currentMinConsecutiveSlots"
+                    :max-consecutive-slots="currentMaxConsecutiveSlots"
                     @update:selected-slots="onSlotsUpdate"
                 />
+
+                <!-- Min consecutive warning -->
+                <div
+                    v-if="selectedSlots.length > 0 && selectedSlots.length < currentMinConsecutiveSlots && currentSchedulingMode === 'time_slots'"
+                    class="mt-4 rounded-lg bg-warning-light p-3 text-center text-sm text-warning"
+                    role="alert"
+                >
+                    {{ t('booking_calendar.min_consecutive_required', { min: currentMinConsecutiveSlots }) }}
+                </div>
 
                 <!-- Book button -->
                 <div
@@ -298,7 +317,13 @@ async function onEventSelect(bookingId: string): Promise<void> {
                 >
                     <button
                         type="button"
-                        class="rounded-lg bg-primary-600 px-8 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-page"
+                        :disabled="selectedSlots.length < currentMinConsecutiveSlots && currentSchedulingMode === 'time_slots'"
+                        :class="[
+                            'rounded-lg px-8 py-3 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-page',
+                            selectedSlots.length < currentMinConsecutiveSlots && currentSchedulingMode === 'time_slots'
+                                ? 'cursor-not-allowed bg-primary-400 text-white/70'
+                                : 'bg-primary-600 text-white hover:bg-primary-700',
+                        ]"
                         @click="openBookingForm"
                     >
                         {{ t('booking_calendar.book') }}
