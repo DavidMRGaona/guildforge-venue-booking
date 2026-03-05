@@ -5,6 +5,7 @@ import FullCalendar from '@fullcalendar/vue3';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import esLocale from '@fullcalendar/core/locales/es';
 import type {
     CalendarOptions,
     EventClickArg,
@@ -32,7 +33,7 @@ const emit = defineEmits<{
     eventSelect: [bookingId: string];
 }>();
 
-const { locale, t } = useI18n();
+const { t } = useI18n();
 
 const isLoading = ref(false);
 const error = ref<string | null>(null);
@@ -149,7 +150,7 @@ watch(tooltipVisible, (visible) => {
 const calendarOptions = computed<CalendarOptions>(() => ({
     plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
     initialView: 'dayGridMonth',
-    locale: locale.value,
+    locale: esLocale,
     events: fetchEvents,
     dateClick: handleDateClick,
     eventClick: handleEventClick,
