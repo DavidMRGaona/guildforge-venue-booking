@@ -5,7 +5,7 @@ import FullCalendar from '@fullcalendar/vue3';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import esLocale from '@fullcalendar/core/locales/es';
+import { useCalendarLocale } from '@/composables/useCalendarLocale';
 import type {
     CalendarOptions,
     EventClickArg,
@@ -34,6 +34,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const calendarLocale = useCalendarLocale();
 
 const isLoading = ref(false);
 const error = ref<string | null>(null);
@@ -150,7 +151,7 @@ watch(tooltipVisible, (visible) => {
 const calendarOptions = computed<CalendarOptions>(() => ({
     plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
     initialView: 'dayGridMonth',
-    locale: esLocale,
+    locale: calendarLocale.value,
     events: fetchEvents,
     dateClick: handleDateClick,
     eventClick: handleEventClick,
