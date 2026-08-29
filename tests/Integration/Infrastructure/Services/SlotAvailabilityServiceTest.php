@@ -180,7 +180,7 @@ final class SlotAvailabilityServiceTest extends TestCase
 
     public function test_slots_before_current_time_are_unavailable(): void
     {
-        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 11, 30));
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 11, 30, 0, 'UTC'));
 
         $this->createScheduleWithMondayOpen();
 
@@ -202,7 +202,7 @@ final class SlotAvailabilityServiceTest extends TestCase
     {
         config()->set('venue-bookings.min_advance_minutes', 60);
 
-        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 10, 30));
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 10, 30, 0, 'UTC'));
 
         $this->createScheduleWithMondayOpen();
 
@@ -222,7 +222,7 @@ final class SlotAvailabilityServiceTest extends TestCase
 
     public function test_all_slots_available_for_future_dates(): void
     {
-        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 11, 30));
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 11, 30, 0, 'UTC'));
 
         $this->createScheduleWithMondayOpen();
 
@@ -242,7 +242,7 @@ final class SlotAvailabilityServiceTest extends TestCase
     {
         config()->set('venue-bookings.min_advance_minutes', 0);
 
-        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 11, 30));
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 11, 30, 0, 'UTC'));
 
         $this->createScheduleWithMondayOpen();
 

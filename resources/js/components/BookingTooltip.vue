@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { BookingTooltipData } from '../types/bookings';
+import { VENUE_TIMEZONE } from '@/utils/datetime';
 
 interface Props {
     booking: BookingTooltipData | null;
@@ -35,6 +36,7 @@ const formattedTime = computed(() => {
     const format = (iso: string): string => {
         const date = new Date(iso);
         return date.toLocaleTimeString(locale.value, {
+            timeZone: VENUE_TIMEZONE,
             hour: '2-digit',
             minute: '2-digit',
             hour12: false,

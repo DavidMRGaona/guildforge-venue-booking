@@ -3,6 +3,7 @@ import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { BookingListItem } from '../types/bookings';
 import BookingStatusBadge from './BookingStatusBadge.vue';
+import { VENUE_TIMEZONE } from '@/utils/datetime';
 
 interface Props {
     booking: BookingListItem;
@@ -23,8 +24,9 @@ const visibleFields = computed(() =>
 );
 
 const formattedDate = computed(() => {
-    const date = new Date(props.booking.date + 'T12:00:00');
+    const date = new Date(`${props.booking.date}T12:00:00Z`);
     return date.toLocaleDateString(locale.value, {
+        timeZone: VENUE_TIMEZONE,
         weekday: 'short',
         day: 'numeric',
         month: 'short',

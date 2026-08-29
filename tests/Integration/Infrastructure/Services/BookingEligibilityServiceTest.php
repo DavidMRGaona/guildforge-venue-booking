@@ -164,7 +164,7 @@ final class BookingEligibilityServiceTest extends TestCase
         config()->set('venue-bookings.min_advance_minutes', 60);
 
         // Travel to early morning so end-of-day (23:59:59) is well beyond cutoff
-        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 8, 0));
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 8, 0, 0, 'UTC'));
 
         $date = '2026-03-16'; // same as "today"
 
@@ -181,7 +181,7 @@ final class BookingEligibilityServiceTest extends TestCase
         config()->set('venue-bookings.min_advance_minutes', 1440); // 24 hours
 
         // Travel to midday — cutoff is tomorrow midday, so today's end-of-day (23:59:59) < cutoff
-        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 12, 0));
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 12, 0, 0, 'UTC'));
 
         $date = '2026-03-16';
 

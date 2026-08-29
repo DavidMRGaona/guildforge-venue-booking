@@ -8,6 +8,7 @@ import { useFlashMessages } from '@/composables/useFlashMessages';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 import type { BookingListItem } from '../../types/bookings';
 import BookingCard from '../../components/BookingCard.vue';
+import { venueDayKey } from '@/utils/datetime';
 
 interface Props {
     bookings: BookingListItem[];
@@ -28,8 +29,10 @@ useSeo({
 const showCancelDialog = ref(false);
 const pendingCancelId = ref<string | null>(null);
 
-// Split bookings into upcoming and past
-const today = new Date().toISOString().substring(0, 10);
+// Split bookings into upcoming and past. `b.date` is a venue calendar day, so
+// "today" has to be the venue's day too -- toISOString() would give the UTC day
+// and misclassify bookings during the small hours.
+const today = venueDayKey(new Date());
 
 const upcomingBookings = computed(() =>
     props.bookings.filter((b) => b.date >= today)

@@ -3,6 +3,7 @@ import { ref, computed, Teleport, Transition } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useForm } from '@inertiajs/vue3';
 import type { FieldDefinition, BookingEligibility } from '../types/bookings';
+import { VENUE_TIMEZONE } from '@/utils/datetime';
 
 interface Props {
     resourceId: string;
@@ -56,8 +57,9 @@ const canBook = computed(() => {
 });
 
 const formattedDate = computed(() => {
-    const date = new Date(props.date + 'T12:00:00');
+    const date = new Date(`${props.date}T12:00:00Z`);
     return date.toLocaleDateString(locale.value, {
+        timeZone: VENUE_TIMEZONE,
         weekday: 'long',
         day: 'numeric',
         month: 'long',

@@ -30,7 +30,9 @@ final class SendBookingRemindersCommand extends Command
         }
 
         $hoursBeforeReminder = $settingsReader->getReminderHoursBefore();
-        $now = CarbonImmutable::now();
+        // The window is narrowed to calendar days downstream, so it must be read
+        // in the venue's timezone, like the rest of the booking logic.
+        $now = CarbonImmutable::now($settingsReader->getTimezone());
         $from = $now;
         $to = $now->addHours($hoursBeforeReminder);
 

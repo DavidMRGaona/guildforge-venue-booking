@@ -3,6 +3,7 @@ import { computed, Teleport, Transition } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { BookingDetail } from '../types/bookings';
 import BookingStatusBadge from './BookingStatusBadge.vue';
+import { VENUE_TIMEZONE } from '@/utils/datetime';
 
 interface Props {
     booking: BookingDetail;
@@ -17,8 +18,9 @@ const emit = defineEmits<{
 const { t, locale } = useI18n();
 
 const formattedDate = computed(() => {
-    const date = new Date(props.booking.date + 'T12:00:00');
+    const date = new Date(`${props.booking.date}T12:00:00Z`);
     return date.toLocaleDateString(locale.value, {
+        timeZone: VENUE_TIMEZONE,
         weekday: 'long',
         day: 'numeric',
         month: 'long',

@@ -5,6 +5,7 @@ import FullCalendar from '@fullcalendar/vue3';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
+import luxonPlugin from '@fullcalendar/luxon3';
 import { useCalendarLocale } from '@/composables/useCalendarLocale';
 import type {
     CalendarOptions,
@@ -17,6 +18,7 @@ import type {
     BookingTooltipData,
 } from '../types/bookings';
 import BookingTooltip from './BookingTooltip.vue';
+import { VENUE_TIMEZONE } from '@/utils/datetime';
 
 interface DateClickInfo {
     dateStr: string;
@@ -149,8 +151,11 @@ watch(tooltipVisible, (visible) => {
 });
 
 const calendarOptions = computed<CalendarOptions>(() => ({
-    plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
+    plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin, luxonPlugin],
     initialView: 'dayGridMonth',
+    // The week/day time grids position real hours, so the calendar must resolve
+    // them in the venue timezone rather than the visitor's.
+    timeZone: VENUE_TIMEZONE,
     locale: calendarLocale.value,
     events: fetchEvents,
     dateClick: handleDateClick,
