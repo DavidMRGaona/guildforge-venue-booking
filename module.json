@@ -1,7 +1,7 @@
 {
   "name": "venue-bookings",
   "displayName": "Reservas del local",
-  "version": "1.0.0-beta",
+  "version": "1.0.1-beta",
   "namespace": "Modules\\VenueBookings",
   "provider": "VenueBookingsServiceProvider",
   "description": "Sistema de reservas del local para gestionar espacios y horarios",
