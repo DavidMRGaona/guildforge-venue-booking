@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Tests\Feature\Filament\Resources;
 
+use Illuminate\Routing\RouteCollection;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Event;
@@ -35,7 +36,7 @@ final class BookingResourceEditTest extends ModuleTestCase
 
         // Register the BookingResource with the current Filament panel
         // and register its routes so edit/create/index pages are available.
-        $panel = Filament::getCurrentPanel();
+        $panel = Filament::getCurrentOrDefaultPanel();
         $panel->resources([BookingResource::class]);
 
         // Register resource routes within the panel's name prefix (filament.admin.)
@@ -46,7 +47,7 @@ final class BookingResourceEditTest extends ModuleTestCase
         // Rebuild route collection so module and Filament routes are resolvable by name.
         $router = app('router');
         $oldRoutes = $router->getRoutes();
-        $newRoutes = new \Illuminate\Routing\RouteCollection();
+        $newRoutes = new RouteCollection();
         foreach ($oldRoutes->getRoutes() as $route) {
             $newRoutes->add($route);
         }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Tests\Feature\Filament\Pages;
 
+use Illuminate\Routing\RouteCollection;
 use App\Application\Services\SettingsServiceInterface;
 use App\Infrastructure\Persistence\Eloquent\Models\SettingModel;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
@@ -26,7 +27,7 @@ final class VenueBookingsSettingsTest extends ModuleTestCase
         parent::setUp();
 
         // Register the settings page with Filament panel and its routes
-        $panel = Filament::getCurrentPanel();
+        $panel = Filament::getCurrentOrDefaultPanel();
         $panel->pages([VenueBookingsSettings::class]);
 
         Route::name($panel->generateRouteName(''))
@@ -36,7 +37,7 @@ final class VenueBookingsSettingsTest extends ModuleTestCase
         // Rebuild route collection
         $router = app('router');
         $oldRoutes = $router->getRoutes();
-        $newRoutes = new \Illuminate\Routing\RouteCollection;
+        $newRoutes = new RouteCollection;
         foreach ($oldRoutes->getRoutes() as $route) {
             $newRoutes->add($route);
         }

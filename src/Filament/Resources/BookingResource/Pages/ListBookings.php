@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Filament\Resources\BookingResource\Pages;
 
+use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Actions\CreateAction;
-use Filament\Resources\Components\Tab;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
@@ -31,7 +31,7 @@ final class ListBookings extends ListRecords
     }
 
     /**
-     * @return array<string, Tab>
+     * @return array<string, \Filament\Schemas\Components\Tabs\Tab>
      */
     public function getTabs(): array
     {

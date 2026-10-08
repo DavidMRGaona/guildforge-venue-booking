@@ -4,20 +4,23 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Filament\Resources;
 
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Actions\Action;
+use Filament\Actions\EditAction;
+use Modules\VenueBookings\Filament\Resources\BookingResource\Pages\ListBookings;
+use Modules\VenueBookings\Filament\Resources\BookingResource\Pages\CreateBooking;
+use Modules\VenueBookings\Filament\Resources\BookingResource\Pages\EditBooking;
 use App\Filament\Resources\BaseResource;
 use App\Infrastructure\Persistence\Eloquent\Models\EventModel;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Forms\Form;
-use Filament\Forms\Get;
 use Filament\Notifications\Notification;
-use Filament\Tables\Actions\Action;
-use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -39,7 +42,7 @@ final class BookingResource extends BaseResource
 {
     protected static ?string $model = BookingModel::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-calendar-days';
 
     protected static ?int $navigationSort = 2;
 
@@ -63,10 +66,10 @@ final class BookingResource extends BaseResource
         return __('venue-bookings::messages.model.booking.plural');
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 Select::make('resource_id')
                     ->label(__('venue-bookings::messages.fields.resource'))
                     ->options(BookableResourceModel::query()->pluck('name', 'id'))
@@ -265,7 +268,7 @@ final class BookingResource extends BaseResource
                     ->options(BookingStatus::options()),
 
                 Filter::make('date_range')
-                    ->form([
+                    ->schema([
                         DatePicker::make('date_from')
                             ->label(__('venue-bookings::messages.filters.date_from'))
                             ->native(false),
@@ -285,7 +288,7 @@ final class BookingResource extends BaseResource
                             );
                     }),
             ])
-            ->actions([
+            ->recordActions([
                 Action::make('confirm')
                     ->label(__('venue-bookings::messages.actions.confirm'))
                     ->icon('heroicon-o-check-circle')
@@ -307,7 +310,7 @@ final class BookingResource extends BaseResource
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->form([
+                    ->schema([
                         Textarea::make('reason')
                             ->label(__('venue-bookings::messages.fields.rejection_reason'))
                             ->required(),
@@ -328,7 +331,7 @@ final class BookingResource extends BaseResource
                     ->icon('heroicon-o-no-symbol')
                     ->color('warning')
                     ->requiresConfirmation()
-                    ->form([
+                    ->schema([
                         Textarea::make('reason')
                             ->label(__('venue-bookings::messages.fields.cancellation_reason'))
                             ->required(),
@@ -372,9 +375,9 @@ final class BookingResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListBookings::route('/'),
-            'create' => Pages\CreateBooking::route('/create'),
-            'edit' => Pages\EditBooking::route('/{record}/edit'),
+            'index' => ListBookings::route('/'),
+            'create' => CreateBooking::route('/create'),
+            'edit' => EditBooking::route('/{record}/edit'),
         ];
     }
 }

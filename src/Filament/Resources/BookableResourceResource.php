@@ -4,23 +4,26 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Filament\Resources;
 
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Actions\Action;
+use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Components\Section;
+use Filament\Actions\EditAction;
+use Modules\VenueBookings\Filament\Resources\BookableResourceResource\Pages\ListBookableResources;
+use Modules\VenueBookings\Filament\Resources\BookableResourceResource\Pages\CreateBookableResource;
+use Modules\VenueBookings\Filament\Resources\BookableResourceResource\Pages\EditBookableResource;
+use Filament\Schemas\Components\Grid;
 use App\Filament\Resources\BaseResource;
-use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\CheckboxList;
-use Filament\Forms\Components\Grid;
-use Filament\Forms\Components\Group;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Tabs;
-use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Forms\Form;
-use Filament\Forms\Get;
-use Filament\Forms\Set;
-use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
@@ -36,7 +39,7 @@ final class BookableResourceResource extends BaseResource
 {
     protected static ?string $model = BookableResourceModel::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-building-office';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-building-office';
 
     protected static ?int $navigationSort = 1;
 
@@ -60,10 +63,10 @@ final class BookableResourceResource extends BaseResource
         return __('venue-bookings::messages.model.bookable_resource.plural');
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 Tabs::make('BookableResourceTabs')
                     ->tabs([
                         Tab::make(__('venue-bookings::messages.tabs.basic_info'))
@@ -205,7 +208,7 @@ final class BookableResourceResource extends BaseResource
                                             Action::make('bulkAddDays')
                                                 ->label(__('venue-bookings::messages.actions.bulk_add_days'))
                                                 ->icon('heroicon-m-plus-circle')
-                                                ->form(function (Get $get): array {
+                                                ->schema(function (Get $get): array {
                                                     $presets = app(BookingSettingsReader::class)->getTimeBlockPresets();
                                                     $presetOptions = [];
                                                     foreach ($presets as $index => $preset) {
@@ -379,7 +382,7 @@ final class BookableResourceResource extends BaseResource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->actions([
+            ->recordActions([
                 EditAction::make(),
             ])
             ->defaultSort('sort_order', 'asc');
@@ -393,9 +396,9 @@ final class BookableResourceResource extends BaseResource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListBookableResources::route('/'),
-            'create' => Pages\CreateBookableResource::route('/create'),
-            'edit' => Pages\EditBookableResource::route('/{record}/edit'),
+            'index' => ListBookableResources::route('/'),
+            'create' => CreateBookableResource::route('/create'),
+            'edit' => EditBookableResource::route('/{record}/edit'),
         ];
     }
 

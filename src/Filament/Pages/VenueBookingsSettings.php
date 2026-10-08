@@ -4,20 +4,20 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Filament\Pages;
 
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Grid;
 use App\Application\Services\SettingsServiceInterface;
 use App\Filament\Concerns\SafeModuleNavigation;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
-use Filament\Forms\Get;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Modules\VenueBookings\Application\Services\ModuleIntegrationServiceInterface;
@@ -26,18 +26,18 @@ use Modules\VenueBookings\Domain\Enums\BookingFieldType;
 use Modules\VenueBookings\Domain\Enums\FieldVisibility;
 
 /**
- * @property Form $form
+ * @property \Filament\Schemas\Schema $form
  */
 final class VenueBookingsSettings extends Page implements HasForms
 {
     use InteractsWithForms;
     use SafeModuleNavigation;
 
-    protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-cog-6-tooth';
 
     protected static ?int $navigationSort = 99;
 
-    protected static string $view = 'filament.pages.simple-settings';
+    protected string $view = 'filament.pages.simple-settings';
 
     /**
      * @var array<string, mixed>
@@ -79,7 +79,7 @@ final class VenueBookingsSettings extends Page implements HasForms
     /**
      * Get the form schema components for settings.
      *
-     * @return array<\Filament\Forms\Components\Component>
+     * @return array<\Filament\Schemas\Components\Component>
      */
     public static function getFormSchemaComponents(): array
     {
@@ -260,10 +260,10 @@ final class VenueBookingsSettings extends Page implements HasForms
         ];
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
-            ->schema(self::getFormSchemaComponents())
+        return $schema
+            ->components(self::getFormSchemaComponents())
             ->statePath('data');
     }
 

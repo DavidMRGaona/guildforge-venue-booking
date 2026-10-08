@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Tests\Unit\Notifications;
 
+use Illuminate\Routing\RouteCollection;
+use stdClass;
 use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
@@ -21,7 +23,7 @@ final class BookingCreatedNotificationTest extends ModuleTestCase
     {
         parent::setUp();
 
-        $panel = Filament::getCurrentPanel();
+        $panel = Filament::getCurrentOrDefaultPanel();
         $panel->resources([BookingResource::class]);
 
         Route::name($panel->generateRouteName(''))
@@ -30,7 +32,7 @@ final class BookingCreatedNotificationTest extends ModuleTestCase
 
         $router = app('router');
         $oldRoutes = $router->getRoutes();
-        $newRoutes = new \Illuminate\Routing\RouteCollection();
+        $newRoutes = new RouteCollection();
         foreach ($oldRoutes->getRoutes() as $route) {
             $newRoutes->add($route);
         }
@@ -50,7 +52,7 @@ final class BookingCreatedNotificationTest extends ModuleTestCase
             endTime: '12:00',
         );
 
-        $mail = $notification->toMail(new \stdClass);
+        $mail = $notification->toMail(new stdClass);
 
         $expectedUrl = BookingResource::getUrl('edit', ['record' => $bookingId]);
 

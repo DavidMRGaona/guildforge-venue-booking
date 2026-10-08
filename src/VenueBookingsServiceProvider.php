@@ -4,6 +4,20 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings;
 
+use Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader;
+use Throwable;
+use Modules\VenueBookings\Filament\Resources\BookableResourceResource;
+use Modules\VenueBookings\Filament\Resources\BookingResource;
+use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
+use Modules\VenueBookings\Policies\BookableResourcePolicy;
+use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
+use Modules\VenueBookings\Policies\BookingPolicy;
+use Modules\VenueBookings\Filament\Pages\VenueBookingsSettings;
+use Modules\VenueBookings\Filament\Widgets\TodayBookingsWidget;
+use Modules\VenueBookings\Filament\Widgets\UpcomingBookingsWidget;
+use Filament\Resources\Resource;
+use Filament\Pages\Page;
+use Filament\Widgets\Widget;
 use App\Application\Modules\DTOs\ModuleRouteDTO;
 use App\Application\Modules\DTOs\NavigationItemDTO;
 use App\Application\Modules\DTOs\PagePrefixDTO;
@@ -69,7 +83,7 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
             return new SlotAvailabilityService(
                 $app->make(OperatingScheduleRepositoryInterface::class),
                 $app->make(BookingRepositoryInterface::class),
-                $app->make(\Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader::class),
+                $app->make(BookingSettingsReader::class),
             );
         });
         $this->app->bind(BookingFieldConfigServiceInterface::class, BookingFieldConfigService::class);
@@ -97,7 +111,7 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
                     config()->set('modules.settings.venue-bookings', $decoded);
                 }
             }
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // DB unavailable (fresh install, migration in progress).
             // File-based settings from parent::register() remain as fallback.
         }
@@ -213,13 +227,13 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
     }
 
     /**
-     * @return array<class-string<\Filament\Resources\Resource>>
+     * @return array<class-string<Resource>>
      */
     public function registerFilamentResources(): array
     {
         return [
-            \Modules\VenueBookings\Filament\Resources\BookableResourceResource::class,
-            \Modules\VenueBookings\Filament\Resources\BookingResource::class,
+            BookableResourceResource::class,
+            BookingResource::class,
         ];
     }
 
@@ -229,8 +243,8 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
     public function registerPolicies(): array
     {
         return [
-            \Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel::class => \Modules\VenueBookings\Policies\BookableResourcePolicy::class,
-            \Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel::class => \Modules\VenueBookings\Policies\BookingPolicy::class,
+            BookableResourceModel::class => BookableResourcePolicy::class,
+            BookingModel::class => BookingPolicy::class,
         ];
     }
 
@@ -361,31 +375,31 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
     }
 
     /**
-     * @return array<\Filament\Forms\Components\Component>
+     * @return array<\Filament\Schemas\Components\Component>
      */
     public function getSettingsSchema(): array
     {
-        return \Modules\VenueBookings\Filament\Pages\VenueBookingsSettings::getFormSchemaComponents();
+        return VenueBookingsSettings::getFormSchemaComponents();
     }
 
     /**
-     * @return array<class-string<\Filament\Pages\Page>>
+     * @return array<class-string<Page>>
      */
     public function registerFilamentPages(): array
     {
         return [
-            \Modules\VenueBookings\Filament\Pages\VenueBookingsSettings::class,
+            VenueBookingsSettings::class,
         ];
     }
 
     /**
-     * @return array<class-string<\Filament\Widgets\Widget>>
+     * @return array<class-string<Widget>>
      */
     public function registerFilamentWidgets(): array
     {
         return [
-            \Modules\VenueBookings\Filament\Widgets\TodayBookingsWidget::class,
-            \Modules\VenueBookings\Filament\Widgets\UpcomingBookingsWidget::class,
+            TodayBookingsWidget::class,
+            UpcomingBookingsWidget::class,
         ];
     }
 }
