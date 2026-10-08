@@ -203,7 +203,7 @@ final class BookingResourceEditTest extends ModuleTestCase
                 'status' => 'confirmed',
             ])
             ->call('save')
-            ->assertNotified();
+            ->assertHasFormErrors(['status']);
 
         $this->assertDatabaseHas('venuebookings_bookings', [
             'id' => $booking->id,
