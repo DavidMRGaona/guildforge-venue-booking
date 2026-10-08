@@ -13,14 +13,14 @@ use Modules\VenueBookings\Domain\Repositories\BookableResourceRepositoryInterfac
 use Modules\VenueBookings\Domain\ValueObjects\BookableResourceId;
 use Modules\VenueBookings\Domain\ValueObjects\ResourceFieldConfig;
 use Modules\VenueBookings\Infrastructure\Services\BookingFieldConfigService;
-use PHPUnit\Framework\MockObject\MockObject;
+use PHPUnit\Framework\MockObject\Stub;
 use Tests\TestCase;
 
 final class BookingFieldConfigServiceTest extends TestCase
 {
-    private ModuleIntegrationServiceInterface&MockObject $moduleIntegration;
+    private ModuleIntegrationServiceInterface&Stub $moduleIntegration;
 
-    private BookableResourceRepositoryInterface&MockObject $resourceRepository;
+    private BookableResourceRepositoryInterface&Stub $resourceRepository;
 
     private BookingFieldConfigService $service;
 
@@ -30,11 +30,11 @@ final class BookingFieldConfigServiceTest extends TestCase
     {
         parent::setUp();
 
-        $this->moduleIntegration = $this->createMock(ModuleIntegrationServiceInterface::class);
+        $this->moduleIntegration = $this->createStub(ModuleIntegrationServiceInterface::class);
         $this->moduleIntegration->method('isGameTablesModuleAvailable')->willReturn(false);
         $this->moduleIntegration->method('isTournamentsModuleAvailable')->willReturn(false);
 
-        $this->resourceRepository = $this->createMock(BookableResourceRepositoryInterface::class);
+        $this->resourceRepository = $this->createStub(BookableResourceRepositoryInterface::class);
 
         $this->service = new BookingFieldConfigService($this->moduleIntegration, $this->resourceRepository);
 
