@@ -3,7 +3,6 @@ import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { router } from '@inertiajs/vue3';
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
-import { useSeo } from '@/composables/useSeo';
 import { useFlashMessages } from '@/composables/useFlashMessages';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 import type { BookingListItem } from '../../types/bookings';
@@ -20,10 +19,6 @@ const props = withDefaults(defineProps<Props>(), {
 
 const { t } = useI18n();
 const { success, error: flashError, hasMessages } = useFlashMessages();
-
-useSeo({
-    title: t('booking_calendar.my_bookings'),
-});
 
 // State
 const showCancelDialog = ref(false);

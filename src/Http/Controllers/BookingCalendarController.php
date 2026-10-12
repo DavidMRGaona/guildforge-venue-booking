@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Http\Controllers;
 
+use App\Application\Seo\DTOs\SeoPageDTO;
+use App\Application\Seo\Services\SeoMetadataFactoryInterface;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -20,6 +22,7 @@ final class BookingCalendarController extends Controller
         private readonly BookableResourceRepositoryInterface $resourceRepository,
         private readonly BookingFieldConfigServiceInterface $fieldConfigService,
         private readonly OperatingScheduleRepositoryInterface $scheduleRepository,
+        private readonly SeoMetadataFactoryInterface $seo,
     ) {}
 
     public function index(Request $request): Response
@@ -53,6 +56,9 @@ final class BookingCalendarController extends Controller
         return Inertia::render('VenueBookings/Index', [
             'resources' => $resourceDtos,
             'selectedResourceId' => $selectedResourceId,
+            'seo' => $this->seo->forPage(new SeoPageDTO(
+                title: (string) __('venue-bookings::messages.seo.calendar_title'),
+            ))->toArray(),
         ]);
     }
 }

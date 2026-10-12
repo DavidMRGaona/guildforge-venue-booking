@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Http\Controllers;
 
+use App\Application\Seo\DTOs\SeoPageDTO;
+use App\Application\Seo\Services\SeoMetadataFactoryInterface;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,6 +31,7 @@ final class BookingController extends Controller
         private readonly BookingServiceInterface $bookingService,
         private readonly BookingQueryServiceInterface $queryService,
         private readonly BookingFieldConfigServiceInterface $fieldConfigService,
+        private readonly SeoMetadataFactoryInterface $seo,
     ) {}
 
     public function store(StoreBookingRequest $request): RedirectResponse
@@ -114,6 +117,10 @@ final class BookingController extends Controller
 
         return Inertia::render('VenueBookings/MyBookings', [
             'bookings' => array_map(fn ($b) => $b->toArray(), $bookings),
+            'seo' => $this->seo->forPage(new SeoPageDTO(
+                title: (string) __('venue-bookings::messages.seo.my_bookings_title'),
+                noindex: true,
+            ))->toArray(),
         ]);
     }
 

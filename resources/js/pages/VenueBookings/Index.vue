@@ -2,7 +2,6 @@
 import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
-import { useSeo } from '@/composables/useSeo';
 import { useFlashMessages } from '@/composables/useFlashMessages';
 import { useAuth } from '@/composables/useAuth';
 import type {
@@ -29,10 +28,6 @@ const props = withDefaults(defineProps<Props>(), {
 const { t } = useI18n();
 const { success, error: flashError, hasMessages } = useFlashMessages();
 const { isAuthenticated } = useAuth();
-
-useSeo({
-    title: t('booking_calendar.title'),
-});
 
 // State
 const firstResource = props.resources[0];

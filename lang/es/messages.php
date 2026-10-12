@@ -308,4 +308,10 @@ return [
         'cancel_confirm_button' => 'Sí, cancelar',
         'cancel_success' => 'Reserva cancelada correctamente.',
     ],
+
+    // Server-rendered page metadata (link previews and search engines)
+    'seo' => [
+        'calendar_title' => 'Reservas del local',
+        'my_bookings_title' => 'Mis reservas',
+    ],
 ];
