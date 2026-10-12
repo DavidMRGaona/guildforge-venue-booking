@@ -50,6 +50,8 @@ final class BookingApiController extends Controller
             'date' => ['required', 'date_format:Y-m-d'],
         ]);
 
+        // The route is behind the auth middleware
+        /** @var UserModel $user */
         $user = $request->user();
 
         $result = $this->eligibilityService->canUserBook(

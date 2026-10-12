@@ -1,14 +1,14 @@
 {
   "name": "venue-bookings",
   "displayName": "Reservas del local",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "repository": "DavidMRGaona/guildforge-venue-booking",
   "namespace": "Modules\\VenueBookings",
   "provider": "VenueBookingsServiceProvider",
   "description": "Sistema de reservas del local para gestionar espacios y horarios",
   "author": "GuildForge",
   "requires": {
-    "core": "^3.0",
+    "core": "^3.1",
     "filament": "^5.0",
     "php": ">=8.5",
     "laravel": ">=13.0"
