@@ -4,11 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Tests\Feature\Filament\Resources;
 
-use Illuminate\Routing\RouteCollection;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
-use Filament\Facades\Filament;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Modules\VenueBookings\Domain\Events\BookingConfirmed;
@@ -18,10 +15,13 @@ use Modules\VenueBookings\Filament\Resources\BookingResource\Pages\CreateBooking
 use Modules\VenueBookings\Filament\Resources\BookingResource\Pages\EditBooking;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
+use Tests\Support\Modules\InteractsWithModulePanel;
 use Tests\Support\Modules\ModuleTestCase;
 
 final class BookingResourceEditTest extends ModuleTestCase
 {
+    use InteractsWithModulePanel;
+
     protected ?string $moduleName = 'venue-bookings';
 
     protected bool $autoEnableModule = true;
@@ -34,24 +34,7 @@ final class BookingResourceEditTest extends ModuleTestCase
     {
         parent::setUp();
 
-        // Register the BookingResource with the current Filament panel
-        // and register its routes so edit/create/index pages are available.
-        $panel = Filament::getCurrentOrDefaultPanel();
-        $panel->resources([BookingResource::class]);
-
-        // Register resource routes within the panel's name prefix (filament.admin.)
-        Route::name($panel->generateRouteName(''))
-            ->prefix($panel->getPath())
-            ->group(fn () => BookingResource::registerRoutes($panel));
-
-        // Rebuild route collection so module and Filament routes are resolvable by name.
-        $router = app('router');
-        $oldRoutes = $router->getRoutes();
-        $newRoutes = new RouteCollection();
-        foreach ($oldRoutes->getRoutes() as $route) {
-            $newRoutes->add($route);
-        }
-        $router->setRoutes($newRoutes);
+        $this->registerOnAdminPanel([BookingResource::class]);
 
         $this->bookableResource = BookableResourceModel::create([
             'id' => (string) Str::uuid(),

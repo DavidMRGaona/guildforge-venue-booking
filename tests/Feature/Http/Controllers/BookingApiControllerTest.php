@@ -21,14 +21,8 @@ final class BookingApiControllerTest extends ModuleTestCase
     {
         parent::setUp();
 
-        // Rebuild route collection so module routes are resolvable by name.
-        $router = app('router');
-        $oldRoutes = $router->getRoutes();
-        $newRoutes = new \Illuminate\Routing\RouteCollection();
-        foreach ($oldRoutes->getRoutes() as $route) {
-            $newRoutes->add($route);
-        }
-        $router->setRoutes($newRoutes);
+        // Make the module routes, added after boot, resolvable by name
+        app('router')->getRoutes()->refreshNameLookups();
 
         $this->resource = BookableResourceModel::create([
             'id' => (string) Str::uuid(),

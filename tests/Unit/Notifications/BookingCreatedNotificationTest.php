@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Tests\Unit\Notifications;
 
-use Illuminate\Routing\RouteCollection;
 use stdClass;
-use Filament\Facades\Filament;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Modules\VenueBookings\Filament\Resources\BookingResource;
 use Modules\VenueBookings\Notifications\BookingCreatedNotification;
+use Tests\Support\Modules\InteractsWithModulePanel;
 use Tests\Support\Modules\ModuleTestCase;
 
 final class BookingCreatedNotificationTest extends ModuleTestCase
 {
+    use InteractsWithModulePanel;
+
     protected ?string $moduleName = 'venue-bookings';
 
     protected bool $autoEnableModule = true;
@@ -23,20 +23,7 @@ final class BookingCreatedNotificationTest extends ModuleTestCase
     {
         parent::setUp();
 
-        $panel = Filament::getCurrentOrDefaultPanel();
-        $panel->resources([BookingResource::class]);
-
-        Route::name($panel->generateRouteName(''))
-            ->prefix($panel->getPath())
-            ->group(fn () => BookingResource::registerRoutes($panel));
-
-        $router = app('router');
-        $oldRoutes = $router->getRoutes();
-        $newRoutes = new RouteCollection();
-        foreach ($oldRoutes->getRoutes() as $route) {
-            $newRoutes->add($route);
-        }
-        $router->setRoutes($newRoutes);
+        $this->registerOnAdminPanel([BookingResource::class]);
     }
 
     public function test_email_links_to_filament_edit_page(): void

@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Tests\Feature\Filament\Pages;
 
-use Illuminate\Routing\RouteCollection;
 use App\Application\Services\SettingsServiceInterface;
 use App\Infrastructure\Persistence\Eloquent\Models\SettingModel;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
-use Filament\Facades\Filament;
-use Illuminate\Support\Facades\Route;
 use Livewire\Livewire;
 use Modules\VenueBookings\Filament\Pages\VenueBookingsSettings;
+use Tests\Support\Modules\InteractsWithModulePanel;
 use Tests\Support\Modules\ModuleTestCase;
 
 final class VenueBookingsSettingsTest extends ModuleTestCase
 {
+    use InteractsWithModulePanel;
+
     protected ?string $moduleName = 'venue-bookings';
 
     protected bool $autoEnableModule = true;
@@ -26,22 +26,7 @@ final class VenueBookingsSettingsTest extends ModuleTestCase
     {
         parent::setUp();
 
-        // Register the settings page with Filament panel and its routes
-        $panel = Filament::getCurrentOrDefaultPanel();
-        $panel->pages([VenueBookingsSettings::class]);
-
-        Route::name($panel->generateRouteName(''))
-            ->prefix($panel->getPath())
-            ->group(fn () => VenueBookingsSettings::registerRoutes($panel));
-
-        // Rebuild route collection
-        $router = app('router');
-        $oldRoutes = $router->getRoutes();
-        $newRoutes = new RouteCollection;
-        foreach ($oldRoutes->getRoutes() as $route) {
-            $newRoutes->add($route);
-        }
-        $router->setRoutes($newRoutes);
+        $this->registerOnAdminPanel(pages: [VenueBookingsSettings::class]);
 
         $this->admin = UserModel::factory()->admin()->create();
     }
