@@ -184,7 +184,7 @@ final class BookingResourceEditTest extends ModuleTestCase
         ]);
     }
 
-    public function test_invalid_status_transition_shows_notification(): void
+    public function test_an_invalid_status_transition_is_refused_by_the_status_field(): void
     {
         $booking = BookingModel::create([
             'id' => (string) Str::uuid(),
