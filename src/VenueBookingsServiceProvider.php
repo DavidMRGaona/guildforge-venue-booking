@@ -25,6 +25,7 @@ use App\Application\Modules\DTOs\PermissionDTO;
 use App\Application\Modules\DTOs\SlotRegistrationDTO;
 use App\Application\Services\SettingsServiceInterface;
 use App\Modules\ModuleServiceProvider;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Event;
 use Inertia\Inertia;
 use Modules\VenueBookings\Application\Services\BookingEligibilityServiceInterface;
@@ -96,6 +97,7 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
 
         $this->registerEventListeners();
         $this->registerCommands();
+        $this->registerSchedule();
         $this->shareProfileBookings();
     }
 
@@ -148,6 +150,15 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
                 SendBookingRemindersCommand::class,
             ]);
         }
+    }
+
+    private function registerSchedule(): void
+    {
+        $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
+            $schedule->command('venue-bookings:send-reminders')
+                ->hourly()
+                ->withoutOverlapping();
+        });
     }
 
     /**

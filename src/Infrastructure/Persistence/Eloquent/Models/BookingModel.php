@@ -37,6 +37,7 @@ final class BookingModel extends Model
         'admin_notes',
         'confirmed_at',
         'cancelled_at',
+        'reminder_sent_at',
     ];
 
     /**
@@ -50,7 +51,26 @@ final class BookingModel extends Model
             'field_values' => 'array',
             'confirmed_at' => 'datetime',
             'cancelled_at' => 'datetime',
+            'reminder_sent_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // A reminder belongs to a date and start time: once a booking is moved,
+        // it is due for a new one.
+        static::updating(function (BookingModel $booking): void {
+            if ($booking->isDirty('reminder_sent_at')) {
+                return;
+            }
+
+            $startTimeChanged = substr((string) $booking->getOriginal('start_time'), 0, 5)
+                !== substr((string) $booking->getAttribute('start_time'), 0, 5);
+
+            if ($booking->isDirty('date') || $startTimeChanged) {
+                $booking->setAttribute('reminder_sent_at', null);
+            }
+        });
     }
 
     public function resource(): BelongsTo

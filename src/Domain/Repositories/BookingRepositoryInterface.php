@@ -51,7 +51,8 @@ interface BookingRepositoryInterface
     ): bool;
 
     /**
-     * Get confirmed bookings within a reminder window.
+     * Get confirmed bookings not reminded yet whose start (date and start time,
+     * read in the timezone of $from) falls between $from and $to.
      *
      * @return array<Booking>
      */
@@ -59,6 +60,8 @@ interface BookingRepositoryInterface
         \DateTimeInterface $from,
         \DateTimeInterface $to,
     ): array;
+
+    public function markReminderSent(BookingId $id, \DateTimeInterface $sentAt): void;
 
     /**
      * @return array<Booking>
