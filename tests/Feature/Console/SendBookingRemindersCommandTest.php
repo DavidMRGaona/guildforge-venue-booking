@@ -121,6 +121,8 @@ final class SendBookingRemindersCommandTest extends ModuleTestCase
         $this->assertNotEmpty($events);
         $this->assertSame('0 * * * *', $events[0]->expression);
         $this->assertTrue($events[0]->withoutOverlapping);
+        // A killed run must not block reminders for long.
+        $this->assertSame(10, $events[0]->expiresAt);
     }
 
     private function sendReminders(): void

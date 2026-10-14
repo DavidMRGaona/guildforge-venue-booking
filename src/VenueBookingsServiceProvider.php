@@ -157,7 +157,8 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
         $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
             $schedule->command('venue-bookings:send-reminders')
                 ->hourly()
-                ->withoutOverlapping();
+                // A run takes seconds; a killed one must not block reminders for a day.
+                ->withoutOverlapping(10);
         });
     }
 
