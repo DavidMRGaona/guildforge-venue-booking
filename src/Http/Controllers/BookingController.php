@@ -16,6 +16,8 @@ use Modules\VenueBookings\Application\DTOs\CreateBookingDTO;
 use Modules\VenueBookings\Application\Services\BookingFieldConfigServiceInterface;
 use Modules\VenueBookings\Application\Services\BookingQueryServiceInterface;
 use Modules\VenueBookings\Application\Services\BookingServiceInterface;
+use InvalidArgumentException;
+use Modules\VenueBookings\Domain\Exceptions\BookingCancellationNotAllowedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingLimitExceededException;
 use Modules\VenueBookings\Domain\Exceptions\BookingNotCancellableException;
 use Modules\VenueBookings\Domain\Exceptions\BookingNotFoundException;
@@ -142,8 +144,10 @@ final class BookingController extends Controller
             $this->bookingService->cancelBooking($dto);
 
             return back()->with('success', __('venue-bookings::messages.frontend.booking_cancelled'));
-        } catch (BookingNotFoundException) {
-            return back()->with('error', __('venue-bookings::messages.frontend.booking_not_found'));
+        } catch (BookingCancellationNotAllowedException|BookingNotFoundException|InvalidArgumentException) {
+            // A missing booking answers like someone else's, so the endpoint
+            // does not tell which booking ids exist.
+            abort(403, __('venue-bookings::messages.frontend.booking_cancel_forbidden'));
         } catch (BookingNotCancellableException) {
             return back()->with('error', __('venue-bookings::messages.frontend.booking_not_cancellable'));
         }

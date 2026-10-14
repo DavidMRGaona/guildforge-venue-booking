@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Infrastructure\Services;
 
+use App\Application\Authorization\Services\AuthorizationServiceInterface;
+use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Modules\VenueBookings\Application\DTOs\CancelBookingDTO;
 use Modules\VenueBookings\Application\DTOs\CreateBookingDTO;
 use Modules\VenueBookings\Application\DTOs\Response\BookingResponseDTO;
@@ -17,6 +19,7 @@ use Modules\VenueBookings\Domain\Events\BookingConfirmed;
 use Modules\VenueBookings\Domain\Events\BookingCreated;
 use Modules\VenueBookings\Domain\Events\BookingNoShow;
 use Modules\VenueBookings\Domain\Events\BookingRejected;
+use Modules\VenueBookings\Domain\Exceptions\BookingCancellationNotAllowedException;
 use Modules\VenueBookings\Domain\Exceptions\MinimumSlotsNotMetException;
 use Modules\VenueBookings\Domain\Exceptions\SlotUnavailableException;
 use Modules\VenueBookings\Domain\Repositories\BookingRepositoryInterface;
@@ -33,6 +36,7 @@ final readonly class BookingService implements BookingServiceInterface
         private SlotAvailabilityServiceInterface $slotAvailabilityService,
         private BookingSettingsReader $settingsReader,
         private OperatingScheduleRepositoryInterface $scheduleRepository,
+        private AuthorizationServiceInterface $authorization,
     ) {}
 
     public function createBooking(CreateBookingDTO $dto): BookingResponseDTO
@@ -104,14 +108,38 @@ final readonly class BookingService implements BookingServiceInterface
     public function cancelBooking(CancelBookingDTO $dto): BookingResponseDTO
     {
         $booking = $this->bookingRepository->findOrFail(BookingId::fromString($dto->bookingId));
+
+        if (! $booking->belongsTo($dto->userId) && ! $this->canCancelAnyBooking($dto->userId)) {
+            throw BookingCancellationNotAllowedException::forUser($dto->bookingId, $dto->userId);
+        }
+
+        return $this->cancel($booking, $dto->reason);
+    }
+
+    public function cancelBookingAsStaff(CancelBookingDTO $dto): BookingResponseDTO
+    {
+        $booking = $this->bookingRepository->findOrFail(BookingId::fromString($dto->bookingId));
+
+        return $this->cancel($booking, $dto->reason);
+    }
+
+    private function canCancelAnyBooking(string $userId): bool
+    {
+        $user = UserModel::query()->find($userId);
+
+        return $user !== null && $this->authorization->can($user, 'venuebookings:bookings.cancel_any');
+    }
+
+    private function cancel(Booking $booking, ?string $reason): BookingResponseDTO
+    {
         $wasConfirmed = $booking->status === BookingStatus::Confirmed;
-        $booking->cancel($dto->reason);
+        $booking->cancel($reason);
         $this->bookingRepository->save($booking);
 
         BookingCancelled::dispatch(
             $booking->id->value,
             $booking->userId,
-            $dto->reason,
+            $reason,
             $wasConfirmed,
         );
 
