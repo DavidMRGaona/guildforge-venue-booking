@@ -174,19 +174,19 @@ Widgets del escritorio (se activan y ordenan en la configuración del escritorio
 
 ## Permisos
 
-Los administradores tienen todos los permisos. Los roles por defecto solo se asignan en una instalación nueva; después se gestionan en el editor de roles.
+Los administradores tienen todos los permisos. Ningún otro rol recibe estos permisos automáticamente: se asignan en el editor de roles. La columna **Rol sugerido** indica a quién suele tener sentido dárselos.
 
-| Permiso | Rol por defecto | Uso |
-|---------|-----------------|-----|
+| Permiso | Rol sugerido | Uso |
+|---------|--------------|-----|
 | `bookings.view_any` | editor | Ver el listado de reservas en el panel y, desde él, confirmar, rechazar, cancelar o marcar como no presentado cualquier reserva |
 | `bookings.view` | editor | Ver el detalle de una reserva en el panel |
 | `bookings.create` | editor | Crear reservas desde el panel |
 | `bookings.manage` | — | Gestionar espacios y editar o borrar reservas en el panel |
 | `bookings.cancel_any` | — | Cancelar reservas de otros usuarios desde la web (`DELETE /reservas/{booking}`) |
 | `bookings.settings` | — | Abrir y guardar la configuración del módulo |
-| `bookings.cancel_own` | editor | Registrado, sin uso: cualquier usuario identificado puede cancelar sus propias reservas |
+| `bookings.cancel_own` | — | Registrado, sin uso: cualquier usuario identificado puede cancelar sus propias reservas |
 
-En la web pública, cualquier usuario identificado puede reservar dentro de los límites configurados y cancelar sus propias reservas. Cancelar la reserva de otro usuario sin `bookings.cancel_any` responde 403, igual que una reserva que no existe.
+En la web pública, cualquier usuario identificado puede reservar dentro de los límites configurados y cancelar sus propias reservas. Cancelar la reserva de otro usuario sin `bookings.cancel_any` responde 403, igual que una reserva que no existe o un identificador mal formado.
 
 ## Arquitectura
 
