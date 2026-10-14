@@ -23,6 +23,7 @@ const pendingCancelId = ref<string | null>(null);
 
 const upcomingBookings = computed(() => props.profileBookings?.upcoming ?? []);
 const pastBookings = computed(() => props.profileBookings?.past ?? []);
+const canCancel = computed(() => props.profileBookings?.canCancel ?? false);
 const visiblePastBookings = computed(() => pastBookings.value.slice(0, visiblePastCount.value));
 const hasMorePast = computed(() => visiblePastCount.value < pastBookings.value.length);
 const remainingPastCount = computed(() => pastBookings.value.length - visiblePastCount.value);
@@ -71,6 +72,7 @@ function confirmCancel(): void {
                     v-for="booking in upcomingBookings"
                     :key="booking.id"
                     :booking="booking"
+                    :can-cancel="canCancel"
                     @cancel="handleCancel"
                 />
             </div>
@@ -113,6 +115,7 @@ function confirmCancel(): void {
                     v-for="booking in visiblePastBookings"
                     :key="booking.id"
                     :booking="booking"
+                    :can-cancel="canCancel"
                     @cancel="handleCancel"
                 />
 

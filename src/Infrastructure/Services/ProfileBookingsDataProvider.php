@@ -6,6 +6,7 @@ namespace Modules\VenueBookings\Infrastructure\Services;
 
 use Modules\VenueBookings\Application\DTOs\Response\BookingListDTO;
 use Modules\VenueBookings\Application\Services\BookingQueryServiceInterface;
+use Modules\VenueBookings\Application\Services\BookingServiceInterface;
 use Modules\VenueBookings\Domain\Repositories\BookableResourceRepositoryInterface;
 use Modules\VenueBookings\Domain\ValueObjects\BookableResourceId;
 
@@ -14,12 +15,15 @@ final readonly class ProfileBookingsDataProvider
     public function __construct(
         private BookingQueryServiceInterface $queryService,
         private BookableResourceRepositoryInterface $resourceRepository,
+        private BookingServiceInterface $bookingService,
     ) {}
 
     /**
      * Get bookings data for a user's profile page.
      *
-     * @return array{upcoming: array<array<string, mixed>>, past: array<array<string, mixed>>, total: int}|null
+     * canCancel: whether the cancel button may be offered (all bookings are the user's own).
+     *
+     * @return array{upcoming: array<array<string, mixed>>, past: array<array<string, mixed>>, total: int, canCancel: bool}|null
      */
     public function getDataForUser(?string $userId): ?array
     {
@@ -60,6 +64,7 @@ final readonly class ProfileBookingsDataProvider
             'upcoming' => $upcoming,
             'past' => $past,
             'total' => count($bookings),
+            'canCancel' => $this->bookingService->canCancel($userId, $userId),
         ];
     }
 

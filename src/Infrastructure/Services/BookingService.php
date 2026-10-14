@@ -109,7 +109,7 @@ final readonly class BookingService implements BookingServiceInterface
     {
         $booking = $this->bookingRepository->findOrFail(BookingId::fromString($dto->bookingId));
 
-        if (! $booking->belongsTo($dto->userId) && ! $this->canCancelAnyBooking($dto->userId)) {
+        if (! $this->canCancel($dto->userId, $booking->userId)) {
             throw BookingCancellationNotAllowedException::forUser($dto->bookingId, $dto->userId);
         }
 
@@ -123,11 +123,19 @@ final readonly class BookingService implements BookingServiceInterface
         return $this->cancel($booking, $dto->reason);
     }
 
-    private function canCancelAnyBooking(string $userId): bool
+    public function canCancel(string $userId, string $bookingOwnerId): bool
     {
         $user = UserModel::query()->find($userId);
 
-        return $user !== null && $this->authorization->can($user, 'venuebookings:bookings.cancel_any');
+        if ($user === null) {
+            return false;
+        }
+
+        if ($userId === $bookingOwnerId && $this->authorization->can($user, 'venuebookings:bookings.cancel_own')) {
+            return true;
+        }
+
+        return $this->authorization->can($user, 'venuebookings:bookings.cancel_any');
     }
 
     private function cancel(Booking $booking, ?string $reason): BookingResponseDTO

@@ -14,6 +14,11 @@ final class TodayBookingsWidget extends StatsOverviewWidget
 {
     protected static ?int $sort = 2;
 
+    public static function canView(): bool
+    {
+        return auth()->user()?->can('viewAny', BookingModel::class) ?? false;
+    }
+
     protected function getColumns(): int
     {
         return 2;

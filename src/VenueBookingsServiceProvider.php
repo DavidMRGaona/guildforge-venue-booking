@@ -304,7 +304,8 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
                 label: __('venue-bookings::messages.permissions.cancel_own'),
                 group: __('venue-bookings::messages.navigation.bookings'),
                 module: 'venuebookings',
-                roles: ['editor'],
+                // Granted by the 2026_10_14_200001_grant_cancel_own_to_member_role migration
+                roles: ['member'],
             ),
             new PermissionDTO(
                 name: 'bookings.cancel_any',

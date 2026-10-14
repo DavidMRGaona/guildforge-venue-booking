@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Modules\VenueBookings\Tests\Integration\Infrastructure\Services;
 
 use App\Application\Authorization\Services\AuthorizationServiceInterface;
+use App\Infrastructure\Persistence\Eloquent\Models\PermissionModel;
+use App\Infrastructure\Persistence\Eloquent\Models\RoleModel;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
@@ -249,6 +251,7 @@ final class BookingServiceTest extends TestCase
     public function test_it_cancels_booking(): void
     {
         Event::fake();
+        $this->grant($this->user, ['venuebookings:bookings.cancel_own']);
 
         $bookingId = (string) Str::uuid();
         BookingModel::create([
@@ -467,6 +470,67 @@ final class BookingServiceTest extends TestCase
         $result = $this->service->cancelBookingAsStaff(new CancelBookingDTO(bookingId: $bookingId, userId: $staff->id));
 
         $this->assertEquals(BookingStatus::Cancelled, $result->status);
+    }
+
+    public function test_an_owner_without_cancel_own_cannot_cancel_their_booking(): void
+    {
+        $bookingId = $this->createConfirmedBookingOf($this->user);
+
+        try {
+            $this->service->cancelBooking(new CancelBookingDTO(bookingId: $bookingId, userId: $this->user->id));
+            $this->fail('The booking was cancelled without cancel_own.');
+        } catch (BookingCancellationNotAllowedException) {
+            $this->assertDatabaseHas('venuebookings_bookings', ['id' => $bookingId, 'status' => 'confirmed']);
+        }
+    }
+
+    public function test_a_user_with_cancel_own_cannot_cancel_another_users_booking(): void
+    {
+        $bookingId = $this->createConfirmedBookingOf($this->user);
+        $stranger = UserModel::factory()->create();
+        $this->grant($stranger, ['venuebookings:bookings.cancel_own']);
+
+        $this->expectException(BookingCancellationNotAllowedException::class);
+
+        $this->service->cancelBooking(new CancelBookingDTO(bookingId: $bookingId, userId: $stranger->id));
+    }
+
+    public function test_can_cancel_needs_ownership_and_cancel_own_or_cancel_any(): void
+    {
+        $owner = $this->user;
+        $stranger = UserModel::factory()->create();
+
+        $this->assertFalse($this->service->canCancel($owner->id, $owner->id));
+
+        $this->grant($owner, ['venuebookings:bookings.cancel_own']);
+        $this->grant($stranger, ['venuebookings:bookings.cancel_own']);
+        $this->assertTrue($this->service->canCancel($owner->id, $owner->id));
+        $this->assertFalse($this->service->canCancel($stranger->id, $owner->id));
+
+        $manager = $this->editorWithPermissions(['venuebookings:bookings.cancel_any']);
+        $this->assertTrue($this->service->canCancel($manager->id, $owner->id));
+
+        $this->assertFalse($this->service->canCancel((string) Str::uuid(), (string) Str::uuid()));
+    }
+
+    /**
+     * @param  array<string>  $permissionKeys
+     */
+    private function grant(UserModel $user, array $permissionKeys): void
+    {
+        $role = RoleModel::create(['name' => 'grant_'.uniqid(), 'display_name' => 'Grant']);
+
+        foreach ($permissionKeys as $key) {
+            [$resource, $action] = explode('.', $key, 2);
+            $permission = PermissionModel::firstOrCreate(
+                ['key' => $key],
+                ['label' => $key, 'resource' => $resource, 'action' => $action],
+            );
+            $role->permissions()->attach($permission->id);
+        }
+
+        $user->roles()->attach($role->id);
+        app(AuthorizationServiceInterface::class)->invalidateCache();
     }
 
     private function createConfirmedBookingOf(UserModel $user): string
