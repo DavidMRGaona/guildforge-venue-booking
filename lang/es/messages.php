@@ -290,7 +290,6 @@ return [
         'limit_exceeded' => 'Has alcanzado el máximo de reservas activas.',
         'too_soon' => 'Las reservas deben hacerse con más antelación.',
         'too_far' => 'No se pueden hacer reservas con tanta antelación.',
-        'booking_not_found' => 'No se ha encontrado la reserva.',
         'booking_not_cancellable' => 'Esta reserva no se puede cancelar.',
         'booking_cancel_forbidden' => 'No puedes cancelar esta reserva.',
         'minimum_slots_not_met' => 'Debes seleccionar el mínimo de turnos consecutivos requerido.',

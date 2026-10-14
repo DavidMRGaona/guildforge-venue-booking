@@ -9,6 +9,7 @@ use App\Application\Seo\Services\SeoMetadataFactoryInterface;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Modules\VenueBookings\Application\DTOs\CancelBookingDTO;
@@ -16,7 +17,6 @@ use Modules\VenueBookings\Application\DTOs\CreateBookingDTO;
 use Modules\VenueBookings\Application\Services\BookingFieldConfigServiceInterface;
 use Modules\VenueBookings\Application\Services\BookingQueryServiceInterface;
 use Modules\VenueBookings\Application\Services\BookingServiceInterface;
-use InvalidArgumentException;
 use Modules\VenueBookings\Domain\Exceptions\BookingCancellationNotAllowedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingLimitExceededException;
 use Modules\VenueBookings\Domain\Exceptions\BookingNotCancellableException;
@@ -134,20 +134,31 @@ final class BookingController extends Controller
             abort(403);
         }
 
+        // A malformed or missing booking answers like someone else's, so the
+        // endpoint does not tell which booking ids exist.
+        $forbidden = __('venue-bookings::messages.frontend.booking_cancel_forbidden');
+
+        if (! Str::isUuid($booking)) {
+            abort(403, $forbidden);
+        }
+
+        /** @var array{reason?: string|null} $validated */
+        $validated = $request->validate([
+            'reason' => ['nullable', 'string', 'max:1000'],
+        ]);
+
         $dto = new CancelBookingDTO(
             bookingId: $booking,
             userId: (string) $user->id,
-            reason: $request->input('reason'),
+            reason: $validated['reason'] ?? null,
         );
 
         try {
             $this->bookingService->cancelBooking($dto);
 
             return back()->with('success', __('venue-bookings::messages.frontend.booking_cancelled'));
-        } catch (BookingCancellationNotAllowedException|BookingNotFoundException|InvalidArgumentException) {
-            // A missing booking answers like someone else's, so the endpoint
-            // does not tell which booking ids exist.
-            abort(403, __('venue-bookings::messages.frontend.booking_cancel_forbidden'));
+        } catch (BookingCancellationNotAllowedException|BookingNotFoundException) {
+            abort(403, $forbidden);
         } catch (BookingNotCancellableException) {
             return back()->with('error', __('venue-bookings::messages.frontend.booking_not_cancellable'));
         }

@@ -100,4 +100,25 @@ final class BookingCancellationTest extends ModuleTestCase
             ->assertForbidden()
             ->assertSee(__('venue-bookings::messages.frontend.booking_cancel_forbidden'));
     }
+
+    public function test_a_malformed_booking_id_answers_like_another_users_booking(): void
+    {
+        $this->actingAs(UserModel::factory()->create())
+            ->delete('/reservas/not-a-uuid')
+            ->assertForbidden()
+            ->assertSee(__('venue-bookings::messages.frontend.booking_cancel_forbidden'));
+    }
+
+    public function test_a_reason_that_is_not_text_is_rejected(): void
+    {
+        $this->actingAs($this->owner)
+            ->deleteJson("/reservas/{$this->booking->id}", ['reason' => ['not', 'text']])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('reason');
+
+        $this->assertDatabaseHas('venuebookings_bookings', [
+            'id' => $this->booking->id,
+            'status' => 'confirmed',
+        ]);
+    }
 }
