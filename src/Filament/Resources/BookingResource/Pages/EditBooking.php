@@ -10,6 +10,7 @@ use Filament\Resources\Pages\EditRecord;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Modules\VenueBookings\Application\DTOs\CancelBookingDTO;
 use Modules\VenueBookings\Application\Services\BookingFieldConfigServiceInterface;
 use Modules\VenueBookings\Application\Services\BookingServiceInterface;
@@ -110,6 +111,16 @@ final class EditBooking extends EditRecord
         $newStatus = $newStatusValue !== null ? BookingStatus::from($newStatusValue) : $oldStatus;
 
         if ($oldStatus !== $newStatus) {
+            // The status select only offers these to users who may apply them; a crafted request must not
+            $ability = match ($newStatus) {
+                BookingStatus::Confirmed => 'confirm',
+                BookingStatus::Cancelled => 'cancel',
+                BookingStatus::Rejected => 'reject',
+                BookingStatus::NoShow => 'markNoShow',
+                default => 'update',
+            };
+            Gate::authorize($ability, $record);
+
             try {
                 $service = app(BookingServiceInterface::class);
 

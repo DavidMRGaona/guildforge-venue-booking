@@ -27,6 +27,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Modules\VenueBookings\Application\DTOs\CancelBookingDTO;
 use Modules\VenueBookings\Application\Services\BookingFieldConfigServiceInterface;
 use Modules\VenueBookings\Application\Services\BookingServiceInterface;
@@ -112,9 +113,16 @@ final class BookingResource extends BaseResource
                         $options = [$current->value => $current->label()];
 
                         foreach (BookingStatus::cases() as $case) {
-                            if ($current->canTransitionTo($case)) {
-                                $options[$case->value] = $case->label();
+                            if (! $current->canTransitionTo($case)) {
+                                continue;
                             }
+
+                            // Same rule as the cancel row action
+                            if ($case === BookingStatus::Cancelled && ! Gate::allows('cancel', $record)) {
+                                continue;
+                            }
+
+                            $options[$case->value] = $case->label();
                         }
 
                         return $options;
@@ -295,7 +303,10 @@ final class BookingResource extends BaseResource
                     ->color('success')
                     ->requiresConfirmation()
                     ->visible(fn (BookingModel $record): bool => $record->status === BookingStatus::Pending)
+                    ->authorize('confirm')
                     ->action(function (BookingModel $record): void {
+                        Gate::authorize('confirm', $record);
+
                         $service = app(BookingServiceInterface::class);
                         $service->confirmBooking($record->id);
 
@@ -316,7 +327,10 @@ final class BookingResource extends BaseResource
                             ->required(),
                     ])
                     ->visible(fn (BookingModel $record): bool => $record->status === BookingStatus::Pending)
+                    ->authorize('reject')
                     ->action(function (BookingModel $record, array $data): void {
+                        Gate::authorize('reject', $record);
+
                         $service = app(BookingServiceInterface::class);
                         $service->rejectBooking($record->id, $data['reason']);
 
@@ -337,7 +351,10 @@ final class BookingResource extends BaseResource
                             ->required(),
                     ])
                     ->visible(fn (BookingModel $record): bool => $record->status->isActive())
+                    ->authorize('cancel')
                     ->action(function (BookingModel $record, array $data): void {
+                        Gate::authorize('cancel', $record);
+
                         $service = app(BookingServiceInterface::class);
                         $service->cancelBookingAsStaff(new CancelBookingDTO(
                             bookingId: $record->id,
@@ -357,7 +374,10 @@ final class BookingResource extends BaseResource
                     ->color('gray')
                     ->requiresConfirmation()
                     ->visible(fn (BookingModel $record): bool => $record->status === BookingStatus::Confirmed)
+                    ->authorize('markNoShow')
                     ->action(function (BookingModel $record): void {
+                        Gate::authorize('markNoShow', $record);
+
                         $service = app(BookingServiceInterface::class);
                         $service->markNoShow($record->id);
 

@@ -19,6 +19,11 @@ final class UpcomingBookingsWidget extends BaseWidget
 
     protected static ?int $sort = 12;
 
+    public static function canView(): bool
+    {
+        return auth()->user()?->can('viewAny', BookingModel::class) ?? false;
+    }
+
     public function table(Table $table): Table
     {
         return $table

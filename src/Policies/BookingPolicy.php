@@ -33,6 +33,33 @@ final class BookingPolicy
         return $this->authorize($user, 'venuebookings:bookings.manage');
     }
 
+    /** Panel row action and edit-page status change to "confirmed". */
+    public function confirm(UserModel $user, BookingModel $booking): bool
+    {
+        return $this->authorize($user, 'venuebookings:bookings.manage');
+    }
+
+    /** Panel row action and edit-page status change to "rejected". */
+    public function reject(UserModel $user, BookingModel $booking): bool
+    {
+        return $this->authorize($user, 'venuebookings:bookings.manage');
+    }
+
+    /** Panel row action and edit-page status change to "no_show". */
+    public function markNoShow(UserModel $user, BookingModel $booking): bool
+    {
+        return $this->authorize($user, 'venuebookings:bookings.manage');
+    }
+
+    /**
+     * Cancelling from the panel, whoever owns the booking. Users cancel their own
+     * bookings on the website, where BookingServiceInterface::canCancel() applies.
+     */
+    public function cancel(UserModel $user, BookingModel $booking): bool
+    {
+        return $this->authorize($user, 'venuebookings:bookings.cancel_any');
+    }
+
     public function delete(UserModel $user, BookingModel $booking): bool
     {
         return $this->authorize($user, 'venuebookings:bookings.manage');
