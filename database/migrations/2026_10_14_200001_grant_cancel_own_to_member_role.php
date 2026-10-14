@@ -53,7 +53,8 @@ return new class extends Migration
     {
         $label = __(self::LABEL_KEY);
 
-        // The module's translations are not registered when it is migrated before it boots
+        // The module's translations are not registered when it is migrated before it boots.
+        // Keep the fallback equal to permissions.cancel_own in lang/es/messages.php.
         return is_string($label) && $label !== self::LABEL_KEY ? $label : 'Cancelar reservas propias';
     }
 };

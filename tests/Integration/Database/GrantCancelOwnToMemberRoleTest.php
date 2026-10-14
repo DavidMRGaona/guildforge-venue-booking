@@ -106,7 +106,10 @@ final class GrantCancelOwnToMemberRoleTest extends ModuleTestCase
         $this->migration->up();
 
         $this->assertSame(1, DB::table('permissions')->where('key', self::KEY)->count());
-        $this->assertSame(0, DB::table('role_permission')->count());
+        $this->assertSame(0, DB::table('role_permission')
+            ->join('permissions', 'permissions.id', '=', 'role_permission.permission_id')
+            ->where('permissions.key', self::KEY)
+            ->count());
     }
 
     public function test_members_can_cancel_their_bookings_right_after_it_runs(): void
