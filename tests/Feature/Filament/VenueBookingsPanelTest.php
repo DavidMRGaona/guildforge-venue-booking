@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\VenueBookings\Tests\Feature\Filament;
 
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Modules\VenueBookings\Filament\Resources\BookableResourceResource;
@@ -17,11 +18,14 @@ use Modules\VenueBookings\Filament\Widgets\TodayBookingsWidget;
 use Modules\VenueBookings\Filament\Widgets\UpcomingBookingsWidget;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
+use Modules\VenueBookings\Filament\Pages\VenueBookingsSettings;
+use Tests\Support\Authorization\CreatesUsersWithPermissions;
 use Tests\Support\Modules\InteractsWithModulePanel;
 use Tests\Support\Modules\ModuleTestCase;
 
 final class VenueBookingsPanelTest extends ModuleTestCase
 {
+    use CreatesUsersWithPermissions;
     use InteractsWithModulePanel;
 
     protected ?string $moduleName = 'venue-bookings';
@@ -76,5 +80,37 @@ final class VenueBookingsPanelTest extends ModuleTestCase
         foreach ([TodayBookingsWidget::class, UpcomingBookingsWidget::class] as $widget) {
             Livewire::test($widget)->assertOk();
         }
+    }
+
+    public function test_staff_who_can_list_bookings_still_cancel_any_booking_from_the_list(): void
+    {
+        Notification::fake();
+        $booking = BookingModel::create([
+            'id' => (string) Str::uuid(),
+            'resource_id' => $this->room->id,
+            'user_id' => UserModel::factory()->create()->id,
+            'date' => now()->addDays(3)->toDateString(),
+            'start_time' => '18:00',
+            'end_time' => '20:00',
+            'status' => 'confirmed',
+        ]);
+        $this->actingAs($this->editorWithPermissions(['venuebookings:bookings.view_any']));
+
+        Livewire::test(ListBookings::class)
+            ->callTableAction('cancel', $booking, data: ['reason' => 'Cierre del local'])
+            ->assertHasNoTableActionErrors();
+
+        $this->assertSame('cancelled', BookingModel::query()->findOrFail($booking->id)->getRawOriginal('status'));
+    }
+
+    public function test_the_settings_page_follows_the_settings_permission(): void
+    {
+        $this->assertTrue(VenueBookingsSettings::canAccess(), 'Admins must keep access');
+
+        $this->actingAs($this->editorWithPermissions(['venuebookings:bookings.settings']));
+        $this->assertTrue(VenueBookingsSettings::canAccess());
+
+        $this->actingAs($this->editorWithPermissions(['venuebookings:bookings.view_any']));
+        $this->assertFalse(VenueBookingsSettings::canAccess());
     }
 }
