@@ -46,7 +46,7 @@ En las releases los assets los compila el workflow y van dentro del ZIP.
 
 ## Configuración
 
-Se configura en el panel: **Reservas del local → Configuración de reservas** (solo administradores). Los valores se guardan en la tabla `settings` (clave `module_settings:venue-bookings`), así que se conservan al actualizar el módulo. `config/settings.php` solo aporta los valores de una instalación nueva.
+Se configura en el panel: **Reservas del local → Configuración de reservas** (permiso `bookings.settings`; los administradores siempre tienen acceso). Los valores se guardan en la tabla `settings` (clave `module_settings:venue-bookings`), así que se conservan al actualizar el módulo. `config/settings.php` solo aporta los valores de una instalación nueva.
 
 | Clave | Valor de una instalación nueva | Descripción |
 |-------|--------------------------------|-------------|
@@ -109,7 +109,7 @@ Grupo **Reservas del local**:
 |----------|-------------|
 | Espacios | Espacios reservables, con su horario y la configuración de sus campos |
 | Reservas | Listado, creación, edición y borrado de reservas; confirmar, rechazar, cancelar o marcar como no presentado |
-| Configuración de reservas | Configuración del módulo (solo administradores) |
+| Configuración de reservas | Configuración del módulo (permiso `bookings.settings`) |
 
 Widgets del escritorio (se activan y ordenan en la configuración del escritorio):
 
@@ -174,17 +174,19 @@ Widgets del escritorio (se activan y ordenan en la configuración del escritorio
 
 ## Permisos
 
+Los administradores tienen todos los permisos. Los roles por defecto solo se asignan en una instalación nueva; después se gestionan en el editor de roles.
+
 | Permiso | Rol por defecto | Uso |
 |---------|-----------------|-----|
-| `bookings.view_any` | editor | Ver el listado de reservas en el panel |
+| `bookings.view_any` | editor | Ver el listado de reservas en el panel y, desde él, confirmar, rechazar, cancelar o marcar como no presentado cualquier reserva |
 | `bookings.view` | editor | Ver el detalle de una reserva en el panel |
 | `bookings.create` | editor | Crear reservas desde el panel |
 | `bookings.manage` | — | Gestionar espacios y editar o borrar reservas en el panel |
-| `bookings.cancel_own` | editor | Registrado, sin uso todavía |
-| `bookings.cancel_any` | — | Registrado, sin uso todavía |
-| `bookings.settings` | — | Registrado, sin uso todavía (la configuración es solo para administradores) |
+| `bookings.cancel_any` | — | Cancelar reservas de otros usuarios desde la web (`DELETE /reservas/{booking}`) |
+| `bookings.settings` | — | Abrir y guardar la configuración del módulo |
+| `bookings.cancel_own` | editor | Registrado, sin uso: cualquier usuario identificado puede cancelar sus propias reservas |
 
-En la web pública, cualquier usuario identificado puede reservar dentro de los límites configurados.
+En la web pública, cualquier usuario identificado puede reservar dentro de los límites configurados y cancelar sus propias reservas. Cancelar la reserva de otro usuario sin `bookings.cancel_any` responde 403, igual que una reserva que no existe.
 
 ## Arquitectura
 
