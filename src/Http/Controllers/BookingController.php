@@ -119,6 +119,8 @@ final class BookingController extends Controller
 
         return Inertia::render('VenueBookings/MyBookings', [
             'bookings' => array_map(fn ($b) => $b->toArray(), $bookings),
+            // Every booking listed is the user's own, so one flag covers them all
+            'canCancel' => $this->bookingService->canCancel((string) $user->id, (string) $user->id),
             'seo' => $this->seo->forPage(new SeoPageDTO(
                 title: (string) __('venue-bookings::messages.seo.my_bookings_title'),
                 noindex: true,

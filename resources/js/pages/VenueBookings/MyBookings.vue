@@ -11,10 +11,12 @@ import { venueDayKey } from '@/utils/datetime';
 
 interface Props {
     bookings: BookingListItem[];
+    canCancel?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     bookings: () => [],
+    canCancel: false,
 });
 
 const { t } = useI18n();
@@ -98,6 +100,7 @@ function confirmCancel(): void {
                         v-for="booking in upcomingBookings"
                         :key="booking.id"
                         :booking="booking"
+                        :can-cancel="props.canCancel"
                         @cancel="handleCancel"
                     />
                 </div>
@@ -140,6 +143,7 @@ function confirmCancel(): void {
                         v-for="booking in pastBookings"
                         :key="booking.id"
                         :booking="booking"
+                        :can-cancel="props.canCancel"
                         @cancel="handleCancel"
                     />
                 </div>

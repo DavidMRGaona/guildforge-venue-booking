@@ -7,9 +7,13 @@ import { VENUE_TIMEZONE } from '@/utils/datetime';
 
 interface Props {
     booking: BookingListItem;
+    /** Whether the server lets the current user cancel this booking. */
+    canCancel?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    canCancel: false,
+});
 
 const emit = defineEmits<{
     cancel: [id: string];
@@ -111,7 +115,7 @@ function handleCancel(): void {
                     </div>
                 </div>
 
-                <div v-if="booking.is_cancellable" class="flex-shrink-0">
+                <div v-if="canCancel && booking.is_cancellable" class="flex-shrink-0">
                     <button
                         type="button"
                         class="rounded-lg border border-error px-3 py-1.5 text-sm font-medium text-error transition-colors hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:hover:bg-red-900/20 dark:focus:ring-offset-page"
