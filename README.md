@@ -194,7 +194,9 @@ En la web pública, cualquier usuario identificado puede reservar dentro de los 
 
 ### Concesión de `bookings.cancel_own` al rol `member`
 
-La migración `2026_10_14_200001_grant_cancel_own_to_member_role` concede `bookings.cancel_own` al rol `member`, que el core da a toda cuenta registrada, para que los usuarios sigan pudiendo cancelar sus reservas. Crea antes la fila del permiso si `permissions:sync` aún no la ha creado (con los mismos campos; `permissions:sync` la reutiliza por su clave). No hace nada si no existe el rol `member`, se puede ejecutar varias veces y no se deshace al revertirla. Quitar el permiso a `member` en el editor de roles retira la cancelación a los usuarios que no tengan otro rol con él.
+La migración `2026_10_14_200001_grant_cancel_own_to_member_role` concede `bookings.cancel_own` al rol `member`, que el core da a toda cuenta registrada, para que los usuarios sigan pudiendo cancelar sus reservas. Crea antes la fila del permiso si `permissions:sync` aún no la ha creado (con los mismos campos; `permissions:sync` la reutiliza por su clave). Si no existe el rol `member`, crea igualmente la fila del permiso y no concede nada; desde el core 3.8 el rol `member` existe siempre tras migrar. Se puede ejecutar varias veces y no se deshace al revertirla.
+
+La concesión se aplica una sola vez, cuando corre la migración. Si un administrador quita `bookings.cancel_own` a `member` en el editor de roles, los usuarios que no tengan otro rol con él dejan de poder cancelar, y las actualizaciones posteriores del módulo no se lo devuelven; solo una reinstalación que borre los datos del módulo vuelve a ejecutarla.
 
 ## Arquitectura
 
