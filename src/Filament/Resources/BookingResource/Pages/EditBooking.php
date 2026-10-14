@@ -115,7 +115,7 @@ final class EditBooking extends EditRecord
 
                 match ($newStatus) {
                     BookingStatus::Confirmed => $service->confirmBooking($record->id),
-                    BookingStatus::Cancelled => $service->cancelBooking(new CancelBookingDTO(
+                    BookingStatus::Cancelled => $service->cancelBookingAsStaff(new CancelBookingDTO(
                         bookingId: $record->id,
                         userId: (string) Auth::id(),
                         reason: $data['cancellation_reason'] ?? null,

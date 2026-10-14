@@ -89,7 +89,7 @@ final readonly class BookingSettingsReader
 
     public function isReminderEnabled(): bool
     {
-        return (bool) (config('modules.settings.venue-bookings.notifications.reminder_enabled')
-            ?? config('venue-bookings.notifications.reminder_enabled', true));
+        return (bool) (config('modules.settings.venue-bookings.notifications.notify_on_booking_reminder')
+            ?? config('venue-bookings.notifications.notify_on_booking_reminder', true));
     }
 }

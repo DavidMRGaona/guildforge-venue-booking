@@ -140,8 +140,11 @@ final readonly class EloquentBookingRepository implements BookingRepositoryInter
         DateTimeInterface $from,
         DateTimeInterface $to,
     ): array {
-        return BookingModel::query()
+        // Narrow by calendar day in SQL, then compare the exact start in PHP
+        // (date and time live in separate columns; this stays portable).
+        $bookings = BookingModel::query()
             ->where('status', BookingStatus::Confirmed->value)
+            ->whereNull('reminder_sent_at')
             ->whereBetween('date', [
                 $from->format('Y-m-d'),
                 $to->format('Y-m-d'),
@@ -151,6 +154,28 @@ final readonly class EloquentBookingRepository implements BookingRepositoryInter
             ->get()
             ->map(fn (BookingModel $model): Booking => $this->toEntity($model))
             ->all();
+
+        $timezone = $from->getTimezone();
+
+        return array_values(array_filter(
+            $bookings,
+            function (Booking $booking) use ($from, $to, $timezone): bool {
+                $start = DateTimeImmutable::createFromFormat(
+                    '!Y-m-d H:i',
+                    $booking->date.' '.substr($booking->timeRange->startTime, 0, 5),
+                    $timezone,
+                );
+
+                return $start !== false && $start >= $from && $start <= $to;
+            },
+        ));
+    }
+
+    public function markReminderSent(BookingId $id, DateTimeInterface $sentAt): void
+    {
+        BookingModel::query()
+            ->where('id', $id->value)
+            ->update(['reminder_sent_at' => $sentAt->format('Y-m-d H:i:s')]);
     }
 
     /**

@@ -642,7 +642,7 @@ final class EloquentBookingRepositoryTest extends TestCase
 
     public function test_it_gets_confirmed_bookings_for_reminder(): void
     {
-        // Confirmed booking in reminder window
+        // Confirmed booking starting within the window
         BookingModel::create([
             'id' => (string) Str::uuid(),
             'resource_id' => $this->resource->id,
@@ -653,7 +653,7 @@ final class EloquentBookingRepositoryTest extends TestCase
             'status' => 'confirmed',
         ]);
 
-        // Confirmed booking outside window
+        // Confirmed booking on a later day
         BookingModel::create([
             'id' => (string) Str::uuid(),
             'resource_id' => $this->resource->id,
@@ -661,6 +661,28 @@ final class EloquentBookingRepositoryTest extends TestCase
             'date' => '2026-04-01',
             'start_time' => '10:00',
             'end_time' => '12:00',
+            'status' => 'confirmed',
+        ]);
+
+        // Confirmed booking on the last day of the window, but starting after it ends
+        BookingModel::create([
+            'id' => (string) Str::uuid(),
+            'resource_id' => $this->resource->id,
+            'user_id' => $this->user->id,
+            'date' => '2026-03-15',
+            'start_time' => '18:00',
+            'end_time' => '20:00',
+            'status' => 'confirmed',
+        ]);
+
+        // Confirmed booking on the first day of the window, but already started
+        BookingModel::create([
+            'id' => (string) Str::uuid(),
+            'resource_id' => $this->resource->id,
+            'user_id' => $this->user->id,
+            'date' => '2026-03-14',
+            'start_time' => '08:00',
+            'end_time' => '10:00',
             'status' => 'confirmed',
         ]);
 
@@ -676,13 +698,64 @@ final class EloquentBookingRepositoryTest extends TestCase
         ]);
 
         $bookings = $this->repository->getConfirmedBookingsForReminder(
-            new DateTimeImmutable('2026-03-14'),
-            new DateTimeImmutable('2026-03-16'),
+            new DateTimeImmutable('2026-03-14 09:00'),
+            new DateTimeImmutable('2026-03-15 12:00'),
         );
 
         $this->assertCount(1, $bookings);
         $this->assertEquals(BookingStatus::Confirmed, $bookings[0]->status);
         $this->assertEquals('2026-03-15', $bookings[0]->date);
+        $this->assertEquals('10:00', substr($bookings[0]->timeRange->startTime, 0, 5));
+    }
+
+    public function test_reminded_bookings_are_excluded(): void
+    {
+        $bookingId = BookingId::generate();
+
+        BookingModel::create([
+            'id' => $bookingId->value,
+            'resource_id' => $this->resource->id,
+            'user_id' => $this->user->id,
+            'date' => '2026-03-15',
+            'start_time' => '10:00',
+            'end_time' => '12:00',
+            'status' => 'confirmed',
+        ]);
+
+        $from = new DateTimeImmutable('2026-03-14 12:00');
+        $to = new DateTimeImmutable('2026-03-15 12:00');
+
+        $this->assertCount(1, $this->repository->getConfirmedBookingsForReminder($from, $to));
+
+        $this->repository->markReminderSent($bookingId, new DateTimeImmutable('2026-03-14 12:00'));
+
+        $this->assertCount(0, $this->repository->getConfirmedBookingsForReminder($from, $to));
+        $this->assertNotNull(BookingModel::query()->find($bookingId->value)?->getAttribute('reminder_sent_at'));
+    }
+
+    public function test_moving_a_reminded_booking_makes_it_due_for_a_new_reminder(): void
+    {
+        $bookingId = BookingId::generate();
+
+        BookingModel::create([
+            'id' => $bookingId->value,
+            'resource_id' => $this->resource->id,
+            'user_id' => $this->user->id,
+            'date' => '2026-03-15',
+            'start_time' => '10:00',
+            'end_time' => '12:00',
+            'status' => 'confirmed',
+        ]);
+        $this->repository->markReminderSent($bookingId, new DateTimeImmutable('2026-03-14 12:00'));
+
+        // Saving the same date and time (as the panel does) keeps the mark
+        BookingModel::query()->findOrFail($bookingId->value)
+            ->update(['date' => '2026-03-15', 'start_time' => '10:00:00', 'admin_notes' => 'Ok']);
+        $this->assertNotNull(BookingModel::query()->findOrFail($bookingId->value)->getAttribute('reminder_sent_at'));
+
+        // Moving it to another time clears the mark
+        BookingModel::query()->findOrFail($bookingId->value)->update(['start_time' => '17:00']);
+        $this->assertNull(BookingModel::query()->findOrFail($bookingId->value)->getAttribute('reminder_sent_at'));
     }
 
     public function test_it_deletes_booking(): void

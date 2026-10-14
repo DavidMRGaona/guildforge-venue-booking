@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Tests\Integration\Infrastructure\Services;
 
+use App\Application\Authorization\Services\AuthorizationServiceInterface;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
@@ -17,6 +18,7 @@ use Modules\VenueBookings\Domain\Events\BookingConfirmed;
 use Modules\VenueBookings\Domain\Events\BookingCreated;
 use Modules\VenueBookings\Domain\Events\BookingNoShow;
 use Modules\VenueBookings\Domain\Events\BookingRejected;
+use Modules\VenueBookings\Domain\Exceptions\BookingCancellationNotAllowedException;
 use Modules\VenueBookings\Domain\Exceptions\MinimumSlotsNotMetException;
 use Modules\VenueBookings\Domain\Exceptions\SlotUnavailableException;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
@@ -27,10 +29,12 @@ use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories\Eloqu
 use Modules\VenueBookings\Infrastructure\Services\BookingService;
 use Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader;
 use Modules\VenueBookings\Infrastructure\Services\SlotAvailabilityService;
+use Tests\Support\Authorization\CreatesUsersWithPermissions;
 use Tests\TestCase;
 
 final class BookingServiceTest extends TestCase
 {
+    use CreatesUsersWithPermissions;
     use RefreshDatabase;
 
     private BookingService $service;
@@ -59,6 +63,7 @@ final class BookingServiceTest extends TestCase
             $slotAvailabilityService,
             new BookingSettingsReader,
             $scheduleRepository,
+            app(AuthorizationServiceInterface::class),
         );
 
         $this->resource = BookableResourceModel::create([
@@ -429,5 +434,54 @@ final class BookingServiceTest extends TestCase
             return $event->bookingId === $bookingId
                 && $event->userId === $this->user->id;
         });
+    }
+
+    public function test_it_refuses_to_cancel_another_users_booking(): void
+    {
+        $bookingId = $this->createConfirmedBookingOf($this->user);
+        $stranger = UserModel::factory()->create();
+
+        try {
+            $this->service->cancelBooking(new CancelBookingDTO(bookingId: $bookingId, userId: $stranger->id));
+            $this->fail('Another user\'s booking was cancelled.');
+        } catch (BookingCancellationNotAllowedException) {
+            $this->assertDatabaseHas('venuebookings_bookings', ['id' => $bookingId, 'status' => 'confirmed']);
+        }
+    }
+
+    public function test_a_user_allowed_to_cancel_any_booking_can_cancel_another_users_booking(): void
+    {
+        $bookingId = $this->createConfirmedBookingOf($this->user);
+        $manager = $this->editorWithPermissions(['venuebookings:bookings.cancel_any']);
+
+        $result = $this->service->cancelBooking(new CancelBookingDTO(bookingId: $bookingId, userId: $manager->id));
+
+        $this->assertEquals(BookingStatus::Cancelled, $result->status);
+    }
+
+    public function test_staff_cancellation_does_not_depend_on_ownership(): void
+    {
+        $bookingId = $this->createConfirmedBookingOf($this->user);
+        $staff = UserModel::factory()->create();
+
+        $result = $this->service->cancelBookingAsStaff(new CancelBookingDTO(bookingId: $bookingId, userId: $staff->id));
+
+        $this->assertEquals(BookingStatus::Cancelled, $result->status);
+    }
+
+    private function createConfirmedBookingOf(UserModel $user): string
+    {
+        $bookingId = (string) Str::uuid();
+        BookingModel::create([
+            'id' => $bookingId,
+            'resource_id' => $this->resource->id,
+            'user_id' => $user->id,
+            'date' => '2026-03-16',
+            'start_time' => '10:00',
+            'end_time' => '12:00',
+            'status' => 'confirmed',
+        ]);
+
+        return $bookingId;
     }
 }

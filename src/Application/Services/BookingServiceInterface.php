@@ -14,7 +14,18 @@ interface BookingServiceInterface
 
     public function confirmBooking(string $bookingId): BookingResponseDTO;
 
+    /**
+     * Cancel a booking on behalf of the user in the DTO: only their own bookings,
+     * unless they hold the cancel_any permission.
+     *
+     * @throws \Modules\VenueBookings\Domain\Exceptions\BookingCancellationNotAllowedException
+     */
     public function cancelBooking(CancelBookingDTO $dto): BookingResponseDTO;
+
+    /**
+     * Cancel any booking from the admin panel. The panel authorizes the caller.
+     */
+    public function cancelBookingAsStaff(CancelBookingDTO $dto): BookingResponseDTO;
 
     public function rejectBooking(string $bookingId, ?string $reason = null): BookingResponseDTO;
 

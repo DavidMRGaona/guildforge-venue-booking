@@ -339,7 +339,7 @@ final class BookingResource extends BaseResource
                     ->visible(fn (BookingModel $record): bool => $record->status->isActive())
                     ->action(function (BookingModel $record, array $data): void {
                         $service = app(BookingServiceInterface::class);
-                        $service->cancelBooking(new CancelBookingDTO(
+                        $service->cancelBookingAsStaff(new CancelBookingDTO(
                             bookingId: $record->id,
                             userId: (string) Auth::id(),
                             reason: $data['reason'],

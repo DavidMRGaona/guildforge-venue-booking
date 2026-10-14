@@ -67,4 +67,23 @@ final class BookingSettingsReaderTest extends TestCase
 
         $this->assertEquals(3, $this->reader->getMaxActiveBookings());
     }
+
+    public function test_reminders_follow_the_panel_toggle(): void
+    {
+        config()->set('modules.settings.venue-bookings.notifications.notify_on_booking_reminder', false);
+
+        $this->assertFalse($this->reader->isReminderEnabled());
+
+        config()->set('modules.settings.venue-bookings.notifications.notify_on_booking_reminder', true);
+
+        $this->assertTrue($this->reader->isReminderEnabled());
+    }
+
+    public function test_reminders_are_enabled_by_default(): void
+    {
+        config()->offsetUnset('modules.settings.venue-bookings');
+        config()->offsetUnset('venue-bookings');
+
+        $this->assertTrue($this->reader->isReminderEnabled());
+    }
 }

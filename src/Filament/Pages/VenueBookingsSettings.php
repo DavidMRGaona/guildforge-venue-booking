@@ -9,6 +9,7 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Grid;
 use App\Application\Services\SettingsServiceInterface;
+use App\Filament\Concerns\ChecksPermissions;
 use App\Filament\Concerns\SafeModuleNavigation;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Repeater;
@@ -30,6 +31,7 @@ use Modules\VenueBookings\Domain\Enums\FieldVisibility;
  */
 final class VenueBookingsSettings extends Page implements HasForms
 {
+    use ChecksPermissions;
     use InteractsWithForms;
     use SafeModuleNavigation;
 
@@ -61,7 +63,8 @@ final class VenueBookingsSettings extends Page implements HasForms
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->isAdmin() ?? false;
+        // Admins hold every permission.
+        return self::userCan('venuebookings:bookings.settings');
     }
 
     public function mount(SettingsServiceInterface $settingsService): void
