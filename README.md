@@ -10,14 +10,14 @@ Sistema de reservas del local para gestionar espacios y horarios, con calendario
 - **Modo de aprobación**: confirmación automática o aprobación manual en el panel
 - **Campos configurables**: campos predefinidos y personalizados con visibilidad configurable
 - **Validación de elegibilidad**: límite de reservas activas, antelación mínima y máximo de días futuros
-- **Mis reservas**: cada usuario ve y cancela sus reservas en `/reservas/mis-reservas` y en la pestaña **Reservas** de su perfil
+- **Mis reservas**: cada usuario ve sus reservas en `/reservas/mis-reservas` y en la pestaña **Reservas** de su perfil, y las cancela si tiene el permiso `bookings.cancel_own`
 - **Integración con módulos**: asociación de la reserva con una mesa de rol o una campaña (configurable en el panel)
 - **Notificaciones por email**: creación, confirmación, cancelación, rechazo y recordatorio antes del inicio
 - **Panel de administración**: espacios, reservas, configuración y dos widgets para el escritorio
 
 ## Requisitos
 
-- GuildForge core `^3.1`
+- GuildForge core `^3.8` (da el rol `member` a toda cuenta registrada)
 - PHP >= 8.5, Laravel >= 13, Filament 5
 
 El core rechaza el módulo si no se cumplen (`module.json` → `requires`).
@@ -108,13 +108,15 @@ Grupo **Reservas del local**:
 | Elemento | Descripción |
 |----------|-------------|
 | Espacios | Espacios reservables, con su horario y la configuración de sus campos |
-| Reservas | Listado, creación, edición y borrado de reservas; confirmar, rechazar, cancelar o marcar como no presentado |
+| Reservas | Listado, creación, edición y borrado de reservas; confirmar, rechazar, cancelar o marcar como no presentado (cada acción exige su permiso, ver [Permisos](#permisos)) |
 | Configuración de reservas | Configuración del módulo (permiso `bookings.settings`) |
 
 Widgets del escritorio (se activan y ordenan en la configuración del escritorio):
 
 - `TodayBookingsWidget`: reservas de hoy y reservas pendientes de aprobación
 - `UpcomingBookingsWidget`: próximas reservas
+
+Los dos widgets solo se muestran a quien puede ver el listado de reservas (`bookings.view_any`).
 
 ## Comandos Artisan
 
@@ -134,7 +136,7 @@ Widgets del escritorio (se activan y ordenan en la configuración del escritorio
 | `GET` | `/reservas/api/eligibility` | API: elegibilidad del usuario (auth) |
 | `POST` | `/reservas` | Crear una reserva (auth) |
 | `GET` | `/reservas/mis-reservas` | Mis reservas (auth) |
-| `DELETE` | `/reservas/{booking}` | Cancelar una reserva (auth) |
+| `DELETE` | `/reservas/{booking}` | Cancelar una reserva (auth; propia con `bookings.cancel_own` o cualquiera con `bookings.cancel_any`) |
 
 ## Componentes Vue
 
@@ -143,7 +145,7 @@ Widgets del escritorio (se activan y ordenan en la configuración del escritorio
 | Componente | Descripción |
 |------------|-------------|
 | `BookingCalendar` | Calendario interactivo con vista de reservas |
-| `BookingCard` | Tarjeta resumen de una reserva |
+| `BookingCard` | Tarjeta resumen de una reserva; muestra **Cancelar reserva** solo con `canCancel` |
 | `BookingDetailModal` | Modal con el detalle completo de una reserva |
 | `BookingForm` | Formulario de creación de reserva |
 | `BookingSlotPicker` | Selector de franja horaria disponible |
@@ -174,19 +176,25 @@ Widgets del escritorio (se activan y ordenan en la configuración del escritorio
 
 ## Permisos
 
-Los administradores tienen todos los permisos. Ningún otro rol recibe estos permisos automáticamente: se asignan en el editor de roles. La columna **Rol sugerido** indica a quién suele tener sentido dárselos.
+Los administradores tienen todos los permisos. La columna **Rol sugerido** indica a quién suele tener sentido dárselos en el editor de roles; el único que el módulo concede por su cuenta es `bookings.cancel_own` al rol `member` (ver abajo).
 
 | Permiso | Rol sugerido | Uso |
 |---------|--------------|-----|
-| `bookings.view_any` | editor | Ver el listado de reservas en el panel y, desde él, confirmar, rechazar, cancelar o marcar como no presentado cualquier reserva |
+| `bookings.view_any` | editor | Ver el listado de reservas en el panel y los widgets del escritorio |
 | `bookings.view` | editor | Ver el detalle de una reserva en el panel |
 | `bookings.create` | editor | Crear reservas desde el panel |
-| `bookings.manage` | — | Gestionar espacios y editar o borrar reservas en el panel |
-| `bookings.cancel_any` | — | Cancelar reservas de otros usuarios desde la web (`DELETE /reservas/{booking}`) |
+| `bookings.manage` | editor que gestione reservas | Confirmar, rechazar y marcar como no presentado desde el listado; editar (incluido el cambio de estado) y borrar reservas; gestionar espacios |
+| `bookings.cancel_any` | editor que gestione reservas | Cancelar cualquier reserva: desde el listado del panel, pasando una reserva a «Cancelada» al editarla (también exige `bookings.manage`) y desde la web (`DELETE /reservas/{booking}`) |
+| `bookings.cancel_own` | member (concedido al actualizar) | Cancelar las propias reservas desde la web |
 | `bookings.settings` | — | Abrir y guardar la configuración del módulo |
-| `bookings.cancel_own` | — | Registrado, sin uso: cualquier usuario identificado puede cancelar sus propias reservas |
 
-En la web pública, cualquier usuario identificado puede reservar dentro de los límites configurados y cancelar sus propias reservas. Cancelar la reserva de otro usuario sin `bookings.cancel_any` responde 403, igual que una reserva que no existe o un identificador mal formado.
+Las acciones del panel se comprueban también en el servidor: si se fuerzan sin el permiso, la reserva no cambia. Para que un editor siga gestionando reservas hay que darle `bookings.manage` y `bookings.cancel_any`; `bookings.view_any` solo deja verlas.
+
+En la web pública, cualquier usuario identificado puede reservar dentro de los límites configurados (no se exige `bookings.create`). Para cancelar una reserva hay que ser su dueño y tener `bookings.cancel_own`, o tener `bookings.cancel_any`. Las páginas solo muestran el botón **Cancelar reserva** cuando el servidor lo permitiría. Si no se cumple, la cancelación responde 403, igual que una reserva que no existe o un identificador mal formado.
+
+### Concesión de `bookings.cancel_own` al rol `member`
+
+La migración `2026_10_14_200001_grant_cancel_own_to_member_role` concede `bookings.cancel_own` al rol `member`, que el core da a toda cuenta registrada, para que los usuarios sigan pudiendo cancelar sus reservas. Crea antes la fila del permiso si `permissions:sync` aún no la ha creado (con los mismos campos; `permissions:sync` la reutiliza por su clave). No hace nada si no existe el rol `member`, se puede ejecutar varias veces y no se deshace al revertirla. Quitar el permiso a `member` en el editor de roles retira la cancelación a los usuarios que no tengan otro rol con él.
 
 ## Arquitectura
 
@@ -196,7 +204,7 @@ src/modules/venue-bookings/
 │   ├── module.php             # Activación del módulo
 │   └── settings.php           # Valores de una instalación nueva
 ├── database/
-│   ├── migrations/            # Migraciones (espacios, horarios, reservas)
+│   ├── migrations/            # Migraciones (espacios, horarios, reservas, permiso cancel_own de member)
 │   └── seeders/               # Seeders de desarrollo
 ├── lang/
 │   └── es/                    # Traducciones en español
@@ -239,7 +247,7 @@ src/modules/venue-bookings/
 │   └── Policies/              # Políticas de autorización
 ├── tests/
 │   ├── Unit/                  # Tests unitarios (entidades, enums, VOs)
-│   ├── Integration/           # Tests de integración (repositorios, servicios)
+│   ├── Integration/           # Tests de integración (repositorios, servicios, migraciones de datos)
 │   └── Feature/               # Tests funcionales (comandos, Filament, HTTP)
 ├── module.json                # Manifiesto del módulo
 └── phpunit.xml                # Configuración de tests
