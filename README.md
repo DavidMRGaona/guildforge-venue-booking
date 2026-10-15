@@ -17,7 +17,7 @@ Sistema de reservas del local para gestionar espacios y horarios, con calendario
 
 ## Requisitos
 
-- GuildForge core `^3.8` (da el rol `member` a toda cuenta registrada)
+- GuildForge core `^3.10` (da el rol `member` a toda cuenta registrada y dice a la interfaz si la cuenta debe verificar su email)
 - PHP >= 8.5, Laravel >= 13, Filament 5
 
 El core rechaza el módulo si no se cumplen (`module.json` → `requires`).
@@ -197,6 +197,17 @@ En la web pública, cualquier usuario identificado puede reservar dentro de los 
 La migración `2026_10_14_200001_grant_cancel_own_to_member_role` concede `bookings.cancel_own` al rol `member`, que el core da a toda cuenta registrada, para que los usuarios sigan pudiendo cancelar sus reservas. Crea antes la fila del permiso si `permissions:sync` aún no la ha creado (con los mismos campos; `permissions:sync` la reutiliza por su clave). Si no existe el rol `member`, crea igualmente la fila del permiso y no concede nada; desde el core 3.8 el rol `member` existe siempre tras migrar. Se puede ejecutar varias veces y no se deshace al revertirla.
 
 La concesión se aplica una sola vez, cuando corre la migración. Si un administrador quita `bookings.cancel_own` a `member` en el editor de roles, los usuarios que no tengan otro rol con él dejan de poder cancelar, y las actualizaciones posteriores del módulo no se lo devuelven; solo una reinstalación que borre los datos del módulo vuelve a ejecutarla.
+
+## Verificación de email
+
+Cuando el core exige verificar el email (*Configuración del sitio → Autenticación*), sus reglas cierran a la cuenta que aún debe hacerlo las rutas con `auth` del módulo: la elegibilidad, crear una reserva, cancelarla y `/reservas/mis-reservas`. El calendario (`/reservas`) y el perfil siguen abiertos, y la interfaz lo anticipa con `useVerificationGate()` del core en vez de dejar que el servidor rechace lo enviado:
+
+- **Calendario**: no consulta la elegibilidad y el botón **Reservar** aparece desactivado, con el motivo («Para reservar, verifica tu email.») asociado por `aria-describedby` y el enlace «Ver cómo» a la página de verificación.
+- **Formulario de reserva**: no se envía ni muestra los campos; muestra el mismo motivo con el botón **Reservar** desactivado. Una elegibilidad que llega vacía (su endpoint falló) nunca deja el formulario activo a esa cuenta.
+- **Cancelar reserva** (pestaña **Reservas** del perfil): el botón aparece desactivado con «Para cancelar tu reserva, verifica tu email.» y el mismo enlace. `/reservas/mis-reservas` no llega a mostrarse: el servidor lleva al aviso.
+- **Cambio inesperado** (por ejemplo, la verificación se activó con la página ya abierta): si la elegibilidad responde con el 403 de verificación, el formulario queda desactivado y la página va al aviso; una reserva o cancelación enviada de todos modos acaba en el aviso, sin mensaje de éxito.
+
+Los invitados, las cuentas verificadas, las creadas antes de que se empezara a exigir la verificación y todas cuando el ajuste está apagado reservan y cancelan exactamente igual que antes.
 
 ## Arquitectura
 
