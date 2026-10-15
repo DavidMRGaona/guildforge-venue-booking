@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, useId } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { Link } from '@inertiajs/vue3';
 import type { BookingListItem } from '../types/bookings';
 import BookingStatusBadge from './BookingStatusBadge.vue';
 import { VENUE_TIMEZONE } from '@/utils/datetime';
+import { useVerificationGate } from '@/composables/useVerificationGate';
 
 interface Props {
     booking: BookingListItem;
@@ -20,6 +22,11 @@ const emit = defineEmits<{
 }>();
 
 const { t, locale } = useI18n();
+// DELETE /reservas/{id} is closed to accounts that must verify their email (the profile page is not)
+const gate = useVerificationGate();
+const cancelBlockedId = useId();
+
+const showCancel = computed(() => props.canCancel && props.booking.is_cancellable);
 
 const visibleFields = computed(() =>
     props.booking.field_values.filter(
@@ -46,6 +53,7 @@ const timeRange = computed(() =>
 );
 
 function handleCancel(): void {
+    if (gate.blocked.value) return;
     emit('cancel', props.booking.id);
 }
 </script>
@@ -115,10 +123,12 @@ function handleCancel(): void {
                     </div>
                 </div>
 
-                <div v-if="canCancel && booking.is_cancellable" class="flex-shrink-0">
+                <div v-if="showCancel" class="flex-shrink-0">
                     <button
                         type="button"
-                        class="rounded-lg border border-error px-3 py-1.5 text-sm font-medium text-error transition-colors hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:hover:bg-red-900/20 dark:focus:ring-offset-page"
+                        :disabled="gate.blocked.value"
+                        :aria-describedby="gate.blocked.value ? cancelBlockedId : undefined"
+                        class="rounded-lg border border-error px-3 py-1.5 text-sm font-medium text-error transition-colors enabled:hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:enabled:hover:bg-red-900/20 dark:focus:ring-offset-page"
                         @click="handleCancel"
                     >
                         {{ t('booking_calendar.cancel_booking') }}
@@ -126,6 +136,22 @@ function handleCancel(): void {
                 </div>
             </div>
         </div>
+
+        <!-- Why cancelling is disabled for an account that must verify its email -->
+        <p
+            v-if="showCancel && gate.blocked.value"
+            :id="cancelBlockedId"
+            class="border-t border-default bg-warning-light px-4 py-2 text-sm text-base-primary"
+        >
+            {{ gate.reason('cancelBooking') }}
+            <Link
+                :href="gate.noticeUrl"
+                class="font-semibold underline underline-offset-2 hover:no-underline"
+            >
+                {{ gate.linkLabel.value }}
+                <span aria-hidden="true">→</span>
+            </Link>
+        </p>
 
         <!-- Cancellation reason -->
         <div

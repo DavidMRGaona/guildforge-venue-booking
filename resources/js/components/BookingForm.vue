@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, Teleport, Transition } from 'vue';
+import { ref, computed, useId, Teleport, Transition } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useForm } from '@inertiajs/vue3';
+import { Link, useForm } from '@inertiajs/vue3';
 import type { FieldDefinition, BookingEligibility } from '../types/bookings';
 import { VENUE_TIMEZONE } from '@/utils/datetime';
+import { useVerificationGate } from '@/composables/useVerificationGate';
 
 interface Props {
     resourceId: string;
@@ -12,9 +13,13 @@ interface Props {
     endTime: string;
     fieldDefinitions: FieldDefinition[];
     eligibility: BookingEligibility | null;
+    /** The eligibility check answered that the account must verify its email. */
+    verificationRequired?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    verificationRequired: false,
+});
 
 const emit = defineEmits<{
     close: [];
@@ -24,6 +29,14 @@ const emit = defineEmits<{
 const { t, locale } = useI18n();
 
 const loading = ref(false);
+
+// POST /reservas is closed to accounts that must verify their email. A null eligibility (its
+// endpoint failed) must never leave the form open to them.
+const gate = useVerificationGate();
+const verificationBlockedId = useId();
+const verificationBlocked = computed(
+    () => gate.blocked.value || props.verificationRequired
+);
 
 // Build initial form data from field definitions
 function buildInitialData(): Record<string, string | number | boolean> {
@@ -52,6 +65,7 @@ const form = useForm({
 });
 
 const canBook = computed(() => {
+    if (verificationBlocked.value) return false;
     if (!props.eligibility) return true;
     return props.eligibility.can_book;
 });
@@ -81,7 +95,11 @@ function handleSubmit(): void {
 
     form.post('/reservas', {
         preserveScroll: true,
-        onSuccess: () => {
+        onSuccess: (page) => {
+            // Must verify after all (e.g. changed in another tab): the server sent us to the notice
+            if (gate.isVerificationRequired(page)) {
+                return;
+            }
             emit('submitted');
             emit('close');
         },
@@ -168,9 +186,25 @@ function updateField(key: string, value: string | number | boolean): void {
                             </div>
                         </div>
 
+                        <!-- Why booking is disabled for an account that must verify its email -->
+                        <p
+                            v-if="verificationBlocked"
+                            :id="verificationBlockedId"
+                            class="mb-4 rounded-md bg-warning-light p-3 text-sm text-base-primary"
+                        >
+                            {{ gate.reason('book') }}
+                            <Link
+                                :href="gate.noticeUrl"
+                                class="font-semibold underline underline-offset-2 hover:no-underline"
+                            >
+                                {{ gate.linkLabel.value }}
+                                <span aria-hidden="true">→</span>
+                            </Link>
+                        </p>
+
                         <!-- Eligibility warning -->
                         <div
-                            v-if="eligibility && !eligibility.can_book"
+                            v-else-if="eligibility && !eligibility.can_book"
                             class="mb-4 rounded-lg bg-warning-light p-3"
                             role="alert"
                         >
@@ -323,6 +357,25 @@ function updateField(key: string, value: string | number | boolean): void {
                                 </button>
                             </div>
                         </form>
+
+                        <!-- Disabled booking while the account must verify its email -->
+                        <div v-else-if="verificationBlocked" class="flex gap-3 pt-2">
+                            <button
+                                type="button"
+                                class="flex-1 rounded-lg border border-default px-4 py-2.5 text-sm font-medium text-base-secondary transition-colors hover:bg-muted"
+                                @click="handleClose"
+                            >
+                                {{ t('booking_calendar.cancel') }}
+                            </button>
+                            <button
+                                type="button"
+                                disabled
+                                :aria-describedby="verificationBlockedId"
+                                class="flex-1 cursor-not-allowed rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-medium text-white opacity-50"
+                            >
+                                {{ t('booking_calendar.book') }}
+                            </button>
+                        </div>
 
                         <!-- Close button when not eligible -->
                         <div v-else class="pt-2">

@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, useId } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { Link } from '@inertiajs/vue3';
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import { useFlashMessages } from '@/composables/useFlashMessages';
 import { useAuth } from '@/composables/useAuth';
+import { useVerificationGate } from '@/composables/useVerificationGate';
 import type {
     BookableResource,
     BookingDetail,
@@ -28,6 +30,9 @@ const props = withDefaults(defineProps<Props>(), {
 const { t } = useI18n();
 const { success, error: flashError, hasMessages } = useFlashMessages();
 const { isAuthenticated } = useAuth();
+// Booking (POST /reservas) and its eligibility check are closed to accounts that must verify their email
+const gate = useVerificationGate();
+const bookBlockedId = useId();
 
 // State
 const firstResource = props.resources[0];
@@ -42,6 +47,8 @@ const slotsLoading = ref(false);
 const slotsError = ref<string | null>(null);
 const eligibility = ref<BookingEligibility | null>(null);
 const selectedBooking = ref<BookingDetail | null>(null);
+// The eligibility check answered with the verification 403 (e.g. verification turned on meanwhile)
+const verificationRequired = ref(false);
 
 // Computed
 const currentResource = computed(() =>
@@ -62,6 +69,18 @@ const currentMinConsecutiveSlots = computed(() =>
 
 const currentMaxConsecutiveSlots = computed(() =>
     currentResource.value?.max_consecutive_slots ?? 4
+);
+
+const bookingBlocked = computed(() => gate.blocked.value || verificationRequired.value);
+
+const belowMinConsecutiveSlots = computed(
+    () =>
+        selectedSlots.value.length < currentMinConsecutiveSlots.value &&
+        currentSchedulingMode.value === 'time_slots'
+);
+
+const bookButtonDisabled = computed(
+    () => bookingBlocked.value || belowMinConsecutiveSlots.value
 );
 
 const bookingStartTime = computed(() => {
@@ -128,9 +147,16 @@ async function onDateSelect(date: string): Promise<void> {
 
         const [slotsResponse, eligibilityResult] = await Promise.all([
             fetch(`/reservas/api/slots?${params}`, jsonHeaders),
-            isAuthenticated.value
+            isAuthenticated.value && !bookingBlocked.value
                 ? fetch(`/reservas/api/eligibility?${params}`, jsonHeaders).then(
-                      (r) => (r.ok ? r.json() : null)
+                      (r) => {
+                          if (gate.isVerificationRequired(r)) {
+                              verificationRequired.value = true;
+                              gate.goToNotice();
+                              return null;
+                          }
+                          return r.ok ? r.json() : null;
+                      }
                   )
                 : Promise.resolve(null),
         ]);
@@ -155,6 +181,7 @@ function onSlotsUpdate(newSlots: BookingSlot[]): void {
 }
 
 function openBookingForm(): void {
+    if (bookingBlocked.value) return;
     if (selectedSlots.value.length > 0) {
         showForm.value = true;
     }
@@ -308,14 +335,15 @@ async function onEventSelect(bookingId: string): Promise<void> {
                 <!-- Book button -->
                 <div
                     v-if="selectedSlots.length > 0"
-                    class="mt-6 flex justify-center"
+                    class="mt-6 flex flex-col items-center gap-3"
                 >
                     <button
                         type="button"
-                        :disabled="selectedSlots.length < currentMinConsecutiveSlots && currentSchedulingMode === 'time_slots'"
+                        :disabled="bookButtonDisabled"
+                        :aria-describedby="bookingBlocked ? bookBlockedId : undefined"
                         :class="[
                             'rounded-lg px-8 py-3 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-page',
-                            selectedSlots.length < currentMinConsecutiveSlots && currentSchedulingMode === 'time_slots'
+                            bookButtonDisabled
                                 ? 'cursor-not-allowed bg-primary-400 text-white/70'
                                 : 'bg-primary-600 text-white hover:bg-primary-700',
                         ]"
@@ -323,6 +351,22 @@ async function onEventSelect(bookingId: string): Promise<void> {
                     >
                         {{ t('booking_calendar.book') }}
                     </button>
+
+                    <!-- Why booking is disabled for an account that must verify its email -->
+                    <p
+                        v-if="bookingBlocked"
+                        :id="bookBlockedId"
+                        class="rounded-md bg-warning-light p-3 text-center text-sm text-base-primary"
+                    >
+                        {{ gate.reason('book') }}
+                        <Link
+                            :href="gate.noticeUrl"
+                            class="font-semibold underline underline-offset-2 hover:no-underline"
+                        >
+                            {{ gate.linkLabel.value }}
+                            <span aria-hidden="true">→</span>
+                        </Link>
+                    </p>
                 </div>
 
                 <!-- Booking form modal -->
@@ -334,6 +378,7 @@ async function onEventSelect(bookingId: string): Promise<void> {
                     :end-time="bookingEndTime"
                     :field-definitions="currentFieldDefinitions"
                     :eligibility="eligibility"
+                    :verification-required="verificationRequired"
                     @close="showForm = false"
                     @submitted="onBookingSubmitted"
                 />
