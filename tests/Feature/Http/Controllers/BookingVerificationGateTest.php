@@ -139,48 +139,15 @@ final class BookingVerificationGateTest extends ModuleTestCase
         $daysAhead = 7;
 
         foreach ($this->usersThatNeedNotVerify() as $label => $user) {
-            $daysAhead++;
-
-            $this->actingAs($user)
-                ->get(route('bookings.index'))
-                ->assertOk()
-                ->assertInertia(fn (Assert $page) => $page->where('auth.user.mustVerifyEmail', false));
-
-            $this->actingAs($user)
-                ->getJson($this->eligibilityUrl())
-                ->assertOk()
-                ->assertJson(['can_book' => true, 'reasons' => []]);
-
-            // Reaches the booking controller instead of the notice
-            $this->actingAs($user)
-                ->withHeaders($this->inertiaHeaders())
-                ->from(route('bookings.index'))
-                ->post(route('bookings.store'), $this->bookingPayload($daysAhead))
-                ->assertRedirect(route('bookings.my-bookings'))
-                ->assertSessionHas('success');
-            $this->flushHeaders();
-
-            $this->grantCancelOwn($user);
-            $booking = $this->bookingOf($user);
-
-            $this->actingAs($user)
-                ->get(route('profile.show'))
-                ->assertOk()
-                ->assertInertia(fn (Assert $page) => $page->where('auth.user.mustVerifyEmail', false));
-
-            $this->actingAs($user)
-                ->withHeaders($this->inertiaHeaders())
-                ->from(route('profile.show'))
-                ->delete(route('bookings.cancel', $booking->id))
-                ->assertRedirect(route('profile.show'));
-            $this->flushHeaders();
-
-            $this->assertDatabaseHas('venuebookings_bookings', ['id' => $booking->id, 'status' => 'cancelled']);
-            $this->assertSame(1, BookingModel::query()
-                ->where('user_id', $user->id)
-                ->whereDate('date', now()->addDays($daysAhead)->toDateString())
-                ->count(), $label);
+            $this->assertBooksAndCancelsAsBefore($user, ++$daysAhead, $label);
         }
+    }
+
+    public function test_a_new_unverified_account_books_and_cancels_as_before_when_the_setting_is_off(): void
+    {
+        app(SettingsServiceInterface::class)->set('auth_email_verification_required', '0');
+
+        $this->assertBooksAndCancelsAsBefore($this->mustVerifyUser(), 8, 'setting off');
     }
 
     public function test_a_guest_sees_the_calendar_and_is_sent_to_log_in_as_before(): void
@@ -195,6 +162,52 @@ final class BookingVerificationGateTest extends ModuleTestCase
             ->assertRedirect(route('login'));
     }
 
+    private function assertBooksAndCancelsAsBefore(UserModel $user, int $daysAhead, string $label): void
+    {
+        $this->actingAs($user)
+            ->get(route('bookings.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('auth.user.mustVerifyEmail', false));
+
+        $this->actingAs($user)
+            ->getJson($this->eligibilityUrl())
+            ->assertOk()
+            ->assertJson(['can_book' => true, 'reasons' => []]);
+
+        // Reaches the booking controller instead of the notice
+        $this->actingAs($user)
+            ->withHeaders($this->inertiaHeaders())
+            ->from(route('bookings.index'))
+            ->post(route('bookings.store'), $this->bookingPayload($daysAhead))
+            ->assertRedirect(route('bookings.my-bookings'))
+            ->assertSessionHas('success');
+        $this->flushHeaders();
+
+        $this->grantCancelOwn($user);
+        $booking = $this->bookingOf($user);
+
+        $this->actingAs($user)
+            ->get(route('profile.show'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->where('auth.user.mustVerifyEmail', false));
+
+        $this->actingAs($user)
+            ->withHeaders($this->inertiaHeaders())
+            ->from(route('profile.show'))
+            ->delete(route('bookings.cancel', $booking->id))
+            ->assertRedirect(route('profile.show'));
+        $this->flushHeaders();
+
+        $this->assertDatabaseHas('venuebookings_bookings', ['id' => $booking->id, 'status' => 'cancelled']);
+        $this->assertSame(1, BookingModel::query()
+            ->where('user_id', $user->id)
+            ->whereDate('date', now()->addDays($daysAhead)->toDateString())
+            ->count(), $label);
+    }
+
+    /**
+     * A new unverified account: it must verify while the setting is on.
+     */
     private function mustVerifyUser(): UserModel
     {
         return UserModel::factory()->unverified()->create();
