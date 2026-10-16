@@ -200,14 +200,29 @@ final class BookingStartCutoffTest extends ModuleTestCase
         $data = $this->app->make(ProfileBookingsDataProvider::class)->getDataForUser($this->user->id);
         $this->assertNotNull($data);
 
-        // The upcoming/past split uses the server's real date, so look the bookings up in both lists
         $flags = [];
-        foreach ([...$data['upcoming'], ...$data['past']] as $booking) {
+        foreach ($data['upcoming'] as $booking) {
             $flags[$booking['id']] = $booking['is_cancellable'];
         }
 
         $this->assertFalse($flags[$started->id]);
         $this->assertTrue($flags[$later->id]);
+    }
+
+    public function test_the_profile_splits_upcoming_and_past_on_the_venue_day(): void
+    {
+        // 12:00 UTC on 2026-11-10 is already the 11th in Auckland (UTC+13)
+        config()->set('venue-bookings.timezone', 'Pacific/Auckland');
+        $this->travelTo(CarbonImmutable::create(2026, 11, 11, 1, 0, 0, 'Pacific/Auckland'));
+
+        $yesterdayAtVenue = $this->bookingOf($this->user, '20:00', '21:00', '2026-11-10');
+        $todayAtVenue = $this->bookingOf($this->user, '20:00', '21:00', '2026-11-11');
+
+        $data = $this->app->make(ProfileBookingsDataProvider::class)->getDataForUser($this->user->id);
+        $this->assertNotNull($data);
+
+        $this->assertSame([$todayAtVenue->id], array_column($data['upcoming'], 'id'));
+        $this->assertSame([$yesterdayAtVenue->id], array_column($data['past'], 'id'));
     }
 
     public function test_the_calendar_starts_on_the_venue_day(): void
