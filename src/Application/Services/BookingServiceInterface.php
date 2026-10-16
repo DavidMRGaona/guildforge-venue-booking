@@ -10,6 +10,13 @@ use Modules\VenueBookings\Application\DTOs\Response\BookingResponseDTO;
 
 interface BookingServiceInterface
 {
+    /**
+     * Create a booking. Refused for any caller once the slot has started in the venue timezone.
+     *
+     * @throws \Modules\VenueBookings\Domain\Exceptions\BookingAlreadyStartedException
+     * @throws \Modules\VenueBookings\Domain\Exceptions\MinimumSlotsNotMetException
+     * @throws \Modules\VenueBookings\Domain\Exceptions\SlotUnavailableException
+     */
     public function createBooking(CreateBookingDTO $dto): BookingResponseDTO;
 
     public function confirmBooking(string $bookingId): BookingResponseDTO;

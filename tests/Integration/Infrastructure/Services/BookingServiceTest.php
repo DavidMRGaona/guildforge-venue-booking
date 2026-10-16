@@ -8,6 +8,7 @@ use App\Application\Authorization\Services\AuthorizationServiceInterface;
 use App\Infrastructure\Persistence\Eloquent\Models\PermissionModel;
 use App\Infrastructure\Persistence\Eloquent\Models\RoleModel;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
@@ -20,6 +21,7 @@ use Modules\VenueBookings\Domain\Events\BookingConfirmed;
 use Modules\VenueBookings\Domain\Events\BookingCreated;
 use Modules\VenueBookings\Domain\Events\BookingNoShow;
 use Modules\VenueBookings\Domain\Events\BookingRejected;
+use Modules\VenueBookings\Domain\Exceptions\BookingAlreadyStartedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingCancellationNotAllowedException;
 use Modules\VenueBookings\Domain\Exceptions\MinimumSlotsNotMetException;
 use Modules\VenueBookings\Domain\Exceptions\SlotUnavailableException;
@@ -39,6 +41,8 @@ final class BookingServiceTest extends TestCase
     use CreatesUsersWithPermissions;
     use RefreshDatabase;
 
+    private const string VENUE_TIMEZONE = 'Europe/Madrid';
+
     private BookingService $service;
 
     private EloquentBookingRepository $bookingRepository;
@@ -50,6 +54,10 @@ final class BookingServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // The fixtures book 2026-03-16: freeze the clock before that day, in the venue timezone
+        config()->set('venue-bookings.timezone', self::VENUE_TIMEZONE);
+        $this->travelTo(CarbonImmutable::create(2026, 3, 1, 9, 0, 0, self::VENUE_TIMEZONE));
 
         $this->bookingRepository = new EloquentBookingRepository;
         $slotAvailabilityService = new SlotAvailabilityService(
@@ -516,6 +524,53 @@ final class BookingServiceTest extends TestCase
     /**
      * @param  array<string>  $permissionKeys
      */
+    public function test_it_refuses_a_booking_whose_start_time_has_been_reached(): void
+    {
+        Event::fake();
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 10, 0, 0, self::VENUE_TIMEZONE));
+
+        try {
+            $this->service->createBooking($this->dtoFor('2026-03-16', '10:00', '12:00'));
+            $this->fail('A booking that had already started was created.');
+        } catch (BookingAlreadyStartedException) {
+            $this->assertDatabaseCount('venuebookings_bookings', 0);
+            Event::assertNotDispatched(BookingCreated::class);
+        }
+    }
+
+    public function test_it_accepts_a_booking_until_the_second_before_it_starts(): void
+    {
+        Event::fake();
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 9, 59, 59, self::VENUE_TIMEZONE));
+
+        $result = $this->service->createBooking($this->dtoFor('2026-03-16', '10:00', '12:00'));
+
+        $this->assertDatabaseHas('venuebookings_bookings', ['id' => $result->id]);
+    }
+
+    public function test_it_refuses_a_booking_on_a_past_day(): void
+    {
+        Event::fake();
+        $this->travelTo(CarbonImmutable::create(2026, 3, 17, 8, 0, 0, self::VENUE_TIMEZONE));
+
+        $this->expectException(BookingAlreadyStartedException::class);
+
+        $this->service->createBooking($this->dtoFor('2026-03-16', '18:00', '20:00'));
+    }
+
+    public function test_it_reads_the_start_in_the_venue_timezone(): void
+    {
+        Event::fake();
+        // Canary time is UTC+0 in March, an hour behind Madrid: 09:30 there is 10:30 in Madrid,
+        // so a 10:00 slot at a Canary venue has not started yet
+        config()->set('venue-bookings.timezone', 'Atlantic/Canary');
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 9, 30, 0, 'Atlantic/Canary'));
+
+        $result = $this->service->createBooking($this->dtoFor('2026-03-16', '10:00', '12:00'));
+
+        $this->assertDatabaseHas('venuebookings_bookings', ['id' => $result->id]);
+    }
+
     private function grant(UserModel $user, array $permissionKeys): void
     {
         $role = RoleModel::create(['name' => 'grant_'.uniqid(), 'display_name' => 'Grant']);
@@ -531,6 +586,17 @@ final class BookingServiceTest extends TestCase
 
         $user->roles()->attach($role->id);
         app(AuthorizationServiceInterface::class)->invalidateCache();
+    }
+
+    private function dtoFor(string $date, string $startTime, string $endTime): CreateBookingDTO
+    {
+        return new CreateBookingDTO(
+            resourceId: $this->resource->id,
+            userId: $this->user->id,
+            date: $date,
+            startTime: $startTime,
+            endTime: $endTime,
+        );
     }
 
     private function createConfirmedBookingOf(UserModel $user): string

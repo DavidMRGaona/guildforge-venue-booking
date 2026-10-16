@@ -86,4 +86,20 @@ final class BookingSettingsReaderTest extends TestCase
 
         $this->assertTrue($this->reader->isReminderEnabled());
     }
+
+    public function test_the_venue_timezone_comes_from_the_module_settings(): void
+    {
+        config()->set('modules.settings.venue-bookings.timezone', 'Atlantic/Canary');
+
+        $this->assertSame('Atlantic/Canary', $this->reader->getDateTimeZone()->getName());
+    }
+
+    public function test_the_venue_timezone_falls_back_to_the_app_timezone(): void
+    {
+        config()->offsetUnset('modules.settings.venue-bookings');
+        config()->offsetUnset('venue-bookings');
+        config()->set('app.timezone', 'America/Bogota');
+
+        $this->assertSame('America/Bogota', $this->reader->getDateTimeZone()->getName());
+    }
 }
