@@ -210,6 +210,23 @@ final class BookingStartCutoffTest extends ModuleTestCase
         $this->assertTrue($flags[$later->id]);
     }
 
+    public function test_the_calendar_starts_on_the_venue_day(): void
+    {
+        $this->get(route('bookings.index'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('VenueBookings/Index', false)
+                ->where('today', '2026-11-10'));
+
+        // At 12:00 UTC on 2026-11-10 it is already the 11th in Auckland (UTC+13)
+        config()->set('venue-bookings.timezone', 'Pacific/Auckland');
+        $this->travelTo(CarbonImmutable::create(2026, 11, 10, 12, 0, 0, 'UTC'));
+
+        $this->get(route('bookings.index'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page->where('today', '2026-11-11'));
+    }
+
     /**
      * @return array<string, string>
      */

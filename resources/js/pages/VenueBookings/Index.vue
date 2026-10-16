@@ -21,6 +21,8 @@ import BookingDetailModal from '../../components/BookingDetailModal.vue';
 interface Props {
     resources: BookableResource[];
     selectedResourceId: string | null;
+    /** The venue's current day (YYYY-MM-DD): the calendar offers nothing before it. */
+    today: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -278,6 +280,7 @@ async function onEventSelect(bookingId: string): Promise<void> {
                 <BookingCalendar
                     v-if="currentResourceId"
                     :resource-id="currentResourceId"
+                    :min-date="today"
                     @date-select="onDateSelect"
                     @event-select="onEventSelect"
                 />

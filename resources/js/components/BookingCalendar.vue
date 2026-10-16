@@ -26,6 +26,8 @@ interface DateClickInfo {
 
 interface Props {
     resourceId: string;
+    /** First selectable day (YYYY-MM-DD, venue day); the server refuses earlier ones too. */
+    minDate: string;
 }
 
 const props = defineProps<Props>();
@@ -156,6 +158,8 @@ const calendarOptions = computed<CalendarOptions>(() => ({
     // The week/day time grids position real hours, so the calendar must resolve
     // them in the venue timezone rather than the visitor's.
     timeZone: VENUE_TIMEZONE,
+    // Past days cannot be booked: grey them out and stop navigating before today
+    validRange: { start: props.minDate },
     locale: calendarLocale.value,
     events: fetchEvents,
     dateClick: handleDateClick,
