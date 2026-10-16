@@ -293,6 +293,9 @@ return [
         'booking_not_cancellable' => 'Esta reserva no se puede cancelar.',
         'booking_cancel_forbidden' => 'No puedes cancelar esta reserva.',
         'minimum_slots_not_met' => 'Debes seleccionar el mínimo de turnos consecutivos requerido.',
+        'booking_date_in_the_past' => 'No se pueden hacer reservas para días pasados.',
+        'booking_already_started' => 'Esa franja ya ha empezado. Elige una hora posterior.',
+        'booking_already_started_cancel' => 'La reserva ya ha empezado y no se puede cancelar.',
     ],
 
     'profile' => [

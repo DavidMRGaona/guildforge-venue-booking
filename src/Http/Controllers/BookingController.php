@@ -17,6 +17,7 @@ use Modules\VenueBookings\Application\DTOs\CreateBookingDTO;
 use Modules\VenueBookings\Application\Services\BookingFieldConfigServiceInterface;
 use Modules\VenueBookings\Application\Services\BookingQueryServiceInterface;
 use Modules\VenueBookings\Application\Services\BookingServiceInterface;
+use Modules\VenueBookings\Domain\Exceptions\BookingAlreadyStartedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingCancellationNotAllowedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingLimitExceededException;
 use Modules\VenueBookings\Domain\Exceptions\BookingNotCancellableException;
@@ -94,6 +95,11 @@ final class BookingController extends Controller
             return redirect()
                 ->route('bookings.my-bookings')
                 ->with('success', __('venue-bookings::messages.frontend.booking_created'));
+        } catch (BookingAlreadyStartedException) {
+            // Shown inside the booking form, which stays open on errors (flash messages close it)
+            return back()->withErrors([
+                'start_time' => __('venue-bookings::messages.frontend.booking_already_started'),
+            ]);
         } catch (SlotUnavailableException) {
             return back()->with('error', __('venue-bookings::messages.frontend.slot_unavailable'));
         } catch (BookingLimitExceededException) {
@@ -159,7 +165,14 @@ final class BookingController extends Controller
             $this->bookingService->cancelBooking($dto);
 
             return back()->with('success', __('venue-bookings::messages.frontend.booking_cancelled'));
-        } catch (BookingCancellationNotAllowedException|BookingNotFoundException) {
+        } catch (BookingCancellationNotAllowedException $e) {
+            // Only someone allowed to cancel this booking learns that it has started
+            if ($e->bookingHasStarted()) {
+                return back()->with('error', __('venue-bookings::messages.frontend.booking_already_started_cancel'));
+            }
+
+            abort(403, $forbidden);
+        } catch (BookingNotFoundException) {
             abort(403, $forbidden);
         } catch (BookingNotCancellableException) {
             return back()->with('error', __('venue-bookings::messages.frontend.booking_not_cancellable'));
