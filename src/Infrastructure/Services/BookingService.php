@@ -22,6 +22,7 @@ use Modules\VenueBookings\Domain\Events\BookingNoShow;
 use Modules\VenueBookings\Domain\Events\BookingRejected;
 use Modules\VenueBookings\Domain\Exceptions\BookingAlreadyStartedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingCancellationNotAllowedException;
+use Modules\VenueBookings\Domain\Exceptions\BookingNotCancellableException;
 use Modules\VenueBookings\Domain\Exceptions\MinimumSlotsNotMetException;
 use Modules\VenueBookings\Domain\Exceptions\SlotUnavailableException;
 use Modules\VenueBookings\Domain\Repositories\BookingRepositoryInterface;
@@ -123,6 +124,10 @@ final readonly class BookingService implements BookingServiceInterface
 
         if ($this->hasStarted($booking)) {
             throw BookingCancellationNotAllowedException::alreadyStarted($dto->bookingId);
+        }
+
+        if (! $booking->isCancellable()) {
+            throw BookingNotCancellableException::withId($dto->bookingId);
         }
 
         return $this->cancel($booking, $dto->reason);
