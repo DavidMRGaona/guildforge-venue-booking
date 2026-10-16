@@ -285,10 +285,38 @@ final class SlotAvailabilityServiceTest extends TestCase
         $this->assertTrue($slots[3]->isAvailable);
     }
 
+    public function test_started_late_slots_stay_hidden_when_the_advance_crosses_midnight(): void
+    {
+        config()->set('venue-bookings.min_advance_minutes', 60);
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 23, 30, 0, 'UTC'));
+
+        $this->createScheduleWithMondayOpen('20:00', '23:59');
+
+        $slots = $this->service->getAvailableSlotsForDate($this->resource->id, '2026-03-16');
+
+        $this->assertSame(['20:00', '21:00', '22:00', '23:00'], array_map(fn ($s) => $s->startTime, $slots));
+        foreach ($slots as $slot) {
+            $this->assertFalse($slot->isAvailable, "{$slot->startTime} must stay hidden");
+        }
+    }
+
+    public function test_a_slot_that_started_earlier_in_the_same_minute_is_hidden_without_advance(): void
+    {
+        config()->set('venue-bookings.min_advance_minutes', 0);
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 10, 0, 30, 'UTC'));
+
+        $this->createScheduleWithMondayOpen();
+
+        $slots = $this->service->getAvailableSlotsForDate($this->resource->id, '2026-03-16');
+
+        $this->assertFalse($slots[0]->isAvailable);
+        $this->assertTrue($slots[1]->isAvailable);
+    }
+
     /**
-     * Creates an operating schedule with Monday open 10:00-14:00, 60-minute slots.
+     * Creates an operating schedule with Monday open 10:00-14:00 by default, 60-minute slots.
      */
-    private function createScheduleWithMondayOpen(): void
+    private function createScheduleWithMondayOpen(string $open = '10:00', string $close = '14:00'): void
     {
         OperatingScheduleModel::create([
             'id' => (string) Str::uuid(),
@@ -299,8 +327,8 @@ final class SlotAvailabilityServiceTest extends TestCase
             'day_schedules' => [
                 [
                     'day_of_week' => 1,
-                    'open_time' => '10:00',
-                    'close_time' => '14:00',
+                    'open_time' => $open,
+                    'close_time' => $close,
                     'is_enabled' => true,
                 ],
             ],

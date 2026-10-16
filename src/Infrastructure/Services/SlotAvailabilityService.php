@@ -35,15 +35,15 @@ final readonly class SlotAvailabilityService implements SlotAvailabilityServiceI
         $slots = $schedule->generateSlotsForDate($date);
         $bookings = $this->bookingRepository->getByResourceAndDate($resourceIdVO, $date);
 
-        $tz = $this->settingsReader->getTimezone();
+        $tz = $this->settingsReader->getDateTimeZone();
         $now = CarbonImmutable::now($tz);
-        $isToday = $now->toDateString() === $date;
-        $cutoffTime = $isToday
-            ? $now->addMinutes($this->settingsReader->getMinAdvanceMinutes())->format('H:i')
+        $earliestStart = $date === $now->toDateString()
+            ? $now->addMinutes($this->settingsReader->getMinAdvanceMinutes())
             : null;
 
-        return array_map(function (BookingSlot $slot) use ($bookings, $cutoffTime): BookingSlot {
-            if ($cutoffTime !== null && $slot->startTime < $cutoffTime) {
+        return array_map(function (BookingSlot $slot) use ($bookings, $date, $tz, $earliestStart): BookingSlot {
+            if ($earliestStart !== null
+                && CarbonImmutable::parse("{$date} {$slot->startTime}", $tz) < $earliestStart) {
                 return new BookingSlot(
                     startTime: $slot->startTime,
                     endTime: $slot->endTime,
