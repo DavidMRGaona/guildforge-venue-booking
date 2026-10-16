@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\VenueBookings\Tests\Unit\Domain\Entities;
 
 use DateTimeImmutable;
+use DateTimeZone;
 use Modules\VenueBookings\Domain\Entities\Booking;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
 use Modules\VenueBookings\Domain\Exceptions\InvalidStatusTransitionException;
@@ -185,14 +186,95 @@ final class BookingTest extends TestCase
         $this->assertFalse($booking->belongsTo(Uuid::uuid4()->toString()));
     }
 
-    private function createBooking(?string $userId = null): Booking
+    public function test_it_starts_at_its_date_and_start_time_in_the_venue_timezone(): void
     {
+        $booking = $this->createBooking(date: '2026-03-15', startTime: '10:00');
+
+        $this->assertSame(
+            '2026-03-15T10:00:00+01:00',
+            $booking->startsAt(new DateTimeZone('Europe/Madrid'))->format(DATE_ATOM),
+        );
+    }
+
+    public function test_its_start_follows_daylight_saving_time_in_the_venue_timezone(): void
+    {
+        $madrid = new DateTimeZone('Europe/Madrid');
+
+        // Madrid moves its clocks forward on 2026-03-29 and back on 2026-10-25
+        $this->assertSame('2026-03-28T10:00:00+01:00', $this->createBooking(date: '2026-03-28')->startsAt($madrid)->format(DATE_ATOM));
+        $this->assertSame('2026-03-29T10:00:00+02:00', $this->createBooking(date: '2026-03-29')->startsAt($madrid)->format(DATE_ATOM));
+        $this->assertSame('2026-10-24T10:00:00+02:00', $this->createBooking(date: '2026-10-24')->startsAt($madrid)->format(DATE_ATOM));
+        $this->assertSame('2026-10-25T10:00:00+01:00', $this->createBooking(date: '2026-10-25')->startsAt($madrid)->format(DATE_ATOM));
+    }
+
+    public function test_its_start_accepts_times_with_seconds(): void
+    {
+        // PostgreSQL time columns come back as HH:MM:SS
+        $booking = $this->createBooking(date: '2026-03-15', startTime: '10:00:00', endTime: '12:00:00');
+
+        $this->assertSame(
+            '2026-03-15T10:00:00+01:00',
+            $booking->startsAt(new DateTimeZone('Europe/Madrid'))->format(DATE_ATOM),
+        );
+    }
+
+    public function test_it_has_started_from_its_start_time_on(): void
+    {
+        $madrid = new DateTimeZone('Europe/Madrid');
+        $booking = $this->createBooking(date: '2026-03-15', startTime: '10:00');
+
+        $this->assertFalse($booking->hasStarted(new DateTimeImmutable('2026-03-15 09:59:59', $madrid), $madrid));
+        $this->assertTrue($booking->hasStarted(new DateTimeImmutable('2026-03-15 10:00:00', $madrid), $madrid));
+        $this->assertTrue($booking->hasStarted(new DateTimeImmutable('2026-03-15 10:00:01', $madrid), $madrid));
+        $this->assertTrue($booking->hasStarted(new DateTimeImmutable('2026-03-16 08:00:00', $madrid), $madrid));
+    }
+
+    public function test_it_compares_instants_whatever_the_timezone_of_now(): void
+    {
+        $madrid = new DateTimeZone('Europe/Madrid');
+        $utc = new DateTimeZone('UTC');
+
+        // 10:00 in Madrid on 2026-03-29 (summer time, UTC+2) is 08:00 UTC
+        $booking = $this->createBooking(date: '2026-03-29', startTime: '10:00');
+        $this->assertFalse($booking->hasStarted(new DateTimeImmutable('2026-03-29 07:59:59', $utc), $madrid));
+        $this->assertTrue($booking->hasStarted(new DateTimeImmutable('2026-03-29 08:00:00', $utc), $madrid));
+
+        // 10:00 in Madrid on 2026-10-25 (winter time again, UTC+1) is 09:00 UTC
+        $booking = $this->createBooking(date: '2026-10-25', startTime: '10:00');
+        $this->assertFalse($booking->hasStarted(new DateTimeImmutable('2026-10-25 08:59:59', $utc), $madrid));
+        $this->assertTrue($booking->hasStarted(new DateTimeImmutable('2026-10-25 09:00:00', $utc), $madrid));
+    }
+
+    public function test_a_booking_that_crosses_midnight_starts_on_its_own_date(): void
+    {
+        $madrid = new DateTimeZone('Europe/Madrid');
+        $booking = $this->createBooking(date: '2026-03-15', startTime: '22:00', endTime: '02:00');
+
+        $this->assertFalse($booking->hasStarted(new DateTimeImmutable('2026-03-15 21:59:59', $madrid), $madrid));
+        $this->assertTrue($booking->hasStarted(new DateTimeImmutable('2026-03-15 22:00:00', $madrid), $madrid));
+        $this->assertTrue($booking->hasStarted(new DateTimeImmutable('2026-03-16 01:00:00', $madrid), $madrid));
+    }
+
+    public function test_being_cancellable_still_depends_only_on_the_status(): void
+    {
+        // The panel cancels at any time; the start cutoff lives in the website path
+        $booking = $this->createBooking(date: '2020-01-01');
+
+        $this->assertTrue($booking->isCancellable());
+    }
+
+    private function createBooking(
+        ?string $userId = null,
+        string $date = '2026-03-15',
+        string $startTime = '10:00',
+        string $endTime = '12:00',
+    ): Booking {
         return new Booking(
             id: BookingId::generate(),
             resourceId: BookableResourceId::generate(),
             userId: $userId ?? Uuid::uuid4()->toString(),
-            date: '2026-03-15',
-            timeRange: new TimeRange('10:00', '12:00'),
+            date: $date,
+            timeRange: new TimeRange($startTime, $endTime),
         );
     }
 }
