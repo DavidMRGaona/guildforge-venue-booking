@@ -42,8 +42,14 @@ final readonly class BookingQueryService implements BookingQueryServiceInterface
             $date,
         );
 
+        $timezone = $this->settingsReader->getDateTimeZone();
+        $now = CarbonImmutable::now($timezone);
+
         return array_map(
-            fn (Booking $booking): BookingListDTO => BookingListDTO::fromEntity($booking),
+            fn (Booking $booking): BookingListDTO => BookingListDTO::fromEntity(
+                $booking,
+                hasStarted: $booking->hasStarted($now, $timezone),
+            ),
             $bookings,
         );
     }

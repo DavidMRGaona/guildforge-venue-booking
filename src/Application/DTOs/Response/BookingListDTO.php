@@ -30,9 +30,9 @@ final readonly class BookingListDTO
 
     public static function fromEntity(
         Booking $booking,
+        bool $hasStarted,
         string $resourceName = '',
         string $userName = '',
-        bool $hasStarted = false,
     ): self {
         return new self(
             id: $booking->id->value,

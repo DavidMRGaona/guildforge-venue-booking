@@ -135,6 +135,29 @@ final class BookingQueryServiceTest extends TestCase
         $this->assertEquals('14:00', $result[1]->startTime);
     }
 
+    public function test_it_flags_started_bookings_for_a_date(): void
+    {
+        config()->set('venue-bookings.timezone', 'Europe/Madrid');
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 11, 30, 0, 'Europe/Madrid'));
+
+        foreach (['10:00', '14:00'] as $start) {
+            BookingModel::create([
+                'id' => (string) Str::uuid(),
+                'resource_id' => $this->resource->id,
+                'user_id' => $this->user->id,
+                'date' => '2026-03-16',
+                'start_time' => $start,
+                'end_time' => '15:00',
+                'status' => 'confirmed',
+            ]);
+        }
+
+        $result = $this->service->getBookingsForDate($this->resource->id, '2026-03-16');
+
+        $this->assertTrue($result[0]->hasStarted);
+        $this->assertFalse($result[1]->hasStarted);
+    }
+
     public function test_it_returns_user_bookings(): void
     {
         $secondUser = UserModel::factory()->create();
