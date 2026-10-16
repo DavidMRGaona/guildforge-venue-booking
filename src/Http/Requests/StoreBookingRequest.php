@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Http\Requests;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\VenueBookings\Application\Services\BookingFieldConfigServiceInterface;
+use Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader;
 
 final class StoreBookingRequest extends FormRequest
 {
@@ -23,9 +25,13 @@ final class StoreBookingRequest extends FormRequest
         $resourceId = $this->input('resource_id', '');
         $fieldRules = $fieldConfigService->getValidationRules($resourceId, $this->user());
 
+        // A past day is refused outright, judged by the venue's day rather than the server's
+        $venueToday = CarbonImmutable::now(app(BookingSettingsReader::class)->getDateTimeZone())->toDateString();
+
         return array_merge([
             'resource_id' => ['required', 'string', 'uuid'],
-            'date' => ['required', 'date_format:Y-m-d'],
+            // bail: a malformed date stops at date_format and never reaches the comparison
+            'date' => ['bail', 'required', 'date_format:Y-m-d', 'after_or_equal:'.$venueToday],
             'start_time' => ['required', 'date_format:H:i'],
             'end_time' => ['required', 'date_format:H:i'],
             'field_values' => ['nullable', 'array'],
@@ -34,5 +40,15 @@ final class StoreBookingRequest extends FormRequest
             'tournament_id' => ['nullable', 'string'],
             'campaign_id' => ['nullable', 'string'],
         ], $fieldRules);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'date.after_or_equal' => (string) __('venue-bookings::messages.frontend.booking_date_in_the_past'),
+        ];
     }
 }

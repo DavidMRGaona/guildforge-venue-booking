@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Infrastructure\Services;
 
+use Carbon\CarbonImmutable;
 use Modules\VenueBookings\Application\DTOs\Response\BookingListDTO;
 use Modules\VenueBookings\Application\Services\BookingQueryServiceInterface;
 use Modules\VenueBookings\Application\Services\BookingServiceInterface;
@@ -16,6 +17,7 @@ final readonly class ProfileBookingsDataProvider
         private BookingQueryServiceInterface $queryService,
         private BookableResourceRepositoryInterface $resourceRepository,
         private BookingServiceInterface $bookingService,
+        private BookingSettingsReader $settingsReader,
     ) {}
 
     /**
@@ -41,7 +43,7 @@ final readonly class ProfileBookingsDataProvider
 
         $upcoming = [];
         $past = [];
-        $today = date('Y-m-d');
+        $today = CarbonImmutable::now($this->settingsReader->getDateTimeZone())->toDateString();
 
         foreach ($bookings as $booking) {
             $enriched = $this->enrichWithResourceName($booking, $resourceNames);

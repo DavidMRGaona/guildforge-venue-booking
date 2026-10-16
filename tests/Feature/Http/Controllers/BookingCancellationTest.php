@@ -62,6 +62,35 @@ final class BookingCancellationTest extends ModuleTestCase
         ]);
     }
 
+    public function test_an_owner_cancelling_an_already_cancelled_future_booking_gets_a_friendly_error(): void
+    {
+        $this->grant($this->owner, [self::CANCEL_OWN]);
+        $this->booking->update(['status' => 'cancelled']);
+        // The first test of a process can see the module's translations cached empty
+        app('translator')->setLoaded([]);
+
+        $this->actingAs($this->owner)
+            ->delete("/reservas/{$this->booking->id}")
+            ->assertRedirect()
+            ->assertSessionHas('error', 'Esta reserva ya no se puede cancelar.');
+
+        $this->assertDatabaseHas('venuebookings_bookings', [
+            'id' => $this->booking->id,
+            'status' => 'cancelled',
+        ]);
+    }
+
+    public function test_a_stranger_cancelling_an_already_cancelled_booking_still_gets_403(): void
+    {
+        $stranger = UserModel::factory()->create();
+        $this->grant($stranger, [self::CANCEL_OWN]);
+        $this->booking->update(['status' => 'cancelled']);
+
+        $this->actingAs($stranger)
+            ->delete("/reservas/{$this->booking->id}")
+            ->assertForbidden();
+    }
+
     public function test_a_user_with_cancel_own_cannot_cancel_another_users_booking(): void
     {
         $other = UserModel::factory()->create();

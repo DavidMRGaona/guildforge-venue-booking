@@ -6,6 +6,7 @@ namespace Modules\VenueBookings\Infrastructure\Services;
 
 use App\Application\Authorization\Services\AuthorizationServiceInterface;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
+use Carbon\CarbonImmutable;
 use Modules\VenueBookings\Application\DTOs\CancelBookingDTO;
 use Modules\VenueBookings\Application\DTOs\CreateBookingDTO;
 use Modules\VenueBookings\Application\DTOs\Response\BookingResponseDTO;
@@ -19,7 +20,9 @@ use Modules\VenueBookings\Domain\Events\BookingConfirmed;
 use Modules\VenueBookings\Domain\Events\BookingCreated;
 use Modules\VenueBookings\Domain\Events\BookingNoShow;
 use Modules\VenueBookings\Domain\Events\BookingRejected;
+use Modules\VenueBookings\Domain\Exceptions\BookingAlreadyStartedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingCancellationNotAllowedException;
+use Modules\VenueBookings\Domain\Exceptions\BookingNotCancellableException;
 use Modules\VenueBookings\Domain\Exceptions\MinimumSlotsNotMetException;
 use Modules\VenueBookings\Domain\Exceptions\SlotUnavailableException;
 use Modules\VenueBookings\Domain\Repositories\BookingRepositoryInterface;
@@ -43,12 +46,6 @@ final readonly class BookingService implements BookingServiceInterface
     {
         $timeRange = new TimeRange($dto->startTime, $dto->endTime);
         $resourceId = BookableResourceId::fromString($dto->resourceId);
-
-        $this->validateMinConsecutiveSlots($resourceId, $timeRange);
-
-        if (! $this->slotAvailabilityService->isSlotAvailable($dto->resourceId, $dto->date, $timeRange)) {
-            throw SlotUnavailableException::forTimeRange($dto->date, $dto->startTime, $dto->endTime);
-        }
 
         $initialStatus = $this->settingsReader->requiresApproval()
             ? BookingStatus::Pending
@@ -75,6 +72,17 @@ final readonly class BookingService implements BookingServiceInterface
                 ? new \DateTimeImmutable
                 : null,
         );
+
+        // Whoever asks, a slot that has already started cannot be booked
+        if ($this->hasStarted($booking)) {
+            throw BookingAlreadyStartedException::forSlot($dto->date, $dto->startTime);
+        }
+
+        $this->validateMinConsecutiveSlots($resourceId, $timeRange);
+
+        if (! $this->slotAvailabilityService->isSlotAvailable($dto->resourceId, $dto->date, $timeRange)) {
+            throw SlotUnavailableException::forTimeRange($dto->date, $dto->startTime, $dto->endTime);
+        }
 
         $this->bookingRepository->save($booking);
 
@@ -109,8 +117,17 @@ final readonly class BookingService implements BookingServiceInterface
     {
         $booking = $this->bookingRepository->findOrFail(BookingId::fromString($dto->bookingId));
 
+        // Permission first: someone who may not cancel never learns the booking exists
         if (! $this->canCancel($dto->userId, $booking->userId)) {
             throw BookingCancellationNotAllowedException::forUser($dto->bookingId, $dto->userId);
+        }
+
+        if ($this->hasStarted($booking)) {
+            throw BookingCancellationNotAllowedException::alreadyStarted($dto->bookingId);
+        }
+
+        if (! $booking->isCancellable()) {
+            throw BookingNotCancellableException::withId($dto->bookingId);
         }
 
         return $this->cancel($booking, $dto->reason);
@@ -207,5 +224,15 @@ final readonly class BookingService implements BookingServiceInterface
         if ($slotCount < $schedule->minConsecutiveSlots) {
             throw MinimumSlotsNotMetException::forResource($schedule->minConsecutiveSlots, $slotCount);
         }
+    }
+
+    /**
+     * Whether the booking has started now, read in the venue timezone.
+     */
+    private function hasStarted(Booking $booking): bool
+    {
+        $timezone = $this->settingsReader->getDateTimeZone();
+
+        return $booking->hasStarted(CarbonImmutable::now($timezone), $timezone);
     }
 }

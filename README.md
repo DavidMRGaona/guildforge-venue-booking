@@ -11,6 +11,7 @@ Sistema de reservas del local para gestionar espacios y horarios, con calendario
 - **Campos configurables**: campos predefinidos y personalizados con visibilidad configurable
 - **Validación de elegibilidad**: límite de reservas activas, antelación mínima y máximo de días futuros
 - **Mis reservas**: cada usuario ve sus reservas en `/reservas/mis-reservas` y en la pestaña **Reservas** de su perfil, y las cancela si tiene el permiso `bookings.cancel_own`
+- **Cierre a la hora de inicio**: desde la web no se puede reservar un día pasado ni una franja que ya ha empezado, ni cancelar una reserva empezada. El panel no tiene ese límite
 - **Integración con módulos**: asociación de la reserva con una mesa de rol o una campaña (configurable en el panel)
 - **Notificaciones por email**: creación, confirmación, cancelación, rechazo y recordatorio antes del inicio
 - **Panel de administración**: espacios, reservas, configuración y dos widgets para el escritorio
@@ -60,7 +61,7 @@ Se configura en el panel: **Reservas del local → Configuración de reservas** 
 | `notifications` | todas activadas, recordatorio 24 horas antes | Avisos por email y recordatorio |
 | `associations` | desactivadas | Asociación con mesas de rol y campañas |
 
-Las fechas y horas de las reservas se interpretan en la zona horaria de la aplicación (`app.timezone`).
+Las fechas y horas de las reservas se interpretan en la zona horaria de la aplicación (`app.timezone`). En esa misma zona se decide cuándo empieza una reserva y cuál es el día de hoy para el calendario y para rechazar días pasados.
 
 Si una instalación antigua aún guarda la configuración en `config/settings.php`, `php artisan venue-bookings:migrate-settings` la copia a la tabla `settings` (no hace nada si ya existe).
 
@@ -144,7 +145,7 @@ Los dos widgets solo se muestran a quien puede ver el listado de reservas (`book
 
 | Componente | Descripción |
 |------------|-------------|
-| `BookingCalendar` | Calendario interactivo con vista de reservas |
+| `BookingCalendar` | Calendario interactivo con vista de reservas; empieza en el día de hoy del local (`today`) y no ofrece días anteriores |
 | `BookingCard` | Tarjeta resumen de una reserva; muestra **Cancelar reserva** solo con `canCancel` |
 | `BookingDetailModal` | Modal con el detalle completo de una reserva |
 | `BookingForm` | Formulario de creación de reserva |
@@ -190,7 +191,7 @@ Los administradores tienen todos los permisos. La columna **Rol sugerido** indic
 
 Las acciones del panel se comprueban también en el servidor: si se fuerzan sin el permiso, la reserva no cambia. Para que un editor siga gestionando reservas hay que darle `bookings.manage` y `bookings.cancel_any`; `bookings.view_any` solo deja verlas.
 
-En la web pública, cualquier usuario identificado puede reservar dentro de los límites configurados (no se exige `bookings.create`). Para cancelar una reserva hay que ser su dueño y tener `bookings.cancel_own`, o tener `bookings.cancel_any`. Las páginas solo muestran el botón **Cancelar reserva** cuando el servidor lo permitiría. Si no se cumple, la cancelación responde 403, igual que una reserva que no existe o un identificador mal formado.
+En la web pública, cualquier usuario identificado puede reservar dentro de los límites configurados (no se exige `bookings.create`). Para cancelar una reserva hay que ser su dueño y tener `bookings.cancel_own`, o tener `bookings.cancel_any`. Las páginas solo muestran el botón **Cancelar reserva** cuando el servidor lo permitiría. Si no se cumple, la cancelación responde 403, igual que una reserva que no existe o un identificador mal formado. Una reserva solo se puede cancelar desde la web hasta su hora de inicio, también con `bookings.cancel_any`: después, la cancelación vuelve con «La reserva ya ha empezado y no se puede cancelar.» y las páginas dejan de mostrar el botón (`is_cancellable` es falso). Quien no puede cancelarla sigue recibiendo el 403. Desde el panel se cancela a cualquier hora.
 
 ### Concesión de `bookings.cancel_own` al rol `member`
 

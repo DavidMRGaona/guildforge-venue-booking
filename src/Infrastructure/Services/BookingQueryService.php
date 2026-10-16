@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Infrastructure\Services;
 
+use Carbon\CarbonImmutable;
 use Modules\VenueBookings\Application\DTOs\Response\BookingCalendarEventDTO;
 use Modules\VenueBookings\Application\DTOs\Response\BookingListDTO;
 use Modules\VenueBookings\Application\DTOs\Response\BookingResponseDTO;
@@ -20,6 +21,7 @@ final readonly class BookingQueryService implements BookingQueryServiceInterface
     public function __construct(
         private BookingRepositoryInterface $bookingRepository,
         private SlotAvailabilityServiceInterface $slotAvailabilityService,
+        private BookingSettingsReader $settingsReader,
     ) {
     }
 
@@ -40,8 +42,14 @@ final readonly class BookingQueryService implements BookingQueryServiceInterface
             $date,
         );
 
+        $timezone = $this->settingsReader->getDateTimeZone();
+        $now = CarbonImmutable::now($timezone);
+
         return array_map(
-            fn (Booking $booking): BookingListDTO => BookingListDTO::fromEntity($booking),
+            fn (Booking $booking): BookingListDTO => BookingListDTO::fromEntity(
+                $booking,
+                hasStarted: $booking->hasStarted($now, $timezone),
+            ),
             $bookings,
         );
     }
@@ -69,9 +77,14 @@ final readonly class BookingQueryService implements BookingQueryServiceInterface
     public function getUserBookings(string $userId): array
     {
         $bookings = $this->bookingRepository->getByUser($userId);
+        $timezone = $this->settingsReader->getDateTimeZone();
+        $now = CarbonImmutable::now($timezone);
 
         return array_map(
-            fn (Booking $booking): BookingListDTO => BookingListDTO::fromEntity($booking),
+            fn (Booking $booking): BookingListDTO => BookingListDTO::fromEntity(
+                $booking,
+                hasStarted: $booking->hasStarted($now, $timezone),
+            ),
             $bookings,
         );
     }

@@ -7,6 +7,7 @@ namespace Modules\VenueBookings\Http\Controllers;
 use App\Application\Seo\DTOs\SeoPageDTO;
 use App\Application\Seo\Services\SeoMetadataFactoryInterface;
 use App\Http\Controllers\Controller;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -15,6 +16,7 @@ use Modules\VenueBookings\Application\DTOs\Response\FieldDefinitionResponseDTO;
 use Modules\VenueBookings\Application\Services\BookingFieldConfigServiceInterface;
 use Modules\VenueBookings\Domain\Repositories\BookableResourceRepositoryInterface;
 use Modules\VenueBookings\Domain\Repositories\OperatingScheduleRepositoryInterface;
+use Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader;
 
 final class BookingCalendarController extends Controller
 {
@@ -23,6 +25,7 @@ final class BookingCalendarController extends Controller
         private readonly BookingFieldConfigServiceInterface $fieldConfigService,
         private readonly OperatingScheduleRepositoryInterface $scheduleRepository,
         private readonly SeoMetadataFactoryInterface $seo,
+        private readonly BookingSettingsReader $settingsReader,
     ) {}
 
     public function index(Request $request): Response
@@ -56,6 +59,8 @@ final class BookingCalendarController extends Controller
         return Inertia::render('VenueBookings/Index', [
             'resources' => $resourceDtos,
             'selectedResourceId' => $selectedResourceId,
+            // First day the calendar offers: the venue's today, not the visitor's
+            'today' => CarbonImmutable::now($this->settingsReader->getDateTimeZone())->toDateString(),
             'seo' => $this->seo->forPage(new SeoPageDTO(
                 title: (string) __('venue-bookings::messages.seo.calendar_title'),
             ))->toArray(),

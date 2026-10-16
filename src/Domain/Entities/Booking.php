@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\VenueBookings\Domain\Entities;
 
 use DateTimeImmutable;
+use DateTimeZone;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
 use Modules\VenueBookings\Domain\Exceptions\InvalidStatusTransitionException;
 use Modules\VenueBookings\Domain\ValueObjects\BookableResourceId;
@@ -64,6 +65,24 @@ final class Booking
     public function isCancellable(): bool
     {
         return $this->status->isActive();
+    }
+
+    /**
+     * When the booking starts. Date and times are stored as venue wall-clock values,
+     * so they are read in the venue timezone the caller passes.
+     */
+    public function startsAt(DateTimeZone $timezone): DateTimeImmutable
+    {
+        return new DateTimeImmutable("{$this->date} {$this->timeRange->startTime}", $timezone);
+    }
+
+    /**
+     * Whether the booking has started at $now: from its start time on (inclusive),
+     * whatever timezone $now is expressed in.
+     */
+    public function hasStarted(DateTimeImmutable $now, DateTimeZone $timezone): bool
+    {
+        return $now >= $this->startsAt($timezone);
     }
 
     public function belongsTo(string $userId): bool

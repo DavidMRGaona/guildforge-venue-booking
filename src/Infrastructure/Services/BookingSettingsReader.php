@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Infrastructure\Services;
 
+use DateTimeZone;
 use Modules\VenueBookings\Domain\Enums\ApprovalMode;
 
 final readonly class BookingSettingsReader
@@ -85,6 +86,14 @@ final readonly class BookingSettingsReader
             ?? config('venue-bookings.timezone');
 
         return is_string($tz) && $tz !== '' ? $tz : config('app.timezone', 'UTC');
+    }
+
+    /**
+     * The venue timezone, in which booking dates and times are read.
+     */
+    public function getDateTimeZone(): DateTimeZone
+    {
+        return new DateTimeZone($this->getTimezone());
     }
 
     public function isReminderEnabled(): bool

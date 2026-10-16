@@ -23,11 +23,14 @@ final readonly class BookingListDTO
         /** @var array<array{field_key: string, field_label: string, value: mixed, visibility: string}> */
         public array $fieldValues = [],
         public ?string $cancellationReason = null,
+        // Started bookings can no longer be cancelled from the website
+        public bool $hasStarted = false,
     ) {
     }
 
     public static function fromEntity(
         Booking $booking,
+        bool $hasStarted,
         string $resourceName = '',
         string $userName = '',
     ): self {
@@ -46,6 +49,7 @@ final readonly class BookingListDTO
                 $booking->fieldValues,
             ),
             cancellationReason: $booking->cancellationReason,
+            hasStarted: $hasStarted,
         );
     }
 
@@ -66,7 +70,7 @@ final readonly class BookingListDTO
             'status' => $this->status->value,
             'status_label' => $this->status->label(),
             'status_color' => $this->status->color(),
-            'is_cancellable' => $this->status->isActive(),
+            'is_cancellable' => $this->status->isActive() && ! $this->hasStarted,
             'field_values' => $this->fieldValues,
             'cancellation_reason' => $this->cancellationReason,
         ];

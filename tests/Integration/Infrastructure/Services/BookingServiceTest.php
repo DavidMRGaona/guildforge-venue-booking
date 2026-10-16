@@ -8,6 +8,7 @@ use App\Application\Authorization\Services\AuthorizationServiceInterface;
 use App\Infrastructure\Persistence\Eloquent\Models\PermissionModel;
 use App\Infrastructure\Persistence\Eloquent\Models\RoleModel;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
@@ -20,6 +21,7 @@ use Modules\VenueBookings\Domain\Events\BookingConfirmed;
 use Modules\VenueBookings\Domain\Events\BookingCreated;
 use Modules\VenueBookings\Domain\Events\BookingNoShow;
 use Modules\VenueBookings\Domain\Events\BookingRejected;
+use Modules\VenueBookings\Domain\Exceptions\BookingAlreadyStartedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingCancellationNotAllowedException;
 use Modules\VenueBookings\Domain\Exceptions\MinimumSlotsNotMetException;
 use Modules\VenueBookings\Domain\Exceptions\SlotUnavailableException;
@@ -39,6 +41,8 @@ final class BookingServiceTest extends TestCase
     use CreatesUsersWithPermissions;
     use RefreshDatabase;
 
+    private const string VENUE_TIMEZONE = 'Europe/Madrid';
+
     private BookingService $service;
 
     private EloquentBookingRepository $bookingRepository;
@@ -50,6 +54,10 @@ final class BookingServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // The fixtures book 2026-03-16: freeze the clock before that day, in the venue timezone
+        config()->set('venue-bookings.timezone', self::VENUE_TIMEZONE);
+        $this->travelTo(CarbonImmutable::create(2026, 3, 1, 9, 0, 0, self::VENUE_TIMEZONE));
 
         $this->bookingRepository = new EloquentBookingRepository;
         $slotAvailabilityService = new SlotAvailabilityService(
@@ -513,6 +521,125 @@ final class BookingServiceTest extends TestCase
         $this->assertFalse($this->service->canCancel((string) Str::uuid(), (string) Str::uuid()));
     }
 
+    public function test_it_refuses_a_booking_whose_start_time_has_been_reached(): void
+    {
+        Event::fake();
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 10, 0, 0, self::VENUE_TIMEZONE));
+
+        try {
+            $this->service->createBooking($this->dtoFor('2026-03-16', '10:00', '12:00'));
+            $this->fail('A booking that had already started was created.');
+        } catch (BookingAlreadyStartedException) {
+            $this->assertDatabaseCount('venuebookings_bookings', 0);
+            Event::assertNotDispatched(BookingCreated::class);
+        }
+    }
+
+    public function test_it_accepts_a_booking_until_the_second_before_it_starts(): void
+    {
+        Event::fake();
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 9, 59, 59, self::VENUE_TIMEZONE));
+
+        $result = $this->service->createBooking($this->dtoFor('2026-03-16', '10:00', '12:00'));
+
+        $this->assertDatabaseHas('venuebookings_bookings', ['id' => $result->id]);
+    }
+
+    public function test_it_refuses_a_booking_on_a_past_day(): void
+    {
+        Event::fake();
+        $this->travelTo(CarbonImmutable::create(2026, 3, 17, 8, 0, 0, self::VENUE_TIMEZONE));
+
+        $this->expectException(BookingAlreadyStartedException::class);
+
+        $this->service->createBooking($this->dtoFor('2026-03-16', '18:00', '20:00'));
+    }
+
+    public function test_it_reads_the_start_in_the_venue_timezone(): void
+    {
+        Event::fake();
+        // Canary time is UTC+0 in March, an hour behind Madrid: 09:30 there is 10:30 in Madrid,
+        // so a 10:00 slot at a Canary venue has not started yet
+        config()->set('venue-bookings.timezone', 'Atlantic/Canary');
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 9, 30, 0, 'Atlantic/Canary'));
+
+        $result = $this->service->createBooking($this->dtoFor('2026-03-16', '10:00', '12:00'));
+
+        $this->assertDatabaseHas('venuebookings_bookings', ['id' => $result->id]);
+    }
+
+    public function test_an_owner_cannot_cancel_a_booking_that_has_started(): void
+    {
+        Event::fake();
+        $this->grant($this->user, ['venuebookings:bookings.cancel_own']);
+        $bookingId = $this->createConfirmedBookingOf($this->user);
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 10, 0, 0, self::VENUE_TIMEZONE));
+
+        try {
+            $this->service->cancelBooking(new CancelBookingDTO(bookingId: $bookingId, userId: $this->user->id));
+            $this->fail('A booking that had started was cancelled from the website.');
+        } catch (BookingCancellationNotAllowedException $e) {
+            $this->assertTrue($e->bookingHasStarted());
+            $this->assertDatabaseHas('venuebookings_bookings', ['id' => $bookingId, 'status' => 'confirmed']);
+            Event::assertNotDispatched(BookingCancelled::class);
+        }
+    }
+
+    public function test_an_owner_can_cancel_until_the_second_before_the_start(): void
+    {
+        Event::fake();
+        $this->grant($this->user, ['venuebookings:bookings.cancel_own']);
+        $bookingId = $this->createConfirmedBookingOf($this->user);
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 9, 59, 59, self::VENUE_TIMEZONE));
+
+        $result = $this->service->cancelBooking(new CancelBookingDTO(bookingId: $bookingId, userId: $this->user->id));
+
+        $this->assertEquals(BookingStatus::Cancelled, $result->status);
+    }
+
+    public function test_cancel_any_does_not_lift_the_start_cutoff_on_the_website(): void
+    {
+        $bookingId = $this->createConfirmedBookingOf($this->user);
+        $manager = $this->editorWithPermissions(['venuebookings:bookings.cancel_any']);
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 11, 0, 0, self::VENUE_TIMEZONE));
+
+        try {
+            $this->service->cancelBooking(new CancelBookingDTO(bookingId: $bookingId, userId: $manager->id));
+            $this->fail('cancel_any cancelled a started booking from the website.');
+        } catch (BookingCancellationNotAllowedException $e) {
+            $this->assertTrue($e->bookingHasStarted());
+        }
+    }
+
+    public function test_a_stranger_is_refused_for_permission_before_the_start_is_checked(): void
+    {
+        $bookingId = $this->createConfirmedBookingOf($this->user);
+        $stranger = UserModel::factory()->create();
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 11, 0, 0, self::VENUE_TIMEZONE));
+
+        try {
+            $this->service->cancelBooking(new CancelBookingDTO(bookingId: $bookingId, userId: $stranger->id));
+            $this->fail('A stranger cancelled another user\'s booking.');
+        } catch (BookingCancellationNotAllowedException $e) {
+            // "Already started" would tell a stranger that the booking exists
+            $this->assertFalse($e->bookingHasStarted());
+        }
+    }
+
+    public function test_staff_cancel_a_booking_that_has_started(): void
+    {
+        Event::fake();
+        $bookingId = $this->createConfirmedBookingOf($this->user);
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 11, 0, 0, self::VENUE_TIMEZONE));
+
+        $result = $this->service->cancelBookingAsStaff(
+            new CancelBookingDTO(bookingId: $bookingId, userId: UserModel::factory()->create()->id),
+        );
+
+        $this->assertEquals(BookingStatus::Cancelled, $result->status);
+        Event::assertDispatched(BookingCancelled::class);
+    }
+
     /**
      * @param  array<string>  $permissionKeys
      */
@@ -531,6 +658,17 @@ final class BookingServiceTest extends TestCase
 
         $user->roles()->attach($role->id);
         app(AuthorizationServiceInterface::class)->invalidateCache();
+    }
+
+    private function dtoFor(string $date, string $startTime, string $endTime): CreateBookingDTO
+    {
+        return new CreateBookingDTO(
+            resourceId: $this->resource->id,
+            userId: $this->user->id,
+            date: $date,
+            startTime: $startTime,
+            endTime: $endTime,
+        );
     }
 
     private function createConfirmedBookingOf(UserModel $user): string
