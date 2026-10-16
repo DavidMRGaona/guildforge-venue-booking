@@ -11,8 +11,10 @@ use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
+use Inertia\Testing\AssertableInertia;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
+use Modules\VenueBookings\Infrastructure\Services\ProfileBookingsDataProvider;
 use Tests\Support\Modules\ModuleTestCase;
 
 /**
@@ -169,6 +171,43 @@ final class BookingStartCutoffTest extends ModuleTestCase
         }
 
         $this->assertSame(0, BookingModel::query()->count());
+    }
+
+    public function test_my_bookings_stop_offering_to_cancel_once_a_booking_has_started(): void
+    {
+        $this->grant($this->user, [self::CANCEL_OWN]);
+        $started = $this->bookingOf($this->user, '18:00', '19:00');
+        $later = $this->bookingOf($this->user, '19:00', '20:00');
+
+        // Same day, ordered by start time
+        $this->actingAs($this->user)
+            ->get(route('bookings.my-bookings'))
+            ->assertOk()
+            ->assertInertia(fn (AssertableInertia $page) => $page
+                ->component('VenueBookings/MyBookings', false)
+                ->where('canCancel', true)
+                ->where('bookings.0.id', $started->id)
+                ->where('bookings.0.is_cancellable', false)
+                ->where('bookings.1.id', $later->id)
+                ->where('bookings.1.is_cancellable', true));
+    }
+
+    public function test_the_profile_stops_offering_to_cancel_once_a_booking_has_started(): void
+    {
+        $started = $this->bookingOf($this->user, '18:00', '19:00');
+        $later = $this->bookingOf($this->user, '19:00', '20:00');
+
+        $data = $this->app->make(ProfileBookingsDataProvider::class)->getDataForUser($this->user->id);
+        $this->assertNotNull($data);
+
+        // The upcoming/past split uses the server's real date, so look the bookings up in both lists
+        $flags = [];
+        foreach ([...$data['upcoming'], ...$data['past']] as $booking) {
+            $flags[$booking['id']] = $booking['is_cancellable'];
+        }
+
+        $this->assertFalse($flags[$started->id]);
+        $this->assertTrue($flags[$later->id]);
     }
 
     /**

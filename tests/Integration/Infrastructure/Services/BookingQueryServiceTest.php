@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\VenueBookings\Tests\Integration\Infrastructure\Services;
 
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use Modules\VenueBookings\Application\DTOs\Response\BookingCalendarEventDTO;
@@ -43,6 +44,7 @@ final class BookingQueryServiceTest extends TestCase
         $this->service = new BookingQueryService(
             $bookingRepository,
             $slotAvailabilityService,
+            new BookingSettingsReader(),
         );
 
         $this->resource = BookableResourceModel::create([
@@ -258,5 +260,40 @@ final class BookingQueryServiceTest extends TestCase
         $result = $this->service->getAvailableSlots($this->resource->id, '2026-03-16');
 
         $this->assertEmpty($result);
+    }
+
+    public function test_user_bookings_are_cancellable_only_until_they_start(): void
+    {
+        config()->set('venue-bookings.timezone', 'Europe/Madrid');
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 11, 0, 0, 'Europe/Madrid'));
+
+        $started = $this->createBookingFor('2026-03-16', '10:00', '12:00', 'confirmed');
+        $later = $this->createBookingFor('2026-03-16', '12:00', '14:00', 'pending');
+        $cancelled = $this->createBookingFor('2026-03-17', '10:00', '12:00', 'cancelled');
+
+        $flags = [];
+        foreach ($this->service->getUserBookings($this->user->id) as $booking) {
+            $flags[$booking->id] = $booking->toArray()['is_cancellable'];
+        }
+
+        $this->assertFalse($flags[$started]);
+        $this->assertTrue($flags[$later]);
+        $this->assertFalse($flags[$cancelled]);
+    }
+
+    private function createBookingFor(string $date, string $startTime, string $endTime, string $status): string
+    {
+        $id = (string) Str::uuid();
+        BookingModel::create([
+            'id' => $id,
+            'resource_id' => $this->resource->id,
+            'user_id' => $this->user->id,
+            'date' => $date,
+            'start_time' => $startTime,
+            'end_time' => $endTime,
+            'status' => $status,
+        ]);
+
+        return $id;
     }
 }
