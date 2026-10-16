@@ -147,6 +147,19 @@ final class BookingActionPermissionsTest extends ModuleTestCase
         $this->assertStatus('cancelled', $this->confirmed);
     }
 
+    public function test_staff_cancel_from_the_list_a_booking_that_has_already_started(): void
+    {
+        // The start cutoff only binds the website: the panel cancels at any time (D4)
+        $this->confirmed->update(['date' => now()->subDay()->toDateString()]);
+        $this->actingAs($this->editorWithPermissions([self::VIEW_ANY, self::CANCEL_ANY]));
+
+        Livewire::test(ListBookings::class)
+            ->callTableAction('cancel', $this->confirmed, data: ['reason' => 'Cierre del local'])
+            ->assertHasNoTableActionErrors();
+
+        $this->assertStatus('cancelled', $this->confirmed);
+    }
+
     public function test_managers_without_cancel_any_cannot_cancel_from_the_edit_page(): void
     {
         $this->actingAs($this->editorWithPermissions([self::VIEW_ANY, self::MANAGE]));

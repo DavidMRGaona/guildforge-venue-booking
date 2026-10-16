@@ -116,8 +116,13 @@ final readonly class BookingService implements BookingServiceInterface
     {
         $booking = $this->bookingRepository->findOrFail(BookingId::fromString($dto->bookingId));
 
+        // Permission first: someone who may not cancel never learns the booking exists
         if (! $this->canCancel($dto->userId, $booking->userId)) {
             throw BookingCancellationNotAllowedException::forUser($dto->bookingId, $dto->userId);
+        }
+
+        if ($this->hasStarted($booking)) {
+            throw BookingCancellationNotAllowedException::alreadyStarted($dto->bookingId);
         }
 
         return $this->cancel($booking, $dto->reason);

@@ -22,7 +22,8 @@ interface BookingServiceInterface
     public function confirmBooking(string $bookingId): BookingResponseDTO;
 
     /**
-     * Cancel a booking on behalf of the user in the DTO, when canCancel() allows it.
+     * Cancel a booking on behalf of the user in the DTO, when canCancel() allows it and the
+     * booking has not started yet (venue timezone). Staff use cancelBookingAsStaff(), which has no cutoff.
      *
      * @throws \Modules\VenueBookings\Domain\Exceptions\BookingCancellationNotAllowedException
      */

@@ -521,9 +521,6 @@ final class BookingServiceTest extends TestCase
         $this->assertFalse($this->service->canCancel((string) Str::uuid(), (string) Str::uuid()));
     }
 
-    /**
-     * @param  array<string>  $permissionKeys
-     */
     public function test_it_refuses_a_booking_whose_start_time_has_been_reached(): void
     {
         Event::fake();
@@ -571,6 +568,81 @@ final class BookingServiceTest extends TestCase
         $this->assertDatabaseHas('venuebookings_bookings', ['id' => $result->id]);
     }
 
+    public function test_an_owner_cannot_cancel_a_booking_that_has_started(): void
+    {
+        Event::fake();
+        $this->grant($this->user, ['venuebookings:bookings.cancel_own']);
+        $bookingId = $this->createConfirmedBookingOf($this->user);
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 10, 0, 0, self::VENUE_TIMEZONE));
+
+        try {
+            $this->service->cancelBooking(new CancelBookingDTO(bookingId: $bookingId, userId: $this->user->id));
+            $this->fail('A booking that had started was cancelled from the website.');
+        } catch (BookingCancellationNotAllowedException $e) {
+            $this->assertTrue($e->bookingHasStarted());
+            $this->assertDatabaseHas('venuebookings_bookings', ['id' => $bookingId, 'status' => 'confirmed']);
+            Event::assertNotDispatched(BookingCancelled::class);
+        }
+    }
+
+    public function test_an_owner_can_cancel_until_the_second_before_the_start(): void
+    {
+        Event::fake();
+        $this->grant($this->user, ['venuebookings:bookings.cancel_own']);
+        $bookingId = $this->createConfirmedBookingOf($this->user);
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 9, 59, 59, self::VENUE_TIMEZONE));
+
+        $result = $this->service->cancelBooking(new CancelBookingDTO(bookingId: $bookingId, userId: $this->user->id));
+
+        $this->assertEquals(BookingStatus::Cancelled, $result->status);
+    }
+
+    public function test_cancel_any_does_not_lift_the_start_cutoff_on_the_website(): void
+    {
+        $bookingId = $this->createConfirmedBookingOf($this->user);
+        $manager = $this->editorWithPermissions(['venuebookings:bookings.cancel_any']);
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 11, 0, 0, self::VENUE_TIMEZONE));
+
+        try {
+            $this->service->cancelBooking(new CancelBookingDTO(bookingId: $bookingId, userId: $manager->id));
+            $this->fail('cancel_any cancelled a started booking from the website.');
+        } catch (BookingCancellationNotAllowedException $e) {
+            $this->assertTrue($e->bookingHasStarted());
+        }
+    }
+
+    public function test_a_stranger_is_refused_for_permission_before_the_start_is_checked(): void
+    {
+        $bookingId = $this->createConfirmedBookingOf($this->user);
+        $stranger = UserModel::factory()->create();
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 11, 0, 0, self::VENUE_TIMEZONE));
+
+        try {
+            $this->service->cancelBooking(new CancelBookingDTO(bookingId: $bookingId, userId: $stranger->id));
+            $this->fail('A stranger cancelled another user\'s booking.');
+        } catch (BookingCancellationNotAllowedException $e) {
+            // "Already started" would tell a stranger that the booking exists
+            $this->assertFalse($e->bookingHasStarted());
+        }
+    }
+
+    public function test_staff_cancel_a_booking_that_has_started(): void
+    {
+        Event::fake();
+        $bookingId = $this->createConfirmedBookingOf($this->user);
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 11, 0, 0, self::VENUE_TIMEZONE));
+
+        $result = $this->service->cancelBookingAsStaff(
+            new CancelBookingDTO(bookingId: $bookingId, userId: UserModel::factory()->create()->id),
+        );
+
+        $this->assertEquals(BookingStatus::Cancelled, $result->status);
+        Event::assertDispatched(BookingCancelled::class);
+    }
+
+    /**
+     * @param  array<string>  $permissionKeys
+     */
     private function grant(UserModel $user, array $permissionKeys): void
     {
         $role = RoleModel::create(['name' => 'grant_'.uniqid(), 'display_name' => 'Grant']);
