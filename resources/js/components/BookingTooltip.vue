@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useI18n } from 'vue-i18n';
 import type { BookingTooltipData } from '../types/bookings';
-import { VENUE_TIMEZONE } from '@/utils/datetime';
+import { wallClockTime } from '../utils/wallClock';
 
 interface Props {
     booking: BookingTooltipData | null;
@@ -12,8 +11,6 @@ interface Props {
 }
 
 const props = defineProps<Props>();
-
-const { locale } = useI18n();
 
 const statusDotColor = computed(() => {
     if (!props.booking) return '';
@@ -30,20 +27,11 @@ const statusDotColor = computed(() => {
     return colorMap[props.booking.status] ?? 'var(--color-text-muted)';
 });
 
+// start/end are venue wall-clock timestamps without offset: show their time as written
 const formattedTime = computed(() => {
     if (!props.booking) return '';
 
-    const format = (iso: string): string => {
-        const date = new Date(iso);
-        return date.toLocaleTimeString(locale.value, {
-            timeZone: VENUE_TIMEZONE,
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-        });
-    };
-
-    return `${format(props.booking.start)} - ${format(props.booking.end)}`;
+    return `${wallClockTime(props.booking.start)} - ${wallClockTime(props.booking.end)}`;
 });
 
 const tooltipStyle = computed(() => ({
