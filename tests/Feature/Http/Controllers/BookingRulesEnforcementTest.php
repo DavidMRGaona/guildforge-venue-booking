@@ -104,7 +104,7 @@ final class BookingRulesEnforcementTest extends ModuleTestCase
         $this->assertSame(2, BookingModel::query()->count());
     }
 
-    public function test_the_rules_bind_administrators_too(): void
+    public function test_the_active_booking_limit_binds_administrators_too(): void
     {
         $admin = UserModel::factory()->admin()->create();
         $this->bookingOf($admin, 'pending');
@@ -113,10 +113,18 @@ final class BookingRulesEnforcementTest extends ModuleTestCase
         $this->book($admin, '2026-11-12', '10:00', '11:00')
             ->assertSessionHas('error', 'Has alcanzado el máximo de reservas activas.');
 
-        $this->book($admin, '2026-11-10', '13:00', '14:00')
-            ->assertSessionHas('error', 'Has alcanzado el máximo de reservas activas.');
-
         $this->assertSame(2, BookingModel::query()->count());
+    }
+
+    public function test_the_minimum_advance_binds_administrators_too(): void
+    {
+        // No other bookings, so only the minimum advance can refuse it
+        $admin = UserModel::factory()->admin()->create();
+
+        $this->book($admin, '2026-11-10', '13:00', '14:00')
+            ->assertSessionHas('error', 'Las reservas deben hacerse con más antelación.');
+
+        $this->assertSame(0, BookingModel::query()->count());
     }
 
     public function test_cancelled_bookings_do_not_count_toward_the_limit(): void
