@@ -14,6 +14,7 @@ use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingMode
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\OperatingScheduleModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories\EloquentBookingRepository;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories\EloquentOperatingScheduleRepository;
+use Modules\VenueBookings\Infrastructure\Services\BookingRules;
 use Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader;
 use Modules\VenueBookings\Infrastructure\Services\SlotAvailabilityService;
 use Tests\TestCase;
@@ -35,11 +36,15 @@ final class SlotAvailabilityServiceTest extends TestCase
         config()->set('venue-bookings.min_advance_minutes', 0);
         config()->set('venue-bookings.timezone', 'UTC');
 
+        $bookingRepository = new EloquentBookingRepository;
         $this->service = new SlotAvailabilityService(
             new EloquentOperatingScheduleRepository,
-            new EloquentBookingRepository,
-            new BookingSettingsReader,
+            $bookingRepository,
+            new BookingRules($bookingRepository, new BookingSettingsReader),
         );
+
+        // The fixtures use March 2026: freeze the clock before them (tests that need another moment travel again)
+        $this->travelTo(CarbonImmutable::create(2026, 3, 1, 9, 0, 0, 'UTC'));
 
         $this->resource = BookableResourceModel::create([
             'id' => (string) Str::uuid(),
@@ -316,6 +321,46 @@ final class SlotAvailabilityServiceTest extends TestCase
     /**
      * Creates an operating schedule with Monday open 10:00-14:00 by default, 60-minute slots.
      */
+
+    public function test_the_minimum_advance_also_hides_early_slots_of_a_later_day(): void
+    {
+        // 23:30 on the 15th plus 12 hours reaches 11:30 on the 16th
+        config()->set('venue-bookings.min_advance_minutes', 720);
+        $this->travelTo(CarbonImmutable::create(2026, 3, 15, 23, 30, 0, 'UTC'));
+        $this->createScheduleWithMondayOpen();
+
+        $slots = $this->service->getAvailableSlotsForDate($this->resource->id, '2026-03-16');
+
+        $this->assertSame([false, false, true, true], array_map(fn ($s) => $s->isAvailable, $slots));
+    }
+
+    public function test_slots_of_a_past_day_are_unavailable(): void
+    {
+        $this->travelTo(CarbonImmutable::create(2026, 3, 17, 9, 0, 0, 'UTC'));
+        $this->createScheduleWithMondayOpen();
+
+        $slots = $this->service->getAvailableSlotsForDate($this->resource->id, '2026-03-16');
+
+        $this->assertCount(4, $slots);
+        foreach ($slots as $slot) {
+            $this->assertFalse($slot->isAvailable, "{$slot->startTime} of a past day must be unavailable");
+        }
+    }
+
+    public function test_slots_beyond_the_maximum_days_ahead_are_unavailable(): void
+    {
+        // From 1 March, 15 days ahead reach the 16th exactly; 14 stop on the 15th
+        $this->createScheduleWithMondayOpen();
+
+        config()->set('venue-bookings.max_future_days', 15);
+        $slots = $this->service->getAvailableSlotsForDate($this->resource->id, '2026-03-16');
+        $this->assertSame([true, true, true, true], array_map(fn ($s) => $s->isAvailable, $slots));
+
+        config()->set('venue-bookings.max_future_days', 14);
+        $slots = $this->service->getAvailableSlotsForDate($this->resource->id, '2026-03-16');
+        $this->assertSame([false, false, false, false], array_map(fn ($s) => $s->isAvailable, $slots));
+    }
+
     private function createScheduleWithMondayOpen(string $open = '10:00', string $close = '14:00'): void
     {
         OperatingScheduleModel::create([
