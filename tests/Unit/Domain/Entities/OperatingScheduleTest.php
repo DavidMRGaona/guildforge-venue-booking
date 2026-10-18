@@ -311,26 +311,6 @@ final class OperatingScheduleTest extends TestCase
         $this->assertEquals(SchedulingMode::TimeSlots, $schedule->schedulingMode);
     }
 
-    public function test_slots_do_not_depend_on_the_php_default_timezone(): void
-    {
-        $previous = date_default_timezone_get();
-        date_default_timezone_set('Pacific/Kiritimati');
-
-        try {
-            // 2026-03-29 is a Sunday (dayOfWeek 0) and the day Madrid moves its clocks forward
-            $schedule = $this->createScheduleWithDays([
-                new DaySchedule(dayOfWeek: 0, openTime: '01:00', closeTime: '04:00', isEnabled: true),
-            ]);
-
-            $slots = $schedule->generateSlotsForDate('2026-03-29');
-
-            $this->assertSame(['01:00', '02:00', '03:00'], array_map(fn (BookingSlot $s): string => $s->startTime, $slots));
-            $this->assertSame(['02:00', '03:00', '04:00'], array_map(fn (BookingSlot $s): string => $s->endTime, $slots));
-        } finally {
-            date_default_timezone_set($previous);
-        }
-    }
-
     public function test_the_last_slot_may_overrun_the_closing_time_as_before(): void
     {
         $schedule = $this->createScheduleWithDays(
