@@ -21,6 +21,7 @@ use Modules\VenueBookings\Domain\Events\BookingConfirmed;
 use Modules\VenueBookings\Domain\Events\BookingCreated;
 use Modules\VenueBookings\Domain\Events\BookingNoShow;
 use Modules\VenueBookings\Domain\Events\BookingRejected;
+use Modules\VenueBookings\Domain\Exceptions\BookableResourceUnavailableException;
 use Modules\VenueBookings\Domain\Exceptions\BookingAlreadyStartedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingCancellationNotAllowedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingLimitExceededException;
@@ -33,6 +34,7 @@ use Modules\VenueBookings\Domain\Exceptions\TooSoonToBookException;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\OperatingScheduleModel;
+use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories\EloquentBookableResourceRepository;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories\EloquentBookingRepository;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories\EloquentOperatingScheduleRepository;
 use Modules\VenueBookings\Infrastructure\Services\BookingRules;
@@ -83,6 +85,7 @@ final class BookingServiceTest extends TestCase
             $scheduleRepository,
             app(AuthorizationServiceInterface::class),
             new BookingRules($this->bookingRepository, new BookingSettingsReader),
+            new EloquentBookableResourceRepository,
         );
 
         $this->resource = BookableResourceModel::create([
@@ -760,6 +763,25 @@ final class BookingServiceTest extends TestCase
         $this->expectException(SlotOutsideScheduleException::class);
 
         $this->service->createBooking($this->dtoFor('2026-03-16', '10:00', '11:00'));
+    }
+
+    public function test_it_refuses_a_resource_that_is_not_active(): void
+    {
+        Event::fake();
+
+        // The booking page only offers active resources
+        foreach (['inactive', 'maintenance'] as $status) {
+            $this->resource->update(['status' => $status]);
+
+            try {
+                $this->service->createBooking($this->dtoFor('2026-03-16', '10:00', '11:00'));
+                $this->fail("A {$status} resource was booked.");
+            } catch (BookableResourceUnavailableException) {
+                $this->assertDatabaseCount('venuebookings_bookings', 0);
+            }
+        }
+
+        Event::assertNotDispatched(BookingCreated::class);
     }
 
     public function test_it_accepts_a_run_of_thirty_minute_slots(): void

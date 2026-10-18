@@ -178,6 +178,17 @@ final class BookingRulesEnforcementTest extends ModuleTestCase
         $this->assertSame(0, BookingModel::query()->count());
     }
 
+    public function test_an_inactive_resource_is_refused(): void
+    {
+        $this->room->update(['status' => 'inactive']);
+
+        $this->book($this->user, '2026-11-12', '10:00', '11:00')
+            ->assertRedirect(route('bookings.index'))
+            ->assertSessionHas('error', 'Este espacio no admite reservas en este momento.');
+
+        $this->assertSame(0, BookingModel::query()->count());
+    }
+
     public function test_a_run_of_slots_listed_by_the_page_is_booked(): void
     {
         $slots = $this->listedSlots('2026-11-12');
