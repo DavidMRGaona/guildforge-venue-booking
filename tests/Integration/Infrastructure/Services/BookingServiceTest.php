@@ -801,6 +801,27 @@ final class BookingServiceTest extends TestCase
         $this->assertSame([[$this->user->id, $this->resource->id, '2026-03-16']], $locked);
     }
 
+    public function test_the_lock_uses_the_canonical_resource_id_whatever_its_case(): void
+    {
+        Event::fake();
+        $locked = [];
+        $lock = $this->lockThatFirstRuns(function (string $userId, string $resourceId, string $date) use (&$locked): void {
+            $locked[] = [$userId, $resourceId, $date];
+        });
+        $dto = new CreateBookingDTO(
+            resourceId: strtoupper($this->resource->id),
+            userId: $this->user->id,
+            date: '2026-03-16',
+            startTime: '10:00',
+            endTime: '11:00',
+        );
+
+        // Whether the upper-case id then fits a schedule depends on the database; the lock does not
+        rescue(fn (): mixed => $this->makeService($lock)->createBooking($dto), report: false);
+
+        $this->assertSame([[$this->user->id, strtolower($this->resource->id), '2026-03-16']], $locked);
+    }
+
     public function test_the_overlap_is_checked_while_holding_the_lock(): void
     {
         Event::fake();
