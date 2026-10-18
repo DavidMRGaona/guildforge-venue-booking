@@ -8,19 +8,26 @@ use InvalidArgumentException;
 
 final readonly class DaySchedule
 {
+    public string $openTime;
+
+    public string $closeTime;
+
     public function __construct(
         public int $dayOfWeek,
-        public string $openTime,
-        public string $closeTime,
+        string $openTime,
+        string $closeTime,
         public bool $isEnabled,
         public ?string $label = null,
     ) {
+        $this->openTime = self::normaliseTime($openTime);
+        $this->closeTime = self::normaliseTime($closeTime);
+
         if ($dayOfWeek < 0 || $dayOfWeek > 6) {
             throw new InvalidArgumentException("Day of week must be between 0 (Sunday) and 6 (Saturday), got {$dayOfWeek}.");
         }
 
-        if ($isEnabled && $openTime === $closeTime) {
-            throw new InvalidArgumentException("Open time and close time cannot be equal ({$openTime}) when enabled.");
+        if ($isEnabled && $this->openTime === $this->closeTime) {
+            throw new InvalidArgumentException("Open time and close time cannot be equal ({$this->openTime}) when enabled.");
         }
     }
 
@@ -55,5 +62,17 @@ final readonly class DaySchedule
             isEnabled: (bool) $data['is_enabled'],
             label: $data['label'] ?? null,
         );
+    }
+
+    /**
+     * "HH:MM" of "H:MM", "HH:MM" or "HH:MM:SS"; anything else is kept as it is.
+     */
+    private static function normaliseTime(string $time): string
+    {
+        if (preg_match('/^(\d{1,2}):(\d{2})(?::\d{2})?$/', $time, $parts) !== 1) {
+            return $time;
+        }
+
+        return sprintf('%02d:%s', (int) $parts[1], $parts[2]);
     }
 }

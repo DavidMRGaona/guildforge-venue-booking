@@ -239,6 +239,26 @@ final class BookingRulesEnforcementTest extends ModuleTestCase
         $this->assertSame(1, BookingModel::query()->count());
     }
 
+    public function test_a_block_closing_after_midnight_stored_without_leading_zero_is_booked(): void
+    {
+        OperatingScheduleModel::query()->where('resource_id', $this->room->id)->firstOrFail()->update([
+            'scheduling_mode' => 'time_blocks',
+            'min_consecutive_slots' => 1,
+            'day_schedules' => [
+                ['day_of_week' => 4, 'open_time' => '18:00', 'close_time' => '3:00', 'is_enabled' => true, 'label' => 'Noche'],
+            ],
+        ]);
+
+        $slots = $this->listedSlots('2026-11-12');
+
+        $this->assertSame('03:00', $slots[0]['end_time']);
+
+        $this->book($this->user, '2026-11-12', $slots[0]['start_time'], $slots[0]['end_time'])
+            ->assertRedirect(route('bookings.my-bookings'));
+
+        $this->assertSame(1, BookingModel::query()->count());
+    }
+
     private function book(UserModel $user, string $date, string $startTime, string $endTime): TestResponse
     {
         return $this->actingAs($user)
