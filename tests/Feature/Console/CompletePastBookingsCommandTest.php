@@ -177,8 +177,11 @@ final class CompletePastBookingsCommandTest extends ModuleTestCase
 
         $this->assertSame('confirmed', $broken->fresh()?->status->value);
         $this->assertSame('completed', $fine->fresh()?->status->value);
+        // The exception itself goes in the context, so the log keeps its class and stack trace
         Log::shouldHaveReceived('error')
-            ->withArgs(fn (string $message, array $context = []): bool => ($context['booking_id'] ?? null) === $broken->id)
+            ->withArgs(fn (string $message, array $context = []): bool => ($context['booking_id'] ?? null) === $broken->id
+                && ($context['exception'] ?? null) instanceof RuntimeException
+                && $context['exception']->getMessage() === 'Simulated failure')
             ->once();
     }
 
