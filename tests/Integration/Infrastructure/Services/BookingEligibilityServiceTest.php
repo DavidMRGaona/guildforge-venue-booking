@@ -12,6 +12,7 @@ use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableRes
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories\EloquentBookingRepository;
 use Modules\VenueBookings\Infrastructure\Services\BookingEligibilityService;
+use Modules\VenueBookings\Infrastructure\Services\BookingRules;
 use Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader;
 use Tests\TestCase;
 
@@ -30,7 +31,7 @@ final class BookingEligibilityServiceTest extends TestCase
         parent::setUp();
 
         $this->service = new BookingEligibilityService(
-            new EloquentBookingRepository,
+            new BookingRules(new EloquentBookingRepository, new BookingSettingsReader),
             new BookingSettingsReader,
         );
 
