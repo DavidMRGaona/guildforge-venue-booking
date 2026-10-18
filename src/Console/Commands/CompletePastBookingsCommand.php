@@ -55,7 +55,7 @@ final class CompletePastBookingsCommand extends Command
                 // One broken booking must not stop the others
                 Log::error('venue-bookings:complete-past could not complete a booking', [
                     'booking_id' => $candidate->id->value,
-                    'exception' => $e->getMessage(),
+                    'exception' => $e,
                 ]);
             }
         }
