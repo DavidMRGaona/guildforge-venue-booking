@@ -206,4 +206,34 @@ final class DayScheduleTest extends TestCase
 
         $this->assertNull($schedule->label);
     }
+
+    public function test_it_normalises_a_time_without_leading_zero(): void
+    {
+        $schedule = new DaySchedule(dayOfWeek: 1, openTime: '9:30', closeTime: '3:00', isEnabled: true);
+
+        $this->assertSame('09:30', $schedule->openTime);
+        $this->assertSame('03:00', $schedule->closeTime);
+    }
+
+    public function test_it_drops_the_seconds_of_a_time(): void
+    {
+        $schedule = DaySchedule::fromArray([
+            'day_of_week' => 1,
+            'open_time' => '18:00:00',
+            'close_time' => '03:00:00',
+            'is_enabled' => true,
+        ]);
+
+        $this->assertSame('18:00', $schedule->openTime);
+        $this->assertSame('03:00', $schedule->closeTime);
+        $this->assertTrue($schedule->crossesMidnight());
+    }
+
+    public function test_it_keeps_an_unreadable_time_as_it_is(): void
+    {
+        $schedule = new DaySchedule(dayOfWeek: 1, openTime: 'abc', closeTime: '25:99', isEnabled: false);
+
+        $this->assertSame('abc', $schedule->openTime);
+        $this->assertSame('25:99', $schedule->closeTime);
+    }
 }
