@@ -57,11 +57,6 @@ final class BookingStartCutoffTest extends ModuleTestCase
         ]);
 
         $this->user = UserModel::factory()->create();
-
-        // The first test of a process starts with the module's translation group cached as empty
-        // (the lazy database refresh rebuilds the application), so the literal Spanish texts asserted
-        // below would not resolve when this class runs alone. Dropping the cache is harmless otherwise.
-        app('translator')->setLoaded([]);
     }
 
     public function test_a_booking_on_a_past_day_is_refused_on_the_date_field(): void
