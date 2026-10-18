@@ -296,6 +296,8 @@ return [
         'booking_date_in_the_past' => 'No se pueden hacer reservas para días pasados.',
         'booking_already_started' => 'Esa franja ya ha empezado. Elige una hora posterior.',
         'booking_already_started_cancel' => 'La reserva ya ha empezado y no se puede cancelar.',
+        'slot_outside_schedule' => 'La franja elegida no coincide con los turnos del espacio. Elige uno de los turnos disponibles.',
+        'maximum_slots_exceeded' => 'Has elegido más turnos consecutivos de los permitidos para este espacio.',
     ],
 
     'profile' => [
