@@ -8,6 +8,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Grid;
+use App\Application\Modules\Services\ModuleSettingsStoreInterface;
 use App\Application\Services\SettingsServiceInterface;
 use App\Filament\Concerns\ChecksPermissions;
 use App\Filament\Concerns\SafeModuleNavigation;
@@ -67,16 +68,13 @@ final class VenueBookingsSettings extends Page implements HasForms
         return self::userCan('venuebookings:bookings.settings');
     }
 
-    public function mount(SettingsServiceInterface $settingsService): void
+    public function mount(ModuleSettingsStoreInterface $settingsStore): void
     {
-        $value = $settingsService->get('module_settings:venue-bookings');
-        $settings = ($value !== null && $value !== '')
-            ? (json_decode((string) $value, true) ?? [])
-            : [];
-
-        $defaults = config('venue-bookings', []);
-
-        $this->form->fill(array_merge($defaults, $settings));
+        // The shipped defaults (config/settings.php) with the saved values on top, read
+        // here rather than from config(): loadSettingsFromDatabase() replaces the module
+        // settings with the raw saved JSON, so keys added by a release would load empty
+        // and be saved switched off
+        $this->form->fill($settingsStore->effective('venue-bookings', dirname(__DIR__, 3)));
     }
 
     /**
@@ -121,6 +119,26 @@ final class VenueBookingsSettings extends Page implements HasForms
                         ->required(),
                 ])
                 ->columns(3),
+
+            Section::make(__('venue-bookings::messages.settings.sections.automation'))
+                ->schema([
+                    Toggle::make('auto_complete_enabled')
+                        ->label(__('venue-bookings::messages.settings.fields.auto_complete_enabled'))
+                        ->helperText(__('venue-bookings::messages.settings.fields.auto_complete_enabled_help'))
+                        ->default(true)
+                        ->live(),
+
+                    TextInput::make('auto_complete_after_hours')
+                        ->label(__('venue-bookings::messages.settings.fields.auto_complete_after_hours'))
+                        ->helperText(__('venue-bookings::messages.settings.fields.auto_complete_after_hours_help'))
+                        ->integer()
+                        ->minValue(0)
+                        ->maxValue(720)
+                        ->default(24)
+                        ->required()
+                        ->visible(fn (Get $get): bool => (bool) $get('auto_complete_enabled')),
+                ])
+                ->columns(2),
 
             Section::make(__('venue-bookings::messages.settings.sections.time_block_presets'))
                 ->schema([
