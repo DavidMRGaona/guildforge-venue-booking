@@ -9,11 +9,13 @@ use App\Infrastructure\Persistence\Eloquent\Models\PermissionModel;
 use App\Infrastructure\Persistence\Eloquent\Models\RoleModel;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Carbon\CarbonImmutable;
+use Closure;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 use Modules\VenueBookings\Application\DTOs\CancelBookingDTO;
 use Modules\VenueBookings\Application\DTOs\CreateBookingDTO;
+use Modules\VenueBookings\Application\Services\BookingLockInterface;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
 use Modules\VenueBookings\Domain\Events\BookingCancelled;
 use Modules\VenueBookings\Domain\Events\BookingCompleted;
@@ -23,6 +25,7 @@ use Modules\VenueBookings\Domain\Events\BookingNoShow;
 use Modules\VenueBookings\Domain\Events\BookingRejected;
 use Modules\VenueBookings\Domain\Exceptions\BookableResourceUnavailableException;
 use Modules\VenueBookings\Domain\Exceptions\BookingAlreadyStartedException;
+use Modules\VenueBookings\Domain\Exceptions\BookingBusyException;
 use Modules\VenueBookings\Domain\Exceptions\BookingCancellationNotAllowedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingLimitExceededException;
 use Modules\VenueBookings\Domain\Exceptions\MaximumSlotsExceededException;
@@ -40,6 +43,7 @@ use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories\Eloqu
 use Modules\VenueBookings\Infrastructure\Services\BookingRules;
 use Modules\VenueBookings\Infrastructure\Services\BookingService;
 use Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader;
+use Modules\VenueBookings\Infrastructure\Services\CacheBookingLock;
 use Modules\VenueBookings\Infrastructure\Services\SlotAvailabilityService;
 use Modules\VenueBookings\Tests\Support\OpensResourceEveryDay;
 use Tests\Support\Authorization\CreatesUsersWithPermissions;
@@ -70,23 +74,7 @@ final class BookingServiceTest extends TestCase
         $this->travelTo(CarbonImmutable::create(2026, 3, 1, 9, 0, 0, self::VENUE_TIMEZONE));
 
         $this->bookingRepository = new EloquentBookingRepository;
-        $slotAvailabilityService = new SlotAvailabilityService(
-            new EloquentOperatingScheduleRepository,
-            $this->bookingRepository,
-            new BookingRules($this->bookingRepository, new BookingSettingsReader),
-        );
-
-        $scheduleRepository = new EloquentOperatingScheduleRepository;
-
-        $this->service = new BookingService(
-            $this->bookingRepository,
-            $slotAvailabilityService,
-            new BookingSettingsReader,
-            $scheduleRepository,
-            app(AuthorizationServiceInterface::class),
-            new BookingRules($this->bookingRepository, new BookingSettingsReader),
-            new EloquentBookableResourceRepository,
-        );
+        $this->service = $this->makeService(new CacheBookingLock);
 
         $this->resource = BookableResourceModel::create([
             'id' => (string) Str::uuid(),
@@ -784,6 +772,76 @@ final class BookingServiceTest extends TestCase
         Event::assertNotDispatched(BookingCreated::class);
     }
 
+    public function test_a_busy_lock_refuses_the_booking_without_saving_it(): void
+    {
+        Event::fake();
+        $service = $this->makeService($this->lockThatFirstRuns(function (): never {
+            throw BookingBusyException::create();
+        }));
+
+        try {
+            $service->createBooking($this->dtoFor('2026-03-16', '10:00', '11:00'));
+            $this->fail('A booking was created without its lock.');
+        } catch (BookingBusyException) {
+            $this->assertDatabaseCount('venuebookings_bookings', 0);
+            Event::assertNotDispatched(BookingCreated::class);
+        }
+    }
+
+    public function test_the_lock_covers_the_user_the_resource_and_the_day(): void
+    {
+        Event::fake();
+        $locked = [];
+        $lock = $this->lockThatFirstRuns(function (string $userId, string $resourceId, string $date) use (&$locked): void {
+            $locked[] = [$userId, $resourceId, $date];
+        });
+
+        $this->makeService($lock)->createBooking($this->dtoFor('2026-03-16', '10:00', '11:00'));
+
+        $this->assertSame([[$this->user->id, $this->resource->id, '2026-03-16']], $locked);
+    }
+
+    public function test_the_overlap_is_checked_while_holding_the_lock(): void
+    {
+        Event::fake();
+        // Another request holding the lock books the same slot first
+        $service = $this->makeService($this->lockThatFirstRuns(function (): void {
+            BookingModel::create([
+                'id' => (string) Str::uuid(),
+                'resource_id' => $this->resource->id,
+                'user_id' => UserModel::factory()->create()->id,
+                'date' => '2026-03-16',
+                'start_time' => '10:00',
+                'end_time' => '11:00',
+                'status' => 'confirmed',
+            ]);
+        }));
+
+        try {
+            $service->createBooking($this->dtoFor('2026-03-16', '10:00', '11:00'));
+            $this->fail('Two bookings were made for the same slot.');
+        } catch (SlotUnavailableException) {
+            $this->assertDatabaseCount('venuebookings_bookings', 1);
+        }
+    }
+
+    public function test_the_active_booking_limit_is_checked_while_holding_the_lock(): void
+    {
+        Event::fake();
+        config()->set('venue-bookings.max_active_bookings_per_user', 1);
+        // Another request of the same user, holding the lock, takes their last booking
+        $service = $this->makeService($this->lockThatFirstRuns(function (): void {
+            $this->createConfirmedBookingOf($this->user);
+        }));
+
+        try {
+            $service->createBooking($this->dtoFor('2026-03-18', '10:00', '11:00'));
+            $this->fail('The user went over the active booking limit.');
+        } catch (BookingLimitExceededException) {
+            $this->assertDatabaseCount('venuebookings_bookings', 1);
+        }
+    }
+
     public function test_it_accepts_a_run_of_thirty_minute_slots(): void
     {
         Event::fake();
@@ -886,6 +944,41 @@ final class BookingServiceTest extends TestCase
 
         $user->roles()->attach($role->id);
         app(AuthorizationServiceInterface::class)->invalidateCache();
+    }
+
+    private function makeService(BookingLockInterface $lock): BookingService
+    {
+        $rules = new BookingRules($this->bookingRepository, new BookingSettingsReader);
+
+        return new BookingService(
+            $this->bookingRepository,
+            new SlotAvailabilityService(new EloquentOperatingScheduleRepository, $this->bookingRepository, $rules),
+            new BookingSettingsReader,
+            new EloquentOperatingScheduleRepository,
+            app(AuthorizationServiceInterface::class),
+            $rules,
+            new EloquentBookableResourceRepository,
+            $lock,
+        );
+    }
+
+    /**
+     * A lock that, while "holding" it, first runs $before (as another request would, given the
+     * user, resource and day it locks) and then the booking.
+     */
+    private function lockThatFirstRuns(Closure $before): BookingLockInterface
+    {
+        return new class($before) implements BookingLockInterface
+        {
+            public function __construct(private readonly Closure $before) {}
+
+            public function forBooking(string $userId, string $resourceId, string $date, Closure $callback): mixed
+            {
+                ($this->before)($userId, $resourceId, $date);
+
+                return $callback();
+            }
+        };
     }
 
     private function dtoFor(string $date, string $startTime, string $endTime): CreateBookingDTO

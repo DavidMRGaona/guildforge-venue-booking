@@ -30,6 +30,7 @@ use Inertia\Inertia;
 use Modules\VenueBookings\Application\Services\BookingEligibilityServiceInterface;
 use Modules\VenueBookings\Application\Services\BookingFieldConfigServiceInterface;
 use Modules\VenueBookings\Application\Services\BookingQueryServiceInterface;
+use Modules\VenueBookings\Application\Services\BookingLockInterface;
 use Modules\VenueBookings\Application\Services\BookingServiceInterface;
 use Modules\VenueBookings\Application\Services\ModuleIntegrationServiceInterface;
 use Modules\VenueBookings\Application\Services\SlotAvailabilityServiceInterface;
@@ -55,6 +56,7 @@ use Modules\VenueBookings\Infrastructure\Services\BookingFieldConfigService;
 use Modules\VenueBookings\Infrastructure\Services\BookingQueryService;
 use Modules\VenueBookings\Infrastructure\Services\BookingRules;
 use Modules\VenueBookings\Infrastructure\Services\BookingService;
+use Modules\VenueBookings\Infrastructure\Services\CacheBookingLock;
 use Modules\VenueBookings\Infrastructure\Services\ModuleIntegrationService;
 use Modules\VenueBookings\Infrastructure\Services\ProfileBookingsDataProvider;
 use Modules\VenueBookings\Infrastructure\Services\SlotAvailabilityService;
@@ -79,6 +81,7 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
 
         // Service bindings
         $this->app->bind(BookingServiceInterface::class, BookingService::class);
+        $this->app->bind(BookingLockInterface::class, CacheBookingLock::class);
         $this->app->bind(BookingQueryServiceInterface::class, BookingQueryService::class);
         $this->app->bind(BookingEligibilityServiceInterface::class, BookingEligibilityService::class);
         $this->app->bind(SlotAvailabilityServiceInterface::class, function ($app) {

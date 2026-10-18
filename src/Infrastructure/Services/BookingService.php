@@ -10,6 +10,7 @@ use Carbon\CarbonImmutable;
 use Modules\VenueBookings\Application\DTOs\CancelBookingDTO;
 use Modules\VenueBookings\Application\DTOs\CreateBookingDTO;
 use Modules\VenueBookings\Application\DTOs\Response\BookingResponseDTO;
+use Modules\VenueBookings\Application\Services\BookingLockInterface;
 use Modules\VenueBookings\Application\Services\BookingServiceInterface;
 use Modules\VenueBookings\Application\Services\SlotAvailabilityServiceInterface;
 use Modules\VenueBookings\Domain\Entities\Booking;
@@ -47,6 +48,7 @@ final readonly class BookingService implements BookingServiceInterface
         private AuthorizationServiceInterface $authorization,
         private BookingRules $rules,
         private BookableResourceRepositoryInterface $resourceRepository,
+        private BookingLockInterface $lock,
     ) {}
 
     public function createBooking(CreateBookingDTO $dto): BookingResponseDTO
@@ -88,21 +90,25 @@ final readonly class BookingService implements BookingServiceInterface
                 : null,
         );
 
-        // Whoever asks, a slot that has already started cannot be booked
-        if ($this->hasStarted($booking)) {
-            throw BookingAlreadyStartedException::forSlot($dto->date, $dto->startTime);
-        }
+        // Checked and saved under the lock: two requests cannot both pass the active booking
+        // limit or the overlap check. The events go out once the lock is released.
+        $this->lock->forBooking($dto->userId, $dto->resourceId, $dto->date, function () use ($booking, $dto, $resourceId, $timeRange): void {
+            // Whoever asks, a slot that has already started cannot be booked
+            if ($this->hasStarted($booking)) {
+                throw BookingAlreadyStartedException::forSlot($dto->date, $dto->startTime);
+            }
 
-        // The rules of the settings bind everyone, staff and administrators included
-        $this->rules->assertCanBook($dto->userId, $dto->date, $dto->startTime);
+            // The rules of the settings bind everyone, staff and administrators included
+            $this->rules->assertCanBook($dto->userId, $dto->date, $dto->startTime);
 
-        $this->assertFitsSchedule($resourceId, $dto->date, $timeRange);
+            $this->assertFitsSchedule($resourceId, $dto->date, $timeRange);
 
-        if (! $this->slotAvailabilityService->isSlotAvailable($dto->resourceId, $dto->date, $timeRange)) {
-            throw SlotUnavailableException::forTimeRange($dto->date, $dto->startTime, $dto->endTime);
-        }
+            if (! $this->slotAvailabilityService->isSlotAvailable($dto->resourceId, $dto->date, $timeRange)) {
+                throw SlotUnavailableException::forTimeRange($dto->date, $dto->startTime, $dto->endTime);
+            }
 
-        $this->bookingRepository->save($booking);
+            $this->bookingRepository->save($booking);
+        });
 
         BookingCreated::dispatch(
             $booking->id->value,
