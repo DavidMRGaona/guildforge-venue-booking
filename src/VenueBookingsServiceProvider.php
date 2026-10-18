@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings;
 
-use Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader;
 use Throwable;
 use Modules\VenueBookings\Filament\Resources\BookableResourceResource;
 use Modules\VenueBookings\Filament\Resources\BookingResource;
@@ -53,6 +52,7 @@ use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories\Eloqu
 use Modules\VenueBookings\Infrastructure\Services\BookingEligibilityService;
 use Modules\VenueBookings\Infrastructure\Services\BookingFieldConfigService;
 use Modules\VenueBookings\Infrastructure\Services\BookingQueryService;
+use Modules\VenueBookings\Infrastructure\Services\BookingRules;
 use Modules\VenueBookings\Infrastructure\Services\BookingService;
 use Modules\VenueBookings\Infrastructure\Services\ModuleIntegrationService;
 use Modules\VenueBookings\Infrastructure\Services\ProfileBookingsDataProvider;
@@ -84,7 +84,7 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
             return new SlotAvailabilityService(
                 $app->make(OperatingScheduleRepositoryInterface::class),
                 $app->make(BookingRepositoryInterface::class),
-                $app->make(BookingSettingsReader::class),
+                $app->make(BookingRules::class),
             );
         });
         $this->app->bind(BookingFieldConfigServiceInterface::class, BookingFieldConfigService::class);
