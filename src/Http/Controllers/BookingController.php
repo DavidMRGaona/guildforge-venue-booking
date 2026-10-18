@@ -22,7 +22,9 @@ use Modules\VenueBookings\Domain\Exceptions\BookingCancellationNotAllowedExcepti
 use Modules\VenueBookings\Domain\Exceptions\BookingLimitExceededException;
 use Modules\VenueBookings\Domain\Exceptions\BookingNotCancellableException;
 use Modules\VenueBookings\Domain\Exceptions\BookingNotFoundException;
+use Modules\VenueBookings\Domain\Exceptions\MaximumSlotsExceededException;
 use Modules\VenueBookings\Domain\Exceptions\MinimumSlotsNotMetException;
+use Modules\VenueBookings\Domain\Exceptions\SlotOutsideScheduleException;
 use Modules\VenueBookings\Domain\Exceptions\SlotUnavailableException;
 use Modules\VenueBookings\Domain\Exceptions\TooFarToBookException;
 use Modules\VenueBookings\Domain\Exceptions\TooSoonToBookException;
@@ -100,6 +102,11 @@ final class BookingController extends Controller
             return back()->withErrors([
                 'start_time' => __('venue-bookings::messages.frontend.booking_already_started'),
             ]);
+        } catch (SlotOutsideScheduleException) {
+            // Shown inside the booking form, like the start cutoff
+            return back()->withErrors([
+                'start_time' => __('venue-bookings::messages.frontend.slot_outside_schedule'),
+            ]);
         } catch (SlotUnavailableException) {
             return back()->with('error', __('venue-bookings::messages.frontend.slot_unavailable'));
         } catch (BookingLimitExceededException) {
@@ -110,6 +117,8 @@ final class BookingController extends Controller
             return back()->with('error', __('venue-bookings::messages.frontend.too_far'));
         } catch (MinimumSlotsNotMetException) {
             return back()->with('error', __('venue-bookings::messages.frontend.minimum_slots_not_met'));
+        } catch (MaximumSlotsExceededException) {
+            return back()->with('error', __('venue-bookings::messages.frontend.maximum_slots_exceeded'));
         }
     }
 
