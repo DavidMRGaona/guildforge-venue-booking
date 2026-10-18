@@ -303,6 +303,7 @@ return [
         'booking_already_started_cancel' => 'La reserva ya ha empezado y no se puede cancelar.',
         'slot_outside_schedule' => 'La franja elegida no coincide con los turnos del espacio. Elige uno de los turnos disponibles.',
         'maximum_slots_exceeded' => 'Has elegido más turnos consecutivos de los permitidos para este espacio.',
+        'resource_unavailable' => 'Este espacio no admite reservas en este momento.',
     ],
 
     'profile' => [

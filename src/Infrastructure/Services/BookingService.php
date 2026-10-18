@@ -21,6 +21,7 @@ use Modules\VenueBookings\Domain\Events\BookingConfirmed;
 use Modules\VenueBookings\Domain\Events\BookingCreated;
 use Modules\VenueBookings\Domain\Events\BookingNoShow;
 use Modules\VenueBookings\Domain\Events\BookingRejected;
+use Modules\VenueBookings\Domain\Exceptions\BookableResourceUnavailableException;
 use Modules\VenueBookings\Domain\Exceptions\BookingAlreadyStartedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingCancellationNotAllowedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingNotCancellableException;
@@ -28,6 +29,7 @@ use Modules\VenueBookings\Domain\Exceptions\MaximumSlotsExceededException;
 use Modules\VenueBookings\Domain\Exceptions\MinimumSlotsNotMetException;
 use Modules\VenueBookings\Domain\Exceptions\SlotOutsideScheduleException;
 use Modules\VenueBookings\Domain\Exceptions\SlotUnavailableException;
+use Modules\VenueBookings\Domain\Repositories\BookableResourceRepositoryInterface;
 use Modules\VenueBookings\Domain\Repositories\BookingRepositoryInterface;
 use Modules\VenueBookings\Domain\Repositories\OperatingScheduleRepositoryInterface;
 use Modules\VenueBookings\Domain\ValueObjects\BookableResourceId;
@@ -44,12 +46,21 @@ final readonly class BookingService implements BookingServiceInterface
         private OperatingScheduleRepositoryInterface $scheduleRepository,
         private AuthorizationServiceInterface $authorization,
         private BookingRules $rules,
+        private BookableResourceRepositoryInterface $resourceRepository,
     ) {}
 
     public function createBooking(CreateBookingDTO $dto): BookingResponseDTO
     {
         $timeRange = new TimeRange($dto->startTime, $dto->endTime);
         $resourceId = BookableResourceId::fromString($dto->resourceId);
+
+        // Only active resources are offered on the booking page. An unknown one is refused below,
+        // where it has no schedule.
+        $resource = $this->resourceRepository->find($resourceId);
+
+        if ($resource !== null && ! $resource->isActive()) {
+            throw BookableResourceUnavailableException::withId($dto->resourceId);
+        }
 
         $initialStatus = $this->settingsReader->requiresApproval()
             ? BookingStatus::Pending

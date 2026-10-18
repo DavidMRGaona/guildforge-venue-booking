@@ -17,6 +17,7 @@ use Modules\VenueBookings\Application\DTOs\CreateBookingDTO;
 use Modules\VenueBookings\Application\Services\BookingFieldConfigServiceInterface;
 use Modules\VenueBookings\Application\Services\BookingQueryServiceInterface;
 use Modules\VenueBookings\Application\Services\BookingServiceInterface;
+use Modules\VenueBookings\Domain\Exceptions\BookableResourceUnavailableException;
 use Modules\VenueBookings\Domain\Exceptions\BookingAlreadyStartedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingCancellationNotAllowedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingLimitExceededException;
@@ -97,6 +98,8 @@ final class BookingController extends Controller
             return redirect()
                 ->route('bookings.my-bookings')
                 ->with('success', __('venue-bookings::messages.frontend.booking_created'));
+        } catch (BookableResourceUnavailableException) {
+            return back()->with('error', __('venue-bookings::messages.frontend.resource_unavailable'));
         } catch (BookingAlreadyStartedException) {
             // Shown inside the booking form, which stays open on errors (flash messages close it)
             return back()->withErrors([
