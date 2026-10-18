@@ -92,7 +92,10 @@ final readonly class BookingService implements BookingServiceInterface
 
         // Checked and saved under the lock: two requests cannot both pass the active booking
         // limit or the overlap check. The events go out once the lock is released.
-        $this->lock->forBooking($dto->userId, $dto->resourceId, $dto->date, function () use ($booking, $dto, $resourceId, $timeRange): void {
+        // Locked by the stored id of the resource when it exists, not by the id as it was sent
+        $lockedResourceId = strtolower($resource !== null ? $resource->id->value : $dto->resourceId);
+
+        $this->lock->forBooking($dto->userId, $lockedResourceId, $dto->date, function () use ($booking, $dto, $resourceId, $timeRange): void {
             // Whoever asks, a slot that has already started cannot be booked
             if ($this->hasStarted($booking)) {
                 throw BookingAlreadyStartedException::forSlot($dto->date, $dto->startTime);

@@ -65,6 +65,38 @@ final class CacheBookingLockTest extends TestCase
         $this->assertSame(['other resource', 'other day'], $result);
     }
 
+    public function test_an_upper_case_resource_id_shares_the_lock_of_the_lower_case_one(): void
+    {
+        // PostgreSQL's uuid columns match either case, so both requests would book the same resource
+        $resourceId = 'a3c1e0f2-5b7d-4e8f-9a1b-2c3d4e5f6a7b';
+
+        $this->expectException(BookingBusyException::class);
+
+        $this->lock->forBooking(self::USER, $resourceId, self::DAY, fn (): mixed => $this->lock->forBooking(
+            'user-2', strtoupper($resourceId), self::DAY, fn (): string => 'booked',
+        ));
+    }
+
+    public function test_an_upper_case_user_id_shares_the_lock_of_the_lower_case_one(): void
+    {
+        $userId = 'b4d2f1a3-6c8e-4f90-8b2c-3d4e5f6a7b8c';
+
+        $this->expectException(BookingBusyException::class);
+
+        $this->lock->forBooking($userId, self::RESOURCE, self::DAY, fn (): mixed => $this->lock->forBooking(
+            strtoupper($userId), 'resource-2', '2026-11-13', fn (): string => 'booked',
+        ));
+    }
+
+    public function test_the_same_day_written_another_way_shares_the_lock(): void
+    {
+        $this->expectException(BookingBusyException::class);
+
+        $this->lock->forBooking(self::USER, self::RESOURCE, '2026-11-05', fn (): mixed => $this->lock->forBooking(
+            'user-2', self::RESOURCE, '2026-11-5', fn (): string => 'booked',
+        ));
+    }
+
     public function test_the_locks_are_released_after_the_booking_even_when_it_fails(): void
     {
         $this->lock->forBooking(self::USER, self::RESOURCE, self::DAY, fn (): string => 'booked');
