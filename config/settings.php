@@ -10,6 +10,9 @@ return [
     'max_active_bookings_per_user' => 3,
     'min_advance_minutes' => 60,
     'max_future_days' => 30,
+    // Confirmed bookings become completed this many hours after they end
+    'auto_complete_enabled' => true,
+    'auto_complete_after_hours' => 24,
     'time_block_presets' => [],
     'predefined_fields' => [
         'activity_name' => ['enabled' => false, 'required' => false, 'visibility' => 'public'],

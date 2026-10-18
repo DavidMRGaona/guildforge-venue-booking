@@ -40,6 +40,24 @@ final readonly class BookingSettingsReader
             ?? config('venue-bookings.max_future_days', 30));
     }
 
+    public function isAutoCompleteEnabled(): bool
+    {
+        return (bool) (config('modules.settings.venue-bookings.auto_complete_enabled')
+            ?? config('venue-bookings.auto_complete_enabled', true));
+    }
+
+    /**
+     * Hours after a booking ends before it is completed automatically, kept within 0-720
+     * so a value stored by hand can never complete a booking before it ends.
+     */
+    public function getAutoCompleteAfterHours(): int
+    {
+        $hours = (int) (config('modules.settings.venue-bookings.auto_complete_after_hours')
+            ?? config('venue-bookings.auto_complete_after_hours', 24));
+
+        return max(0, min(720, $hours));
+    }
+
     public function getReminderHoursBefore(): int
     {
         return (int) (config('modules.settings.venue-bookings.notifications.reminder_hours_before')
