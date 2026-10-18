@@ -102,4 +102,34 @@ final class BookingSettingsReaderTest extends TestCase
 
         $this->assertSame('America/Bogota', $this->reader->getDateTimeZone()->getName());
     }
+
+    public function test_auto_completion_is_on_after_24_hours_by_default(): void
+    {
+        config()->offsetUnset('modules.settings.venue-bookings');
+        config()->offsetUnset('venue-bookings');
+
+        $this->assertTrue($this->reader->isAutoCompleteEnabled());
+        $this->assertSame(24, $this->reader->getAutoCompleteAfterHours());
+    }
+
+    public function test_auto_completion_reads_the_panel_values(): void
+    {
+        config()->set('modules.settings.venue-bookings.auto_complete_enabled', false);
+        config()->set('modules.settings.venue-bookings.auto_complete_after_hours', '48');
+
+        $this->assertFalse($this->reader->isAutoCompleteEnabled());
+        $this->assertSame(48, $this->reader->getAutoCompleteAfterHours());
+    }
+
+    public function test_auto_completion_hours_stay_between_0_and_720(): void
+    {
+        config()->set('modules.settings.venue-bookings.auto_complete_after_hours', -5);
+        $this->assertSame(0, $this->reader->getAutoCompleteAfterHours());
+
+        config()->set('modules.settings.venue-bookings.auto_complete_after_hours', 5000);
+        $this->assertSame(720, $this->reader->getAutoCompleteAfterHours());
+
+        config()->set('modules.settings.venue-bookings.auto_complete_after_hours', 0);
+        $this->assertSame(0, $this->reader->getAutoCompleteAfterHours());
+    }
 }

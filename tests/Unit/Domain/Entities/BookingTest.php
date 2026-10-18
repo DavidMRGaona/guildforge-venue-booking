@@ -263,6 +263,27 @@ final class BookingTest extends TestCase
         $this->assertTrue($booking->isCancellable());
     }
 
+    public function test_it_ends_at_its_date_and_end_time_in_the_venue_timezone(): void
+    {
+        $booking = $this->createBooking(date: '2026-03-15', startTime: '10:00', endTime: '12:00');
+
+        $this->assertSame('2026-03-15T12:00:00+01:00', $booking->endsAt(new DateTimeZone('Europe/Madrid'))->format(DATE_ATOM));
+    }
+
+    public function test_a_booking_that_crosses_midnight_ends_the_next_day(): void
+    {
+        $booking = $this->createBooking(date: '2026-03-15', startTime: '22:00', endTime: '02:00');
+
+        $this->assertSame('2026-03-16T02:00:00+01:00', $booking->endsAt(new DateTimeZone('Europe/Madrid'))->format(DATE_ATOM));
+    }
+
+    public function test_its_end_accepts_times_with_seconds(): void
+    {
+        $booking = $this->createBooking(date: '2026-03-15', startTime: '10:00:00', endTime: '12:00:00');
+
+        $this->assertSame('2026-03-15T12:00:00+01:00', $booking->endsAt(new DateTimeZone('Europe/Madrid'))->format(DATE_ATOM));
+    }
+
     private function createBooking(
         ?string $userId = null,
         string $date = '2026-03-15',

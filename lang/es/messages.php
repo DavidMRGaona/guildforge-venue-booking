@@ -158,12 +158,17 @@ return [
             'time_block_presets' => 'Bloques horarios predefinidos',
             'resource_predefined_fields' => 'Campos predefinidos',
             'resource_custom_fields' => 'Campos personalizados',
+            'automation' => 'Automatización',
         ],
         'fields' => [
             'approval_mode' => 'Modo de aprobación',
             'max_active_bookings_per_user' => 'Máximo de reservas activas por usuario',
             'min_advance_minutes' => 'Minutos mínimos de antelación',
             'max_future_days' => 'Días máximos a futuro',
+            'auto_complete_enabled' => 'Completar reservas automáticamente',
+            'auto_complete_enabled_help' => 'Las reservas confirmadas pasan a «Completada» cuando ha pasado su hora de fin más las horas indicadas. Hasta entonces se pueden marcar como «No presentado».',
+            'auto_complete_after_hours' => 'Horas tras el fin para completar',
+            'auto_complete_after_hours_help' => 'Entre 0 y 720 horas (30 días).',
             'field_activity_name' => 'Nombre de la actividad',
             'field_num_participants' => 'Número de participantes',
             'field_contact_phone' => 'Teléfono de contacto',
@@ -296,6 +301,10 @@ return [
         'booking_date_in_the_past' => 'No se pueden hacer reservas para días pasados.',
         'booking_already_started' => 'Esa franja ya ha empezado. Elige una hora posterior.',
         'booking_already_started_cancel' => 'La reserva ya ha empezado y no se puede cancelar.',
+        'slot_outside_schedule' => 'La franja elegida no coincide con los turnos del espacio. Elige uno de los turnos disponibles.',
+        'maximum_slots_exceeded' => 'Has elegido más turnos consecutivos de los permitidos para este espacio.',
+        'resource_unavailable' => 'Este espacio no admite reservas en este momento.',
+        'booking_busy' => 'Ahora mismo se está procesando otra reserva. Inténtalo de nuevo en unos segundos.',
     ],
 
     'profile' => [

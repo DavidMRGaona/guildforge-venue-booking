@@ -19,6 +19,7 @@ use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\OperatingSc
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories\EloquentBookingRepository;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories\EloquentOperatingScheduleRepository;
 use Modules\VenueBookings\Infrastructure\Services\BookingQueryService;
+use Modules\VenueBookings\Infrastructure\Services\BookingRules;
 use Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader;
 use Modules\VenueBookings\Infrastructure\Services\SlotAvailabilityService;
 use Tests\TestCase;
@@ -39,7 +40,11 @@ final class BookingQueryServiceTest extends TestCase
 
         $bookingRepository = new EloquentBookingRepository();
         $scheduleRepository = new EloquentOperatingScheduleRepository();
-        $slotAvailabilityService = new SlotAvailabilityService($scheduleRepository, $bookingRepository, new BookingSettingsReader());
+        $slotAvailabilityService = new SlotAvailabilityService(
+            $scheduleRepository,
+            $bookingRepository,
+            new BookingRules($bookingRepository, new BookingSettingsReader()),
+        );
 
         $this->service = new BookingQueryService(
             $bookingRepository,
@@ -246,6 +251,8 @@ final class BookingQueryServiceTest extends TestCase
 
     public function test_it_returns_available_slots_for_date(): void
     {
+        $this->travelTo(CarbonImmutable::create(2026, 3, 1, 9, 0, 0, 'UTC'));
+
         // Create an operating schedule: Monday 10:00-13:00 with 60-minute slots = 3 slots
         OperatingScheduleModel::create([
             'id' => (string) Str::uuid(),

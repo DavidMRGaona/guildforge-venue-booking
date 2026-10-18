@@ -9,9 +9,10 @@ Sistema de reservas del local para gestionar espacios y horarios, con calendario
 - **Modos de programación**: franjas horarias (`time_slots`) o bloques predefinidos (`time_blocks`)
 - **Modo de aprobación**: confirmación automática o aprobación manual en el panel
 - **Campos configurables**: campos predefinidos y personalizados con visibilidad configurable
-- **Validación de elegibilidad**: límite de reservas activas, antelación mínima y máximo de días futuros
+- **Reglas de reserva en el servidor**: límite de reservas activas, antelación mínima y máximo de días futuros se comprueban al reservar, para cualquier cuenta (también administradores); la franja debe estar hecha de los turnos del horario del espacio (o ser un bloque entero)
 - **Mis reservas**: cada usuario ve sus reservas en `/reservas/mis-reservas` y en la pestaña **Reservas** de su perfil, y las cancela si tiene el permiso `bookings.cancel_own`
 - **Cierre a la hora de inicio**: desde la web no se puede reservar un día pasado ni una franja que ya ha empezado, ni cancelar una reserva empezada. El panel no tiene ese límite
+- **Completado automático**: las reservas confirmadas pasan a completadas cuando ha pasado su hora de fin más un margen configurable
 - **Integración con módulos**: asociación de la reserva con una mesa de rol o una campaña (configurable en el panel)
 - **Notificaciones por email**: creación, confirmación, cancelación, rechazo y recordatorio antes del inicio
 - **Panel de administración**: espacios, reservas, configuración y dos widgets para el escritorio
@@ -55,6 +56,8 @@ Se configura en el panel: **Reservas del local → Configuración de reservas** 
 | `max_active_bookings_per_user` | `3` | Máximo de reservas activas (pendientes o confirmadas) por usuario |
 | `min_advance_minutes` | `60` | Antelación mínima en minutos para reservar |
 | `max_future_days` | `30` | Máximo de días en el futuro para reservar |
+| `auto_complete_enabled` | `true` | Completar automáticamente las reservas confirmadas ya terminadas |
+| `auto_complete_after_hours` | `24` | Horas tras el fin de la reserva para completarla (0–720) |
 | `time_block_presets` | ninguno | Bloques horarios predefinidos |
 | `predefined_fields` | actividad, participantes, teléfono y notas, todos desactivados | Campos predefinidos con visibilidad configurable |
 | `custom_fields` | ninguno | Campos personalizados |
@@ -76,6 +79,16 @@ Con **Enviar recordatorio** activado, cada reserva confirmada recibe un único e
 El módulo programa `venue-bookings:send-reminders` cada hora (sin ejecuciones solapadas), así que basta con que el planificador de Laravel esté en marcha (`php artisan schedule:work`, o `php artisan schedule:run` cada minuto). `php artisan schedule:list` muestra la tarea.
 
 Al actualizar desde una versión anterior a la 2.3.0, la primera ejecución envía un recordatorio a todas las reservas confirmadas que empiecen dentro de la ventana configurada.
+
+### Completado automático
+
+Con **Completar reservas automáticamente** activado, `venue-bookings:complete-past` pasa a **Completada** cada reserva confirmada cuyo fin (fecha y hora de fin en la zona del local; al día siguiente si cruza la medianoche) más **Horas tras el fin para completar** ya ha pasado. Las reservas pendientes, rechazadas, canceladas o no presentadas no se tocan, y hasta completarse el personal puede marcarlas como **No presentado**. No se envía ningún email.
+
+El módulo lo programa cada hora (sin ejecuciones solapadas), junto a los recordatorios. Cada reserva se procesa por separado: si alguien la cambió mientras tanto se salta, y un fallo queda en el log sin detener al resto. La primera ejecución tras actualizar completa de una vez todas las reservas confirmadas antiguas.
+
+### Franjas y reglas al reservar
+
+Al crear una reserva desde la web, el servidor exige que la franja esté hecha de turnos consecutivos que la página ofrece ese día (en el modo `time_blocks`, un bloque entero) y aplica el límite de reservas activas, la antelación mínima y los días máximos a futuro. La lista de turnos marca como no disponibles los que empiezan antes de la antelación mínima (cualquier día) y los de días más allá del máximo.
 
 ## Modos de programación
 
@@ -124,6 +137,7 @@ Los dos widgets solo se muestran a quien puede ver el listado de reservas (`book
 | Comando | Descripción |
 |---------|-------------|
 | `venue-bookings:send-reminders` | Envía los recordatorios pendientes (programado cada hora por el módulo) |
+| `venue-bookings:complete-past` | Completa las reservas confirmadas ya terminadas (programado cada hora por el módulo) |
 | `venue-bookings:migrate-settings` | Copia la configuración de `config/settings.php` a la tabla `settings` |
 
 ## Rutas web

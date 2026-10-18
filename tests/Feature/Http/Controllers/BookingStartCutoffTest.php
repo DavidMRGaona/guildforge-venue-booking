@@ -15,6 +15,7 @@ use Inertia\Testing\AssertableInertia;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
 use Modules\VenueBookings\Infrastructure\Services\ProfileBookingsDataProvider;
+use Modules\VenueBookings\Tests\Support\OpensResourceEveryDay;
 use Tests\Support\Modules\ModuleTestCase;
 
 /**
@@ -23,6 +24,8 @@ use Tests\Support\Modules\ModuleTestCase;
  */
 final class BookingStartCutoffTest extends ModuleTestCase
 {
+    use OpensResourceEveryDay;
+
     private const string VENUE_TIMEZONE = 'Europe/Madrid';
 
     private const string CANCEL_OWN = 'venuebookings:bookings.cancel_own';
@@ -56,12 +59,11 @@ final class BookingStartCutoffTest extends ModuleTestCase
             'sort_order' => 0,
         ]);
 
-        $this->user = UserModel::factory()->create();
+        // Open every day 10:00-23:00 in hourly slots. The minimum advance is not what these tests are about.
+        $this->openEveryDay($this->room->id, '10:00', '23:00');
+        config()->set('modules.settings.venue-bookings.min_advance_minutes', 0);
 
-        // The first test of a process starts with the module's translation group cached as empty
-        // (the lazy database refresh rebuilds the application), so the literal Spanish texts asserted
-        // below would not resolve when this class runs alone. Dropping the cache is harmless otherwise.
-        app('translator')->setLoaded([]);
+        $this->user = UserModel::factory()->create();
     }
 
     public function test_a_booking_on_a_past_day_is_refused_on_the_date_field(): void

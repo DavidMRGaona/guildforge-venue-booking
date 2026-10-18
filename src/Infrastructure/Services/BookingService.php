@@ -10,21 +10,27 @@ use Carbon\CarbonImmutable;
 use Modules\VenueBookings\Application\DTOs\CancelBookingDTO;
 use Modules\VenueBookings\Application\DTOs\CreateBookingDTO;
 use Modules\VenueBookings\Application\DTOs\Response\BookingResponseDTO;
+use Modules\VenueBookings\Application\Services\BookingLockInterface;
 use Modules\VenueBookings\Application\Services\BookingServiceInterface;
 use Modules\VenueBookings\Application\Services\SlotAvailabilityServiceInterface;
 use Modules\VenueBookings\Domain\Entities\Booking;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
+use Modules\VenueBookings\Domain\Enums\SchedulingMode;
 use Modules\VenueBookings\Domain\Events\BookingCancelled;
 use Modules\VenueBookings\Domain\Events\BookingCompleted;
 use Modules\VenueBookings\Domain\Events\BookingConfirmed;
 use Modules\VenueBookings\Domain\Events\BookingCreated;
 use Modules\VenueBookings\Domain\Events\BookingNoShow;
 use Modules\VenueBookings\Domain\Events\BookingRejected;
+use Modules\VenueBookings\Domain\Exceptions\BookableResourceUnavailableException;
 use Modules\VenueBookings\Domain\Exceptions\BookingAlreadyStartedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingCancellationNotAllowedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingNotCancellableException;
+use Modules\VenueBookings\Domain\Exceptions\MaximumSlotsExceededException;
 use Modules\VenueBookings\Domain\Exceptions\MinimumSlotsNotMetException;
+use Modules\VenueBookings\Domain\Exceptions\SlotOutsideScheduleException;
 use Modules\VenueBookings\Domain\Exceptions\SlotUnavailableException;
+use Modules\VenueBookings\Domain\Repositories\BookableResourceRepositoryInterface;
 use Modules\VenueBookings\Domain\Repositories\BookingRepositoryInterface;
 use Modules\VenueBookings\Domain\Repositories\OperatingScheduleRepositoryInterface;
 use Modules\VenueBookings\Domain\ValueObjects\BookableResourceId;
@@ -40,12 +46,23 @@ final readonly class BookingService implements BookingServiceInterface
         private BookingSettingsReader $settingsReader,
         private OperatingScheduleRepositoryInterface $scheduleRepository,
         private AuthorizationServiceInterface $authorization,
+        private BookingRules $rules,
+        private BookableResourceRepositoryInterface $resourceRepository,
+        private BookingLockInterface $lock,
     ) {}
 
     public function createBooking(CreateBookingDTO $dto): BookingResponseDTO
     {
         $timeRange = new TimeRange($dto->startTime, $dto->endTime);
         $resourceId = BookableResourceId::fromString($dto->resourceId);
+
+        // Only active resources are offered on the booking page. An unknown one is refused below,
+        // where it has no schedule.
+        $resource = $this->resourceRepository->find($resourceId);
+
+        if ($resource !== null && ! $resource->isActive()) {
+            throw BookableResourceUnavailableException::withId($dto->resourceId);
+        }
 
         $initialStatus = $this->settingsReader->requiresApproval()
             ? BookingStatus::Pending
@@ -73,18 +90,28 @@ final readonly class BookingService implements BookingServiceInterface
                 : null,
         );
 
-        // Whoever asks, a slot that has already started cannot be booked
-        if ($this->hasStarted($booking)) {
-            throw BookingAlreadyStartedException::forSlot($dto->date, $dto->startTime);
-        }
+        // Checked and saved under the lock: two requests cannot both pass the active booking
+        // limit or the overlap check. The events go out once the lock is released.
+        // Locked by the stored id of the resource when it exists, not by the id as it was sent
+        $lockedResourceId = strtolower($resource !== null ? $resource->id->value : $dto->resourceId);
 
-        $this->validateMinConsecutiveSlots($resourceId, $timeRange);
+        $this->lock->forBooking($dto->userId, $lockedResourceId, $dto->date, function () use ($booking, $dto, $resourceId, $timeRange): void {
+            // Whoever asks, a slot that has already started cannot be booked
+            if ($this->hasStarted($booking)) {
+                throw BookingAlreadyStartedException::forSlot($dto->date, $dto->startTime);
+            }
 
-        if (! $this->slotAvailabilityService->isSlotAvailable($dto->resourceId, $dto->date, $timeRange)) {
-            throw SlotUnavailableException::forTimeRange($dto->date, $dto->startTime, $dto->endTime);
-        }
+            // The rules of the settings bind everyone, staff and administrators included
+            $this->rules->assertCanBook($dto->userId, $dto->date, $dto->startTime);
 
-        $this->bookingRepository->save($booking);
+            $this->assertFitsSchedule($resourceId, $dto->date, $timeRange);
+
+            if (! $this->slotAvailabilityService->isSlotAvailable($dto->resourceId, $dto->date, $timeRange)) {
+                throw SlotUnavailableException::forTimeRange($dto->date, $dto->startTime, $dto->endTime);
+            }
+
+            $this->bookingRepository->save($booking);
+        });
 
         BookingCreated::dispatch(
             $booking->id->value,
@@ -204,25 +231,33 @@ final readonly class BookingService implements BookingServiceInterface
         return BookingResponseDTO::fromEntity($booking);
     }
 
-    private function validateMinConsecutiveSlots(BookableResourceId $resourceId, TimeRange $timeRange): void
+    /**
+     * The range must be made of the slots the booking page offers for that day: the day is
+     * open, the range starts and ends on slot boundaries (one whole block in block mode)
+     * and, in slot mode, it spans between the minimum and the maximum consecutive slots.
+     */
+    private function assertFitsSchedule(BookableResourceId $resourceId, string $date, TimeRange $timeRange): void
     {
         $schedule = $this->scheduleRepository->findByResource($resourceId);
+        $slotCount = $schedule?->slotsCoveredBy($date, $timeRange);
 
-        if ($schedule === null || $schedule->minConsecutiveSlots <= 1) {
+        if ($schedule === null || $slotCount === null) {
+            throw SlotOutsideScheduleException::forTimeRange($date, $timeRange->startTime, $timeRange->endTime);
+        }
+
+        if ($schedule->schedulingMode !== SchedulingMode::TimeSlots) {
             return;
         }
 
-        $startSeconds = (int) strtotime($timeRange->startTime) - (int) strtotime('00:00');
-        $endSeconds = (int) strtotime($timeRange->endTime) - (int) strtotime('00:00');
-
-        if ($endSeconds <= $startSeconds) {
-            $endSeconds += 86400;
-        }
-
-        $slotCount = (int) (($endSeconds - $startSeconds) / ($schedule->slotDurationMinutes * 60));
-
         if ($slotCount < $schedule->minConsecutiveSlots) {
             throw MinimumSlotsNotMetException::forResource($schedule->minConsecutiveSlots, $slotCount);
+        }
+
+        // The picker lets at least one slot through even with a stored maximum below 1
+        $maximum = max(1, $schedule->maxConsecutiveSlots);
+
+        if ($slotCount > $maximum) {
+            throw MaximumSlotsExceededException::forResource($maximum, $slotCount);
         }
     }
 

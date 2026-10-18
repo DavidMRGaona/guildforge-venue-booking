@@ -64,6 +64,15 @@ interface BookingRepositoryInterface
     public function markReminderSent(BookingId $id, \DateTimeInterface $sentAt): void;
 
     /**
+     * Confirmed bookings whose end (date and end time read in the timezone of $endedBy,
+     * on the next day when the range crosses midnight) is at or before $endedBy,
+     * ordered by date and start time.
+     *
+     * @return array<Booking>
+     */
+    public function getConfirmedEndedBy(\DateTimeInterface $endedBy): array;
+
+    /**
      * @return array<Booking>
      */
     public function getByResourceInDateRange(

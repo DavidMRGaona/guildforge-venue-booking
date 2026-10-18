@@ -66,8 +66,6 @@ final class BookingCancellationTest extends ModuleTestCase
     {
         $this->grant($this->owner, [self::CANCEL_OWN]);
         $this->booking->update(['status' => 'cancelled']);
-        // The first test of a process can see the module's translations cached empty
-        app('translator')->setLoaded([]);
 
         $this->actingAs($this->owner)
             ->delete("/reservas/{$this->booking->id}")
