@@ -10,6 +10,7 @@ use Modules\VenueBookings\Domain\ValueObjects\BookableResourceId;
 use Modules\VenueBookings\Domain\ValueObjects\BookingSlot;
 use Modules\VenueBookings\Domain\ValueObjects\DaySchedule;
 use Modules\VenueBookings\Domain\ValueObjects\OperatingScheduleId;
+use Modules\VenueBookings\Domain\ValueObjects\TimeRange;
 use Tests\TestCase;
 
 final class OperatingScheduleTest extends TestCase
@@ -308,6 +309,133 @@ final class OperatingScheduleTest extends TestCase
         );
 
         $this->assertEquals(SchedulingMode::TimeSlots, $schedule->schedulingMode);
+    }
+
+    public function test_the_last_slot_may_overrun_the_closing_time_as_before(): void
+    {
+        $schedule = $this->createScheduleWithDays(
+            daySchedules: [new DaySchedule(dayOfWeek: 1, openTime: '09:00', closeTime: '11:00', isEnabled: true)],
+            slotDurationMinutes: 45,
+        );
+
+        $slots = $schedule->generateSlotsForDate('2026-03-02');
+
+        $this->assertSame(['09:00', '09:45', '10:30'], array_map(fn (BookingSlot $s): string => $s->startTime, $slots));
+        $this->assertSame('11:15', $slots[2]->endTime);
+    }
+
+    public function test_schedule_times_with_seconds_give_hh_mm_slots(): void
+    {
+        $schedule = $this->createScheduleWithDays([
+            new DaySchedule(dayOfWeek: 1, openTime: '10:00:00', closeTime: '12:00:00', isEnabled: true),
+        ]);
+
+        $slots = $schedule->generateSlotsForDate('2026-03-02');
+
+        $this->assertSame('10:00', $slots[0]->startTime);
+        $this->assertSame('11:00', $slots[0]->endTime);
+        $this->assertSame('12:00', $slots[1]->endTime);
+    }
+
+    public function test_an_unreadable_date_has_no_slots(): void
+    {
+        $schedule = $this->createScheduleWithDays([
+            new DaySchedule(dayOfWeek: 1, openTime: '10:00', closeTime: '12:00', isEnabled: true),
+        ]);
+
+        $this->assertSame([], $schedule->generateSlotsForDate('not-a-date'));
+    }
+
+    public function test_a_range_made_of_consecutive_slots_counts_them(): void
+    {
+        $schedule = $this->createScheduleWithDays([
+            new DaySchedule(dayOfWeek: 1, openTime: '10:00', closeTime: '14:00', isEnabled: true),
+        ]);
+
+        $this->assertSame(1, $schedule->slotsCoveredBy('2026-03-02', new TimeRange('10:00', '11:00')));
+        $this->assertSame(2, $schedule->slotsCoveredBy('2026-03-02', new TimeRange('11:00', '13:00')));
+        $this->assertSame(4, $schedule->slotsCoveredBy('2026-03-02', new TimeRange('10:00', '14:00')));
+    }
+
+    public function test_a_range_off_the_slot_boundaries_or_outside_opening_hours_is_not_covered(): void
+    {
+        $schedule = $this->createScheduleWithDays([
+            new DaySchedule(dayOfWeek: 1, openTime: '10:00', closeTime: '14:00', isEnabled: true),
+        ]);
+
+        $this->assertNull($schedule->slotsCoveredBy('2026-03-02', new TimeRange('10:30', '11:30')));
+        $this->assertNull($schedule->slotsCoveredBy('2026-03-02', new TimeRange('09:00', '11:00')));
+        $this->assertNull($schedule->slotsCoveredBy('2026-03-02', new TimeRange('13:00', '15:00')));
+        $this->assertNull($schedule->slotsCoveredBy('2026-03-02', new TimeRange('11:00', '10:00')));
+    }
+
+    public function test_a_closed_or_disabled_day_covers_nothing(): void
+    {
+        $schedule = $this->createScheduleWithDays([
+            new DaySchedule(dayOfWeek: 1, openTime: '10:00', closeTime: '14:00', isEnabled: true),
+            new DaySchedule(dayOfWeek: 2, openTime: '10:00', closeTime: '14:00', isEnabled: false),
+        ]);
+
+        // 2026-03-03 is a Tuesday (disabled), 2026-03-04 a Wednesday (no schedule)
+        $this->assertNull($schedule->slotsCoveredBy('2026-03-03', new TimeRange('10:00', '11:00')));
+        $this->assertNull($schedule->slotsCoveredBy('2026-03-04', new TimeRange('10:00', '11:00')));
+    }
+
+    public function test_thirty_minute_slots_are_covered_on_half_hours(): void
+    {
+        $schedule = $this->createScheduleWithDays(
+            daySchedules: [new DaySchedule(dayOfWeek: 1, openTime: '10:00', closeTime: '14:00', isEnabled: true)],
+            slotDurationMinutes: 30,
+        );
+
+        $this->assertSame(2, $schedule->slotsCoveredBy('2026-03-02', new TimeRange('10:30', '11:30')));
+    }
+
+    public function test_a_run_that_crosses_midnight_is_covered(): void
+    {
+        // 2026-03-06 is a Friday (dayOfWeek 5)
+        $schedule = $this->createScheduleWithDays([
+            new DaySchedule(dayOfWeek: 5, openTime: '22:00', closeTime: '02:00', isEnabled: true),
+        ]);
+
+        $this->assertSame(2, $schedule->slotsCoveredBy('2026-03-06', new TimeRange('23:00', '01:00')));
+        $this->assertSame(2, $schedule->slotsCoveredBy('2026-03-06', new TimeRange('00:00', '02:00')));
+        $this->assertNull($schedule->slotsCoveredBy('2026-03-06', new TimeRange('01:00', '03:00')));
+    }
+
+    public function test_the_last_slot_of_a_full_day_is_covered(): void
+    {
+        $schedule = $this->createScheduleWithDays([
+            new DaySchedule(dayOfWeek: 1, openTime: '00:00', closeTime: '23:59', isEnabled: true),
+        ]);
+
+        $this->assertSame(1, $schedule->slotsCoveredBy('2026-03-02', new TimeRange('23:00', '00:00')));
+    }
+
+    public function test_a_block_must_be_booked_whole_and_alone(): void
+    {
+        $schedule = $this->createScheduleWithDays(
+            daySchedules: [
+                new DaySchedule(dayOfWeek: 1, openTime: '10:00', closeTime: '14:00', isEnabled: true, label: 'Mañana'),
+                new DaySchedule(dayOfWeek: 1, openTime: '14:00', closeTime: '18:00', isEnabled: true, label: 'Tarde'),
+            ],
+            schedulingMode: SchedulingMode::TimeBlocks,
+        );
+
+        $this->assertSame(1, $schedule->slotsCoveredBy('2026-03-02', new TimeRange('10:00', '14:00')));
+        $this->assertSame(1, $schedule->slotsCoveredBy('2026-03-02', new TimeRange('14:00', '18:00')));
+        $this->assertNull($schedule->slotsCoveredBy('2026-03-02', new TimeRange('10:00', '18:00')));
+        $this->assertNull($schedule->slotsCoveredBy('2026-03-02', new TimeRange('10:00', '12:00')));
+    }
+
+    public function test_a_block_that_crosses_midnight_is_covered(): void
+    {
+        $schedule = $this->createScheduleWithDays(
+            daySchedules: [new DaySchedule(dayOfWeek: 5, openTime: '22:00', closeTime: '02:00', isEnabled: true, label: 'Noche')],
+            schedulingMode: SchedulingMode::TimeBlocks,
+        );
+
+        $this->assertSame(1, $schedule->slotsCoveredBy('2026-03-06', new TimeRange('22:00', '02:00')));
     }
 
     /**

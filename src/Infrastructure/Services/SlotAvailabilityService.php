@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Infrastructure\Services;
 
-use Carbon\CarbonImmutable;
 use Modules\VenueBookings\Application\Services\SlotAvailabilityServiceInterface;
 use Modules\VenueBookings\Domain\Repositories\BookingRepositoryInterface;
 use Modules\VenueBookings\Domain\Repositories\OperatingScheduleRepositoryInterface;
@@ -17,7 +16,7 @@ final readonly class SlotAvailabilityService implements SlotAvailabilityServiceI
     public function __construct(
         private OperatingScheduleRepositoryInterface $scheduleRepository,
         private BookingRepositoryInterface $bookingRepository,
-        private BookingSettingsReader $settingsReader,
+        private BookingRules $rules,
     ) {}
 
     /**
@@ -34,35 +33,19 @@ final readonly class SlotAvailabilityService implements SlotAvailabilityServiceI
 
         $slots = $schedule->generateSlotsForDate($date);
         $bookings = $this->bookingRepository->getByResourceAndDate($resourceIdVO, $date);
+        // Same rules as createBooking(): nothing beyond the days ahead, nothing before the minimum advance
+        $tooFar = $this->rules->isTooFar($date);
 
-        $tz = $this->settingsReader->getDateTimeZone();
-        $now = CarbonImmutable::now($tz);
-        $earliestStart = $date === $now->toDateString()
-            ? $now->addMinutes($this->settingsReader->getMinAdvanceMinutes())
-            : null;
-
-        return array_map(function (BookingSlot $slot) use ($bookings, $date, $tz, $earliestStart): BookingSlot {
-            if ($earliestStart !== null
-                && CarbonImmutable::parse("{$date} {$slot->startTime}", $tz) < $earliestStart) {
-                return new BookingSlot(
-                    startTime: $slot->startTime,
-                    endTime: $slot->endTime,
-                    isAvailable: false,
-                    label: $slot->label,
-                );
+        return array_map(function (BookingSlot $slot) use ($bookings, $date, $tooFar): BookingSlot {
+            if ($tooFar || $this->rules->startsTooSoon($date, $slot->startTime)) {
+                return $this->unavailable($slot);
             }
 
+            $slotRange = new TimeRange($slot->startTime, $slot->endTime);
+
             foreach ($bookings as $booking) {
-                if (! $booking->status->isFinal()) {
-                    $slotRange = new TimeRange($slot->startTime, $slot->endTime);
-                    if ($booking->timeRange->overlaps($slotRange)) {
-                        return new BookingSlot(
-                            startTime: $slot->startTime,
-                            endTime: $slot->endTime,
-                            isAvailable: false,
-                            label: $slot->label,
-                        );
-                    }
+                if (! $booking->status->isFinal() && $booking->timeRange->overlaps($slotRange)) {
+                    return $this->unavailable($slot);
                 }
             }
 
@@ -75,5 +58,15 @@ final readonly class SlotAvailabilityService implements SlotAvailabilityServiceI
         $resourceIdVO = BookableResourceId::fromString($resourceId);
 
         return ! $this->bookingRepository->hasOverlappingBooking($resourceIdVO, $date, $timeRange);
+    }
+
+    private function unavailable(BookingSlot $slot): BookingSlot
+    {
+        return new BookingSlot(
+            startTime: $slot->startTime,
+            endTime: $slot->endTime,
+            isAvailable: false,
+            label: $slot->label,
+        );
     }
 }

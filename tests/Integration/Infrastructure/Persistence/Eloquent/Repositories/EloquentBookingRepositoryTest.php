@@ -843,4 +843,37 @@ final class EloquentBookingRepositoryTest extends TestCase
         $this->assertNotNull($found->confirmedAt);
         $this->assertEquals('2026-03-14 15:30:00', $found->confirmedAt->format('Y-m-d H:i:s'));
     }
+
+    public function test_it_gets_confirmed_bookings_ended_by_a_moment(): void
+    {
+        $madrid = new \DateTimeZone('Europe/Madrid');
+        $create = function (string $date, string $start, string $end, string $status): string {
+            $id = (string) Str::uuid();
+            BookingModel::create([
+                'id' => $id,
+                'resource_id' => $this->resource->id,
+                'user_id' => $this->user->id,
+                'date' => $date,
+                'start_time' => $start,
+                'end_time' => $end,
+                'status' => $status,
+            ]);
+
+            return $id;
+        };
+
+        $endedEarlier = $create('2026-03-14', '10:00', '12:00', 'confirmed');
+        $endedExactly = $create('2026-03-15', '10:00', '12:00', 'confirmed');
+        $create('2026-03-15', '11:00', '13:00', 'confirmed');   // ends after the moment
+        $create('2026-03-14', '22:00', '13:00', 'confirmed');   // crosses midnight: ends 2026-03-15 13:00
+        $create('2026-03-14', '10:00', '12:00', 'pending');
+        $create('2026-03-14', '10:00', '12:00', 'cancelled');
+        $create('2026-03-14', '10:00', '12:00', 'completed');
+        $create('2026-03-14', '10:00', '12:00', 'no_show');
+        $create('2026-03-16', '08:00', '09:00', 'confirmed');   // a later day
+
+        $bookings = $this->repository->getConfirmedEndedBy(new DateTimeImmutable('2026-03-15 12:00', $madrid));
+
+        $this->assertSame([$endedEarlier, $endedExactly], array_map(fn (Booking $b): string => $b->id->value, $bookings));
+    }
 }

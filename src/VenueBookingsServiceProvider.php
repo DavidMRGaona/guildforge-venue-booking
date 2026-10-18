@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings;
 
-use Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader;
 use Throwable;
 use Modules\VenueBookings\Filament\Resources\BookableResourceResource;
 use Modules\VenueBookings\Filament\Resources\BookingResource;
@@ -31,9 +30,11 @@ use Inertia\Inertia;
 use Modules\VenueBookings\Application\Services\BookingEligibilityServiceInterface;
 use Modules\VenueBookings\Application\Services\BookingFieldConfigServiceInterface;
 use Modules\VenueBookings\Application\Services\BookingQueryServiceInterface;
+use Modules\VenueBookings\Application\Services\BookingLockInterface;
 use Modules\VenueBookings\Application\Services\BookingServiceInterface;
 use Modules\VenueBookings\Application\Services\ModuleIntegrationServiceInterface;
 use Modules\VenueBookings\Application\Services\SlotAvailabilityServiceInterface;
+use Modules\VenueBookings\Console\Commands\CompletePastBookingsCommand;
 use Modules\VenueBookings\Console\Commands\MigrateSettingsToDatabase;
 use Modules\VenueBookings\Console\Commands\SendBookingRemindersCommand;
 use Modules\VenueBookings\Domain\Events\BookingCancelled;
@@ -53,7 +54,9 @@ use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories\Eloqu
 use Modules\VenueBookings\Infrastructure\Services\BookingEligibilityService;
 use Modules\VenueBookings\Infrastructure\Services\BookingFieldConfigService;
 use Modules\VenueBookings\Infrastructure\Services\BookingQueryService;
+use Modules\VenueBookings\Infrastructure\Services\BookingRules;
 use Modules\VenueBookings\Infrastructure\Services\BookingService;
+use Modules\VenueBookings\Infrastructure\Services\CacheBookingLock;
 use Modules\VenueBookings\Infrastructure\Services\ModuleIntegrationService;
 use Modules\VenueBookings\Infrastructure\Services\ProfileBookingsDataProvider;
 use Modules\VenueBookings\Infrastructure\Services\SlotAvailabilityService;
@@ -78,13 +81,14 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
 
         // Service bindings
         $this->app->bind(BookingServiceInterface::class, BookingService::class);
+        $this->app->bind(BookingLockInterface::class, CacheBookingLock::class);
         $this->app->bind(BookingQueryServiceInterface::class, BookingQueryService::class);
         $this->app->bind(BookingEligibilityServiceInterface::class, BookingEligibilityService::class);
         $this->app->bind(SlotAvailabilityServiceInterface::class, function ($app) {
             return new SlotAvailabilityService(
                 $app->make(OperatingScheduleRepositoryInterface::class),
                 $app->make(BookingRepositoryInterface::class),
-                $app->make(BookingSettingsReader::class),
+                $app->make(BookingRules::class),
             );
         });
         $this->app->bind(BookingFieldConfigServiceInterface::class, BookingFieldConfigService::class);
@@ -148,6 +152,7 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
             $this->commands([
                 MigrateSettingsToDatabase::class,
                 SendBookingRemindersCommand::class,
+                CompletePastBookingsCommand::class,
             ]);
         }
     }
@@ -158,6 +163,11 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
             $schedule->command('venue-bookings:send-reminders')
                 ->hourly()
                 // A run takes seconds; a killed one must not block reminders for a day.
+                ->withoutOverlapping(10);
+
+            // Confirmed bookings become completed once they ended (plus the configured hours)
+            $schedule->command('venue-bookings:complete-past')
+                ->hourly()
                 ->withoutOverlapping(10);
         });
     }

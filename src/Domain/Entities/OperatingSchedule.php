@@ -4,14 +4,19 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Domain\Entities;
 
+use DateTimeImmutable;
+use DateTimeZone;
 use Modules\VenueBookings\Domain\Enums\SchedulingMode;
 use Modules\VenueBookings\Domain\ValueObjects\BookableResourceId;
 use Modules\VenueBookings\Domain\ValueObjects\BookingSlot;
 use Modules\VenueBookings\Domain\ValueObjects\DaySchedule;
 use Modules\VenueBookings\Domain\ValueObjects\OperatingScheduleId;
+use Modules\VenueBookings\Domain\ValueObjects\TimeRange;
 
 final class OperatingSchedule
 {
+    private const int MINUTES_PER_DAY = 1440;
+
     /**
      * @param  array<DaySchedule>  $daySchedules
      */
@@ -44,52 +49,100 @@ final class OperatingSchedule
     }
 
     /**
+     * Slots of $date (Y-m-d). Times are wall-clock values counted in minutes from
+     * midnight, so they depend neither on PHP's default timezone nor on today's date.
+     * As before, the last slot may run past the closing time when the slot duration
+     * does not divide the opening hours.
+     *
      * @return array<BookingSlot>
      */
     public function generateSlotsForDate(string $date): array
     {
-        if ($this->schedulingMode === SchedulingMode::TimeBlocks) {
-            return $this->generateBlocksForDate($date);
-        }
+        $dayOfWeek = self::dayOfWeek($date);
 
-        $dayOfWeek = (int) date('w', strtotime($date));
-        $daySchedule = $this->getDaySchedule($dayOfWeek);
-
-        if ($daySchedule === null || ! $daySchedule->isEnabled) {
+        if ($dayOfWeek === null) {
             return [];
         }
 
-        $slots = [];
-        $currentTime = strtotime($daySchedule->openTime);
-        $closeTime = strtotime($daySchedule->closeTime);
-        $durationSeconds = $this->slotDurationMinutes * 60;
-
-        if ($daySchedule->crossesMidnight()) {
-            $closeTime += 86400;
+        if ($this->schedulingMode === SchedulingMode::TimeBlocks) {
+            return $this->generateBlocksFor($dayOfWeek);
         }
 
-        while ($currentTime < $closeTime) {
-            $startTime = date('H:i', $currentTime);
-            $endTime = date('H:i', $currentTime + $durationSeconds);
+        $daySchedule = $this->getDaySchedule($dayOfWeek);
 
+        if ($daySchedule === null || ! $daySchedule->isEnabled || $this->slotDurationMinutes < 1) {
+            return [];
+        }
+
+        $open = self::toMinutes($daySchedule->openTime);
+        $close = self::toMinutes($daySchedule->closeTime);
+
+        // Open until the next day (e.g. 22:00-02:00)
+        if ($close < $open) {
+            $close += self::MINUTES_PER_DAY;
+        }
+
+        $slots = [];
+
+        for ($start = $open; $start < $close; $start += $this->slotDurationMinutes) {
             $slots[] = new BookingSlot(
-                startTime: $startTime,
-                endTime: $endTime,
+                startTime: self::formatMinutes($start),
+                endTime: self::formatMinutes($start + $this->slotDurationMinutes),
                 isAvailable: true,
             );
-
-            $currentTime += $durationSeconds;
         }
 
         return $slots;
     }
 
     /**
+     * How many slots of $date the range covers exactly, or null when it is not made of
+     * them: the day is closed, or the range does not start and end on slot boundaries.
+     * In block mode the range must be one whole block, which counts as one slot.
+     */
+    public function slotsCoveredBy(string $date, TimeRange $range): ?int
+    {
+        $slots = $this->generateSlotsForDate($date);
+        $start = self::toMinutes($range->startTime);
+        $end = self::toMinutes($range->endTime);
+
+        if ($this->schedulingMode === SchedulingMode::TimeBlocks) {
+            foreach ($slots as $block) {
+                if (self::toMinutes($block->startTime) === $start && self::toMinutes($block->endTime) === $end) {
+                    return 1;
+                }
+            }
+
+            return null;
+        }
+
+        // Time slots are contiguous: walk from the slot the range starts on to the one it ends on
+        $count = null;
+
+        foreach ($slots as $slot) {
+            if ($count === null) {
+                if (self::toMinutes($slot->startTime) !== $start) {
+                    continue;
+                }
+
+                $count = 0;
+            }
+
+            $count++;
+
+            if (self::toMinutes($slot->endTime) === $end) {
+                return $count;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * @return array<BookingSlot>
      */
-    private function generateBlocksForDate(string $date): array
+    private function generateBlocksFor(int $dayOfWeek): array
     {
-        $dayOfWeek = (int) date('w', strtotime($date));
         $blocks = [];
 
         foreach ($this->daySchedules as $schedule) {
@@ -104,5 +157,35 @@ final class OperatingSchedule
         }
 
         return $blocks;
+    }
+
+    /**
+     * Day of week (0 = Sunday) of a Y-m-d date, or null when it cannot be read.
+     */
+    private static function dayOfWeek(string $date): ?int
+    {
+        $day = DateTimeImmutable::createFromFormat('!Y-m-d', $date, new DateTimeZone('UTC'));
+
+        return $day === false ? null : (int) $day->format('w');
+    }
+
+    /**
+     * Minutes from midnight of "H:MM", "HH:MM" or "HH:MM:SS".
+     */
+    private static function toMinutes(string $time): int
+    {
+        $parts = explode(':', $time);
+
+        return (int) $parts[0] * 60 + (int) ($parts[1] ?? 0);
+    }
+
+    /**
+     * "HH:MM" of a minute count, wrapping past midnight.
+     */
+    private static function formatMinutes(int $minutes): string
+    {
+        $minutes %= self::MINUTES_PER_DAY;
+
+        return sprintf('%02d:%02d', intdiv($minutes, 60), $minutes % 60);
     }
 }
