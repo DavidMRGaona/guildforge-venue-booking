@@ -19,6 +19,7 @@ use Modules\VenueBookings\Application\Services\BookingQueryServiceInterface;
 use Modules\VenueBookings\Application\Services\BookingServiceInterface;
 use Modules\VenueBookings\Domain\Exceptions\BookableResourceUnavailableException;
 use Modules\VenueBookings\Domain\Exceptions\BookingAlreadyStartedException;
+use Modules\VenueBookings\Domain\Exceptions\BookingBusyException;
 use Modules\VenueBookings\Domain\Exceptions\BookingCancellationNotAllowedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingLimitExceededException;
 use Modules\VenueBookings\Domain\Exceptions\BookingNotCancellableException;
@@ -122,6 +123,8 @@ final class BookingController extends Controller
             return back()->with('error', __('venue-bookings::messages.frontend.minimum_slots_not_met'));
         } catch (MaximumSlotsExceededException) {
             return back()->with('error', __('venue-bookings::messages.frontend.maximum_slots_exceeded'));
+        } catch (BookingBusyException) {
+            return back()->with('error', __('venue-bookings::messages.frontend.booking_busy'));
         }
     }
 

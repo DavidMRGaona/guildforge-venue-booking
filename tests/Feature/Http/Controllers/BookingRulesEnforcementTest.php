@@ -6,9 +6,12 @@ namespace Modules\VenueBookings\Tests\Feature\Http\Controllers;
 
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Carbon\CarbonImmutable;
+use Closure;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
+use Modules\VenueBookings\Application\Services\BookingLockInterface;
+use Modules\VenueBookings\Domain\Exceptions\BookingBusyException;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\OperatingScheduleModel;
@@ -185,6 +188,23 @@ final class BookingRulesEnforcementTest extends ModuleTestCase
         $this->book($this->user, '2026-11-12', '10:00', '11:00')
             ->assertRedirect(route('bookings.index'))
             ->assertSessionHas('error', 'Este espacio no admite reservas en este momento.');
+
+        $this->assertSame(0, BookingModel::query()->count());
+    }
+
+    public function test_a_booking_that_cannot_get_its_lock_asks_to_try_again(): void
+    {
+        $this->app->instance(BookingLockInterface::class, new class implements BookingLockInterface
+        {
+            public function forBooking(string $userId, string $resourceId, string $date, Closure $callback): mixed
+            {
+                throw BookingBusyException::create();
+            }
+        });
+
+        $this->book($this->user, '2026-11-12', '10:00', '11:00')
+            ->assertRedirect(route('bookings.index'))
+            ->assertSessionHas('error', 'Ahora mismo se está procesando otra reserva. Inténtalo de nuevo en unos segundos.');
 
         $this->assertSame(0, BookingModel::query()->count());
     }
