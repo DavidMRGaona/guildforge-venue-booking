@@ -33,6 +33,7 @@ use Modules\VenueBookings\Application\Services\BookingQueryServiceInterface;
 use Modules\VenueBookings\Application\Services\BookingServiceInterface;
 use Modules\VenueBookings\Application\Services\ModuleIntegrationServiceInterface;
 use Modules\VenueBookings\Application\Services\SlotAvailabilityServiceInterface;
+use Modules\VenueBookings\Console\Commands\CompletePastBookingsCommand;
 use Modules\VenueBookings\Console\Commands\MigrateSettingsToDatabase;
 use Modules\VenueBookings\Console\Commands\SendBookingRemindersCommand;
 use Modules\VenueBookings\Domain\Events\BookingCancelled;
@@ -148,6 +149,7 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
             $this->commands([
                 MigrateSettingsToDatabase::class,
                 SendBookingRemindersCommand::class,
+                CompletePastBookingsCommand::class,
             ]);
         }
     }
@@ -158,6 +160,11 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
             $schedule->command('venue-bookings:send-reminders')
                 ->hourly()
                 // A run takes seconds; a killed one must not block reminders for a day.
+                ->withoutOverlapping(10);
+
+            // Confirmed bookings become completed once they ended (plus the configured hours)
+            $schedule->command('venue-bookings:complete-past')
+                ->hourly()
                 ->withoutOverlapping(10);
         });
     }
