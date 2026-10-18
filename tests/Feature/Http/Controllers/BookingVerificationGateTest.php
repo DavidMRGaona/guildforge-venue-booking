@@ -15,6 +15,7 @@ use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
+use Modules\VenueBookings\Tests\Support\OpensResourceEveryDay;
 use Tests\Support\Modules\ModuleTestCase;
 
 /**
@@ -27,6 +28,8 @@ use Tests\Support\Modules\ModuleTestCase;
  */
 final class BookingVerificationGateTest extends ModuleTestCase
 {
+    use OpensResourceEveryDay;
+
     private const string CUTOFF = '2026-01-01T00:00:00+00:00';
 
     private const string CANCEL_OWN = 'venuebookings:bookings.cancel_own';
@@ -56,6 +59,9 @@ final class BookingVerificationGateTest extends ModuleTestCase
             'status' => 'active',
             'sort_order' => 0,
         ]);
+
+        // The booking payload (18:00-20:00) is made of two hourly slots of this schedule
+        $this->openEveryDay($this->room->id, '10:00', '23:00');
 
         config()->set('modules.settings.venue-bookings.max_active_bookings_per_user', 10);
         config()->set('modules.settings.venue-bookings.min_advance_minutes', 60);
