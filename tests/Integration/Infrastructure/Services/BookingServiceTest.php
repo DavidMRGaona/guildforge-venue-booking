@@ -23,8 +23,13 @@ use Modules\VenueBookings\Domain\Events\BookingNoShow;
 use Modules\VenueBookings\Domain\Events\BookingRejected;
 use Modules\VenueBookings\Domain\Exceptions\BookingAlreadyStartedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingCancellationNotAllowedException;
+use Modules\VenueBookings\Domain\Exceptions\BookingLimitExceededException;
+use Modules\VenueBookings\Domain\Exceptions\MaximumSlotsExceededException;
 use Modules\VenueBookings\Domain\Exceptions\MinimumSlotsNotMetException;
+use Modules\VenueBookings\Domain\Exceptions\SlotOutsideScheduleException;
 use Modules\VenueBookings\Domain\Exceptions\SlotUnavailableException;
+use Modules\VenueBookings\Domain\Exceptions\TooFarToBookException;
+use Modules\VenueBookings\Domain\Exceptions\TooSoonToBookException;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\OperatingScheduleModel;
@@ -34,12 +39,14 @@ use Modules\VenueBookings\Infrastructure\Services\BookingRules;
 use Modules\VenueBookings\Infrastructure\Services\BookingService;
 use Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader;
 use Modules\VenueBookings\Infrastructure\Services\SlotAvailabilityService;
+use Modules\VenueBookings\Tests\Support\OpensResourceEveryDay;
 use Tests\Support\Authorization\CreatesUsersWithPermissions;
 use Tests\TestCase;
 
 final class BookingServiceTest extends TestCase
 {
     use CreatesUsersWithPermissions;
+    use OpensResourceEveryDay;
     use RefreshDatabase;
 
     private const string VENUE_TIMEZONE = 'Europe/Madrid';
@@ -75,6 +82,7 @@ final class BookingServiceTest extends TestCase
             new BookingSettingsReader,
             $scheduleRepository,
             app(AuthorizationServiceInterface::class),
+            new BookingRules($this->bookingRepository, new BookingSettingsReader),
         );
 
         $this->resource = BookableResourceModel::create([
@@ -86,6 +94,9 @@ final class BookingServiceTest extends TestCase
         ]);
 
         $this->user = UserModel::factory()->create();
+
+        // The room opens every day 08:00-22:00 in hourly slots, so the fixtures fit its schedule
+        $this->openEveryDay($this->resource->id, '08:00', '22:00', maxConsecutiveSlots: 6);
     }
 
     public function test_it_creates_booking_with_confirmed_status_when_auto_confirm(): void
@@ -362,17 +373,10 @@ final class BookingServiceTest extends TestCase
         Event::fake();
         config()->set('venue-bookings.approval_mode', 'auto_confirm');
 
-        // Create schedule with min_consecutive_slots = 3
-        OperatingScheduleModel::create([
-            'id' => (string) \Illuminate\Support\Str::uuid(),
-            'resource_id' => $this->resource->id,
-            'slot_duration_minutes' => 60,
-            'min_consecutive_slots' => 3,
-            'max_consecutive_slots' => 6,
-            'day_schedules' => [
-                ['day_of_week' => 1, 'open_time' => '10:00', 'close_time' => '20:00', 'is_enabled' => true],
-            ],
-        ]);
+        $this->useSchedule(
+            [['day_of_week' => 1, 'open_time' => '10:00', 'close_time' => '20:00', 'is_enabled' => true]],
+            minConsecutive: 3,
+        );
 
         // Try to book only 1 slot (10:00-11:00) — should fail because min is 3
         $dto = new CreateBookingDTO(
@@ -393,17 +397,10 @@ final class BookingServiceTest extends TestCase
         Event::fake();
         config()->set('venue-bookings.approval_mode', 'auto_confirm');
 
-        // Create schedule with min_consecutive_slots = 2
-        OperatingScheduleModel::create([
-            'id' => (string) \Illuminate\Support\Str::uuid(),
-            'resource_id' => $this->resource->id,
-            'slot_duration_minutes' => 60,
-            'min_consecutive_slots' => 2,
-            'max_consecutive_slots' => 6,
-            'day_schedules' => [
-                ['day_of_week' => 1, 'open_time' => '10:00', 'close_time' => '20:00', 'is_enabled' => true],
-            ],
-        ]);
+        $this->useSchedule(
+            [['day_of_week' => 1, 'open_time' => '10:00', 'close_time' => '20:00', 'is_enabled' => true]],
+            minConsecutive: 2,
+        );
 
         // Book 2 slots (10:00-12:00) — exactly meets minimum
         $dto = new CreateBookingDTO(
@@ -539,6 +536,8 @@ final class BookingServiceTest extends TestCase
     public function test_it_accepts_a_booking_until_the_second_before_it_starts(): void
     {
         Event::fake();
+        // These tests are about the start cutoff, not the minimum advance
+        config()->set('venue-bookings.min_advance_minutes', 0);
         $this->travelTo(CarbonImmutable::create(2026, 3, 16, 9, 59, 59, self::VENUE_TIMEZONE));
 
         $result = $this->service->createBooking($this->dtoFor('2026-03-16', '10:00', '12:00'));
@@ -559,6 +558,8 @@ final class BookingServiceTest extends TestCase
     public function test_it_reads_the_start_in_the_venue_timezone(): void
     {
         Event::fake();
+        // These tests are about the start cutoff, not the minimum advance
+        config()->set('venue-bookings.min_advance_minutes', 0);
         // Canary time is UTC+0 in March, an hour behind Madrid: 09:30 there is 10:30 in Madrid,
         // so a 10:00 slot at a Canary venue has not started yet
         config()->set('venue-bookings.timezone', 'Atlantic/Canary');
@@ -641,6 +642,210 @@ final class BookingServiceTest extends TestCase
         Event::assertDispatched(BookingCancelled::class);
     }
 
+    public function test_it_refuses_a_slot_inside_the_minimum_advance(): void
+    {
+        Event::fake();
+        config()->set('venue-bookings.min_advance_minutes', 60);
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 9, 30, 0, self::VENUE_TIMEZONE));
+
+        try {
+            $this->service->createBooking($this->dtoFor('2026-03-16', '10:00', '11:00'));
+            $this->fail('A booking inside the minimum advance was created.');
+        } catch (TooSoonToBookException) {
+            $this->assertDatabaseCount('venuebookings_bookings', 0);
+            Event::assertNotDispatched(BookingCreated::class);
+        }
+    }
+
+    public function test_it_accepts_a_slot_starting_right_at_the_minimum_advance(): void
+    {
+        Event::fake();
+        config()->set('venue-bookings.min_advance_minutes', 60);
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 9, 0, 0, self::VENUE_TIMEZONE));
+
+        $result = $this->service->createBooking($this->dtoFor('2026-03-16', '10:00', '11:00'));
+
+        $this->assertDatabaseHas('venuebookings_bookings', ['id' => $result->id]);
+    }
+
+    public function test_it_refuses_a_day_beyond_the_maximum_days_ahead(): void
+    {
+        Event::fake();
+        // From 2026-03-01 (setUp), 15 days ahead end on 2026-03-16
+        config()->set('venue-bookings.max_future_days', 15);
+
+        $this->service->createBooking($this->dtoFor('2026-03-16', '10:00', '11:00'));
+
+        $this->expectException(TooFarToBookException::class);
+
+        $this->service->createBooking($this->dtoFor('2026-03-17', '10:00', '11:00'));
+    }
+
+    public function test_it_refuses_a_user_at_the_active_booking_limit(): void
+    {
+        Event::fake();
+        config()->set('venue-bookings.max_active_bookings_per_user', 2);
+        $this->createConfirmedBookingOf($this->user);
+        BookingModel::create([
+            'id' => (string) Str::uuid(),
+            'resource_id' => $this->resource->id,
+            'user_id' => $this->user->id,
+            'date' => '2026-03-17',
+            'start_time' => '10:00',
+            'end_time' => '11:00',
+            'status' => 'pending',
+        ]);
+
+        $this->expectException(BookingLimitExceededException::class);
+
+        $this->service->createBooking($this->dtoFor('2026-03-18', '10:00', '11:00'));
+    }
+
+    public function test_the_rules_bind_administrators_too(): void
+    {
+        Event::fake();
+        config()->set('venue-bookings.max_active_bookings_per_user', 1);
+        $admin = UserModel::factory()->admin()->create();
+        $this->createConfirmedBookingOf($admin);
+
+        $this->expectException(BookingLimitExceededException::class);
+
+        $this->service->createBooking(new CreateBookingDTO(
+            resourceId: $this->resource->id,
+            userId: $admin->id,
+            date: '2026-03-18',
+            startTime: '10:00',
+            endTime: '11:00',
+        ));
+    }
+
+    public function test_it_refuses_a_range_off_the_slot_boundaries(): void
+    {
+        Event::fake();
+
+        try {
+            $this->service->createBooking($this->dtoFor('2026-03-16', '10:30', '11:30'));
+            $this->fail('A range off the slot boundaries was booked.');
+        } catch (SlotOutsideScheduleException) {
+            $this->assertDatabaseCount('venuebookings_bookings', 0);
+            Event::assertNotDispatched(BookingCreated::class);
+        }
+    }
+
+    public function test_it_refuses_a_range_past_closing_time(): void
+    {
+        Event::fake();
+
+        $this->expectException(SlotOutsideScheduleException::class);
+
+        $this->service->createBooking($this->dtoFor('2026-03-16', '21:00', '23:00'));
+    }
+
+    public function test_it_refuses_a_closed_day(): void
+    {
+        Event::fake();
+        $this->useSchedule([['day_of_week' => 1, 'open_time' => '10:00', 'close_time' => '20:00', 'is_enabled' => true]]);
+
+        // 2026-03-17 is a Tuesday
+        $this->expectException(SlotOutsideScheduleException::class);
+
+        $this->service->createBooking($this->dtoFor('2026-03-17', '10:00', '11:00'));
+    }
+
+    public function test_it_refuses_a_resource_without_schedule(): void
+    {
+        Event::fake();
+        OperatingScheduleModel::query()->where('resource_id', $this->resource->id)->delete();
+
+        $this->expectException(SlotOutsideScheduleException::class);
+
+        $this->service->createBooking($this->dtoFor('2026-03-16', '10:00', '11:00'));
+    }
+
+    public function test_it_accepts_a_run_of_thirty_minute_slots(): void
+    {
+        Event::fake();
+        $this->useSchedule(
+            [['day_of_week' => 1, 'open_time' => '10:00', 'close_time' => '14:00', 'is_enabled' => true]],
+            slotMinutes: 30,
+        );
+
+        $result = $this->service->createBooking($this->dtoFor('2026-03-16', '10:30', '11:30'));
+
+        $this->assertDatabaseHas('venuebookings_bookings', ['id' => $result->id]);
+    }
+
+    public function test_a_whole_block_is_booked_whatever_the_minimum_consecutive_slots(): void
+    {
+        Event::fake();
+        // The booking page never applies the minimum to blocks
+        $this->useSchedule([
+            ['day_of_week' => 1, 'open_time' => '10:00', 'close_time' => '14:00', 'is_enabled' => true, 'label' => 'Mañana'],
+            ['day_of_week' => 1, 'open_time' => '16:00', 'close_time' => '20:00', 'is_enabled' => true, 'label' => 'Tarde'],
+        ], mode: 'time_blocks', minConsecutive: 5);
+
+        $result = $this->service->createBooking($this->dtoFor('2026-03-16', '16:00', '20:00'));
+
+        $this->assertDatabaseHas('venuebookings_bookings', ['id' => $result->id]);
+    }
+
+    public function test_it_refuses_a_range_spanning_two_blocks(): void
+    {
+        Event::fake();
+        $this->useSchedule([
+            ['day_of_week' => 1, 'open_time' => '10:00', 'close_time' => '14:00', 'is_enabled' => true, 'label' => 'Mañana'],
+            ['day_of_week' => 1, 'open_time' => '16:00', 'close_time' => '20:00', 'is_enabled' => true, 'label' => 'Tarde'],
+        ], mode: 'time_blocks');
+
+        $this->expectException(SlotOutsideScheduleException::class);
+
+        $this->service->createBooking($this->dtoFor('2026-03-16', '10:00', '20:00'));
+    }
+
+    public function test_it_refuses_more_than_the_maximum_consecutive_slots(): void
+    {
+        Event::fake();
+        // openEveryDay() allows at most 6 consecutive slots; 08:00-15:00 is 7
+        try {
+            $this->service->createBooking($this->dtoFor('2026-03-16', '08:00', '15:00'));
+            $this->fail('A run longer than the maximum consecutive slots was booked.');
+        } catch (MaximumSlotsExceededException) {
+            $this->assertDatabaseCount('venuebookings_bookings', 0);
+            Event::assertNotDispatched(BookingCreated::class);
+        }
+    }
+
+    public function test_it_accepts_exactly_the_maximum_consecutive_slots(): void
+    {
+        Event::fake();
+
+        $result = $this->service->createBooking($this->dtoFor('2026-03-16', '08:00', '14:00'));
+
+        $this->assertDatabaseHas('venuebookings_bookings', ['id' => $result->id]);
+    }
+
+    public function test_a_maximum_below_one_still_lets_one_slot_through(): void
+    {
+        Event::fake();
+        OperatingScheduleModel::query()->where('resource_id', $this->resource->id)->firstOrFail()
+            ->update(['max_consecutive_slots' => 0]);
+
+        $result = $this->service->createBooking($this->dtoFor('2026-03-16', '10:00', '11:00'));
+
+        $this->assertDatabaseHas('venuebookings_bookings', ['id' => $result->id]);
+    }
+
+    public function test_it_accepts_a_run_that_crosses_midnight(): void
+    {
+        Event::fake();
+        // 2026-03-20 is a Friday
+        $this->useSchedule([['day_of_week' => 5, 'open_time' => '22:00', 'close_time' => '02:00', 'is_enabled' => true]]);
+
+        $result = $this->service->createBooking($this->dtoFor('2026-03-20', '23:00', '01:00'));
+
+        $this->assertDatabaseHas('venuebookings_bookings', ['id' => $result->id]);
+    }
+
     /**
      * @param  array<string>  $permissionKeys
      */
@@ -686,5 +891,27 @@ final class BookingServiceTest extends TestCase
         ]);
 
         return $bookingId;
+    }
+
+    /**
+     * Replaces the room's schedule (a resource has a single schedule).
+     *
+     * @param  array<array<string, mixed>>  $daySchedules
+     */
+    private function useSchedule(
+        array $daySchedules,
+        int $slotMinutes = 60,
+        string $mode = 'time_slots',
+        int $minConsecutive = 1,
+    ): void {
+        OperatingScheduleModel::query()
+            ->where('resource_id', $this->resource->id)
+            ->firstOrFail()
+            ->update([
+                'slot_duration_minutes' => $slotMinutes,
+                'scheduling_mode' => $mode,
+                'min_consecutive_slots' => $minConsecutive,
+                'day_schedules' => $daySchedules,
+            ]);
     }
 }

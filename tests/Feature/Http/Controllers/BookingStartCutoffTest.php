@@ -15,6 +15,7 @@ use Inertia\Testing\AssertableInertia;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
 use Modules\VenueBookings\Infrastructure\Services\ProfileBookingsDataProvider;
+use Modules\VenueBookings\Tests\Support\OpensResourceEveryDay;
 use Tests\Support\Modules\ModuleTestCase;
 
 /**
@@ -23,6 +24,8 @@ use Tests\Support\Modules\ModuleTestCase;
  */
 final class BookingStartCutoffTest extends ModuleTestCase
 {
+    use OpensResourceEveryDay;
+
     private const string VENUE_TIMEZONE = 'Europe/Madrid';
 
     private const string CANCEL_OWN = 'venuebookings:bookings.cancel_own';
@@ -55,6 +58,10 @@ final class BookingStartCutoffTest extends ModuleTestCase
             'status' => 'active',
             'sort_order' => 0,
         ]);
+
+        // Open every day 10:00-23:00 in hourly slots. The minimum advance is not what these tests are about.
+        $this->openEveryDay($this->room->id, '10:00', '23:00');
+        config()->set('modules.settings.venue-bookings.min_advance_minutes', 0);
 
         $this->user = UserModel::factory()->create();
     }

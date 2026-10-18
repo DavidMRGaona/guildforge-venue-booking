@@ -11,10 +11,19 @@ use Modules\VenueBookings\Application\DTOs\Response\BookingResponseDTO;
 interface BookingServiceInterface
 {
     /**
-     * Create a booking. Refused for any caller once the slot has started in the venue timezone.
+     * Create a booking. Refused for any caller, administrators included, once the slot has
+     * started (venue timezone), when a settings rule forbids it (active bookings per user,
+     * minimum advance, days ahead), when the range is not made of the resource's slots for
+     * that day or spans fewer or more consecutive slots than allowed, or when it overlaps
+     * an active booking.
      *
      * @throws \Modules\VenueBookings\Domain\Exceptions\BookingAlreadyStartedException
+     * @throws \Modules\VenueBookings\Domain\Exceptions\BookingLimitExceededException
+     * @throws \Modules\VenueBookings\Domain\Exceptions\TooSoonToBookException
+     * @throws \Modules\VenueBookings\Domain\Exceptions\TooFarToBookException
+     * @throws \Modules\VenueBookings\Domain\Exceptions\SlotOutsideScheduleException
      * @throws \Modules\VenueBookings\Domain\Exceptions\MinimumSlotsNotMetException
+     * @throws \Modules\VenueBookings\Domain\Exceptions\MaximumSlotsExceededException
      * @throws \Modules\VenueBookings\Domain\Exceptions\SlotUnavailableException
      */
     public function createBooking(CreateBookingDTO $dto): BookingResponseDTO;
