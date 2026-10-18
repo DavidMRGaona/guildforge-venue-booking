@@ -77,6 +77,17 @@ final class Booking
     }
 
     /**
+     * When the booking ends, read in the venue timezone the caller passes. A range that
+     * crosses midnight ends on the next day.
+     */
+    public function endsAt(DateTimeZone $timezone): DateTimeImmutable
+    {
+        $end = new DateTimeImmutable("{$this->date} {$this->timeRange->endTime}", $timezone);
+
+        return $this->timeRange->crossesMidnight() ? $end->modify('+1 day') : $end;
+    }
+
+    /**
      * Whether the booking has started at $now: from its start time on (inclusive),
      * whatever timezone $now is expressed in.
      */

@@ -6,6 +6,7 @@ namespace Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories
 
 use DateTimeImmutable;
 use DateTimeInterface;
+use DateTimeZone;
 use Modules\VenueBookings\Domain\Entities\Booking;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
 use Modules\VenueBookings\Domain\Exceptions\BookingNotFoundException;
@@ -176,6 +177,30 @@ final readonly class EloquentBookingRepository implements BookingRepositoryInter
         BookingModel::query()
             ->where('id', $id->value)
             ->update(['reminder_sent_at' => $sentAt->format('Y-m-d H:i:s')]);
+    }
+
+    /**
+     * @return array<Booking>
+     */
+    public function getConfirmedEndedBy(DateTimeInterface $endedBy): array
+    {
+        // Narrow by status and calendar day in SQL (a booking ends on its day or the next),
+        // then compare the exact end in PHP, as getConfirmedBookingsForReminder() does
+        $bookings = BookingModel::query()
+            ->where('status', BookingStatus::Confirmed->value)
+            ->where('date', '<=', $endedBy->format('Y-m-d'))
+            ->orderBy('date')
+            ->orderBy('start_time')
+            ->get()
+            ->map(fn (BookingModel $model): Booking => $this->toEntity($model))
+            ->all();
+
+        $timezone = $endedBy->getTimezone() ?: new DateTimeZone('UTC');
+
+        return array_values(array_filter(
+            $bookings,
+            fn (Booking $booking): bool => $booking->endsAt($timezone) <= $endedBy,
+        ));
     }
 
     /**
