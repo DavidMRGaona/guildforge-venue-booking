@@ -109,7 +109,7 @@ final class BookingEmailsTest extends ModuleTestCase
     {
         $message = (new BookingReminderNotification('id', 'John', 'Sala grande', '2026-03-16', '10:00', '12:00'))->toMail($this->member);
 
-        $this->assertSame('Recordatorio: tu reserva de Sala grande, 16/03/2026', $message->subject);
+        $this->assertSame('Recordatorio: tu reserva en Sala grande, 16/03/2026', $message->subject);
         $this->assertStringNotContainsString('mañana', (string) $message->subject);
         $this->assertSame('¡Hola, John!', $message->greeting);
         $this->assertContains('**Fecha:** 16/03/2026', $message->introLines);

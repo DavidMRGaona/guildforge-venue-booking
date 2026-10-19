@@ -186,7 +186,7 @@ return [
             'add_custom_field' => 'Añadir campo',
             'notify_on_booking_created' => 'Notificar al crear reserva',
             'notify_on_booking_created_help' => 'Avisa a los administradores y a quien tenga el permiso de gestionar reservas.',
-            'notify_on_booking_received' => 'Avisar al socio de que su reserva está pendiente',
+            'notify_on_booking_received' => 'Avisar de que la reserva está pendiente de aprobación',
             'notify_on_booking_received_help' => 'Solo cuando la reserva necesita aprobación; si se confirma sola, recibe el correo de confirmación.',
             'notify_on_booking_confirmed' => 'Notificar al confirmar reserva',
             'notify_on_booking_cancelled' => 'Notificar al cancelar reserva',
@@ -265,7 +265,7 @@ return [
             'view_bookings' => 'Ver mis reservas',
         ],
         'booking_reminder' => [
-            'subject' => 'Recordatorio: tu reserva de :resource, :date',
+            'subject' => 'Recordatorio: tu reserva en :resource, :date',
             'greeting' => '¡Hola, :name!',
             'intro' => 'Te recordamos que tienes una reserva próximamente.',
             'resource' => 'Espacio',
