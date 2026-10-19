@@ -23,6 +23,7 @@ return [
     'custom_fields' => [],
     'notifications' => [
         'notify_on_booking_created' => true,
+        'notify_on_booking_received' => true,
         'notify_on_booking_confirmed' => true,
         'notify_on_booking_cancelled' => true,
         'notify_on_booking_rejected' => true,

@@ -46,6 +46,7 @@ use Modules\VenueBookings\Domain\Repositories\BookingRepositoryInterface;
 use Modules\VenueBookings\Domain\Repositories\OperatingScheduleRepositoryInterface;
 use Modules\VenueBookings\Infrastructure\Listeners\NotifyOnBookingCancelled;
 use Modules\VenueBookings\Infrastructure\Listeners\NotifyOnBookingConfirmed;
+use Modules\VenueBookings\Infrastructure\Listeners\NotifyMemberOnBookingReceived;
 use Modules\VenueBookings\Infrastructure\Listeners\NotifyOnBookingCreated;
 use Modules\VenueBookings\Infrastructure\Listeners\NotifyOnBookingRejected;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories\EloquentBookableResourceRepository;
@@ -128,6 +129,11 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
         Event::listen(
             BookingCreated::class,
             [NotifyOnBookingCreated::class, 'handle']
+        );
+
+        Event::listen(
+            BookingCreated::class,
+            [NotifyMemberOnBookingReceived::class, 'handle']
         );
 
         Event::listen(
