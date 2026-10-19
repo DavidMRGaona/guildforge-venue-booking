@@ -8,9 +8,11 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Modules\VenueBookings\Notifications\Concerns\FormatsBookingDate;
 
 final class BookingReminderNotification extends Notification implements ShouldQueue
 {
+    use FormatsBookingDate;
     use Queueable;
 
     public function __construct(
@@ -35,13 +37,14 @@ final class BookingReminderNotification extends Notification implements ShouldQu
         return (new MailMessage)
             ->subject(__('venue-bookings::messages.emails.booking_reminder.subject', [
                 'resource' => $this->resourceName,
+                'date' => $this->displayDate($this->date),
             ]))
             ->greeting(__('venue-bookings::messages.emails.booking_reminder.greeting', [
                 'name' => $this->userName,
             ]))
             ->line(__('venue-bookings::messages.emails.booking_reminder.intro'))
             ->line('**'.__('venue-bookings::messages.emails.booking_reminder.resource').':** '.$this->resourceName)
-            ->line('**'.__('venue-bookings::messages.emails.booking_reminder.date').':** '.$this->date)
+            ->line('**'.__('venue-bookings::messages.emails.booking_reminder.date').':** '.$this->displayDate($this->date))
             ->line('**'.__('venue-bookings::messages.emails.booking_reminder.time').':** '.$this->startTime.' - '.$this->endTime)
             ->action(__('venue-bookings::messages.emails.booking_reminder.view_bookings'), url('/reservas/mis-reservas'));
     }

@@ -8,9 +8,11 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Modules\VenueBookings\Notifications\Concerns\FormatsBookingDate;
 
 final class BookingCancelledNotification extends Notification implements ShouldQueue
 {
+    use FormatsBookingDate;
     use Queueable;
 
     public function __construct(
@@ -36,14 +38,14 @@ final class BookingCancelledNotification extends Notification implements ShouldQ
         $mail = (new MailMessage)
             ->subject(__('venue-bookings::messages.emails.booking_cancelled.subject', [
                 'resource' => $this->resourceName,
-                'date' => $this->date,
+                'date' => $this->displayDate($this->date),
             ]))
             ->greeting(__('venue-bookings::messages.emails.booking_cancelled.greeting', [
                 'name' => $this->userName,
             ]))
             ->line(__('venue-bookings::messages.emails.booking_cancelled.intro'))
             ->line('**'.__('venue-bookings::messages.emails.booking_cancelled.resource').':** '.$this->resourceName)
-            ->line('**'.__('venue-bookings::messages.emails.booking_cancelled.date').':** '.$this->date)
+            ->line('**'.__('venue-bookings::messages.emails.booking_cancelled.date').':** '.$this->displayDate($this->date))
             ->line('**'.__('venue-bookings::messages.emails.booking_cancelled.time').':** '.$this->startTime.' - '.$this->endTime);
 
         if ($this->reason !== null) {

@@ -8,9 +8,11 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Modules\VenueBookings\Notifications\Concerns\FormatsBookingDate;
 
 final class BookingConfirmedNotification extends Notification implements ShouldQueue
 {
+    use FormatsBookingDate;
     use Queueable;
 
     public function __construct(
@@ -33,13 +35,16 @@ final class BookingConfirmedNotification extends Notification implements ShouldQ
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject(__('venue-bookings::messages.emails.booking_confirmed.subject'))
+            ->subject(__('venue-bookings::messages.emails.booking_confirmed.subject', [
+                'resource' => $this->resourceName,
+                'date' => $this->displayDate($this->date),
+            ]))
             ->greeting(__('venue-bookings::messages.emails.booking_confirmed.greeting', [
                 'name' => $this->userName,
             ]))
             ->line(__('venue-bookings::messages.emails.booking_confirmed.intro'))
             ->line('**'.__('venue-bookings::messages.emails.booking_confirmed.resource').':** '.$this->resourceName)
-            ->line('**'.__('venue-bookings::messages.emails.booking_confirmed.date').':** '.$this->date)
+            ->line('**'.__('venue-bookings::messages.emails.booking_confirmed.date').':** '.$this->displayDate($this->date))
             ->line('**'.__('venue-bookings::messages.emails.booking_confirmed.time').':** '.$this->startTime.' - '.$this->endTime)
             ->action(__('venue-bookings::messages.emails.booking_confirmed.view_bookings'), url('/reservas/mis-reservas'));
     }

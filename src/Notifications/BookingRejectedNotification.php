@@ -8,9 +8,11 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Modules\VenueBookings\Notifications\Concerns\FormatsBookingDate;
 
 final class BookingRejectedNotification extends Notification implements ShouldQueue
 {
+    use FormatsBookingDate;
     use Queueable;
 
     public function __construct(
@@ -36,14 +38,14 @@ final class BookingRejectedNotification extends Notification implements ShouldQu
         $mail = (new MailMessage)
             ->subject(__('venue-bookings::messages.emails.booking_rejected.subject', [
                 'resource' => $this->resourceName,
-                'date' => $this->date,
+                'date' => $this->displayDate($this->date),
             ]))
             ->greeting(__('venue-bookings::messages.emails.booking_rejected.greeting', [
                 'name' => $this->userName,
             ]))
             ->line(__('venue-bookings::messages.emails.booking_rejected.intro'))
             ->line('**'.__('venue-bookings::messages.emails.booking_rejected.resource').':** '.$this->resourceName)
-            ->line('**'.__('venue-bookings::messages.emails.booking_rejected.date').':** '.$this->date)
+            ->line('**'.__('venue-bookings::messages.emails.booking_rejected.date').':** '.$this->displayDate($this->date))
             ->line('**'.__('venue-bookings::messages.emails.booking_rejected.time').':** '.$this->startTime.' - '.$this->endTime);
 
         if ($this->reason !== null) {

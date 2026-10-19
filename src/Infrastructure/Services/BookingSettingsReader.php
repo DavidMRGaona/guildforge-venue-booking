@@ -70,6 +70,12 @@ final readonly class BookingSettingsReader
             ?? config('venue-bookings.notifications.notify_on_booking_created', true));
     }
 
+    public function isNotifyOnBookingReceivedEnabled(): bool
+    {
+        return (bool) (config('modules.settings.venue-bookings.notifications.notify_on_booking_received')
+            ?? config('venue-bookings.notifications.notify_on_booking_received', true));
+    }
+
     public function isNotifyOnBookingConfirmedEnabled(): bool
     {
         return (bool) (config('modules.settings.venue-bookings.notifications.notify_on_booking_confirmed')

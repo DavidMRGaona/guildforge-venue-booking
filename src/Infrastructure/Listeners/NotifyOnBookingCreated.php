@@ -13,6 +13,8 @@ use Modules\VenueBookings\Notifications\BookingCreatedNotification;
 
 final readonly class NotifyOnBookingCreated
 {
+    private const string MANAGE_PERMISSION = 'venuebookings:bookings.manage';
+
     public function __construct(
         private BookingSettingsReader $settingsReader,
         private BookableResourceRepositoryInterface $resourceRepository,
@@ -45,10 +47,15 @@ final readonly class NotifyOnBookingCreated
             endTime: $event->endTime,
         );
 
-        $admins = UserModel::whereHas('roles', fn ($q) => $q->where('name', 'admin'))->get();
+        // Whoever can confirm or reject it: the admin role, or a role granted bookings.manage
+        $managers = UserModel::query()
+            ->whereHas('roles', fn ($roles) => $roles
+                ->where('name', 'admin')
+                ->orWhereHas('permissions', fn ($permissions) => $permissions->where('key', self::MANAGE_PERMISSION)))
+            ->get();
 
-        foreach ($admins as $admin) {
-            $admin->notify($notification);
+        foreach ($managers as $manager) {
+            $manager->notify($notification);
         }
     }
 }

@@ -224,6 +224,12 @@ final class VenueBookingsSettings extends Page implements HasForms
                 ->schema([
                     Toggle::make('notifications.notify_on_booking_created')
                         ->label(__('venue-bookings::messages.settings.fields.notify_on_booking_created'))
+                        ->helperText(__('venue-bookings::messages.settings.fields.notify_on_booking_created_help'))
+                        ->default(true),
+
+                    Toggle::make('notifications.notify_on_booking_received')
+                        ->label(__('venue-bookings::messages.settings.fields.notify_on_booking_received'))
+                        ->helperText(__('venue-bookings::messages.settings.fields.notify_on_booking_received_help'))
                         ->default(true),
 
                     Toggle::make('notifications.notify_on_booking_confirmed')

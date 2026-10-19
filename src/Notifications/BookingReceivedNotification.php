@@ -1,0 +1,70 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Modules\VenueBookings\Notifications;
+
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Notification;
+use Modules\VenueBookings\Notifications\Concerns\FormatsBookingDate;
+
+/**
+ * Tells the member their booking arrived and waits for approval.
+ */
+final class BookingReceivedNotification extends Notification implements ShouldQueue
+{
+    use FormatsBookingDate;
+    use Queueable;
+
+    public function __construct(
+        private readonly string $bookingId,
+        private readonly string $userName,
+        private readonly string $resourceName,
+        private readonly string $date,
+        private readonly string $startTime,
+        private readonly string $endTime,
+    ) {}
+
+    /**
+     * @return array<string>
+     */
+    public function via(object $notifiable): array
+    {
+        return ['mail'];
+    }
+
+    public function toMail(object $notifiable): MailMessage
+    {
+        return (new MailMessage)
+            ->subject(__('venue-bookings::messages.emails.booking_received.subject', [
+                'resource' => $this->resourceName,
+                'date' => $this->displayDate($this->date),
+            ]))
+            ->greeting(__('venue-bookings::messages.emails.booking_received.greeting', [
+                'name' => $this->userName,
+            ]))
+            ->line(__('venue-bookings::messages.emails.booking_received.intro'))
+            ->line('**'.__('venue-bookings::messages.emails.booking_received.resource').':** '.$this->resourceName)
+            ->line('**'.__('venue-bookings::messages.emails.booking_received.date').':** '.$this->displayDate($this->date))
+            ->line('**'.__('venue-bookings::messages.emails.booking_received.time').':** '.$this->startTime.' - '.$this->endTime)
+            ->action(__('venue-bookings::messages.emails.booking_received.view_bookings'), url('/reservas/mis-reservas'));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toArray(object $notifiable): array
+    {
+        return [
+            'booking_id' => $this->bookingId,
+            'user_name' => $this->userName,
+            'resource_name' => $this->resourceName,
+            'date' => $this->date,
+            'start_time' => $this->startTime,
+            'end_time' => $this->endTime,
+            'type' => 'booking_received',
+        ];
+    }
+}
