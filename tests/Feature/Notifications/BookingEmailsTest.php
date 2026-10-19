@@ -53,7 +53,7 @@ final class BookingEmailsTest extends ModuleTestCase
             'sort_order' => 0,
         ]);
         $this->openEveryDay($this->room->id, '08:00', '22:00');
-        $this->member = UserModel::factory()->create(['name' => 'Ana']);
+        $this->member = UserModel::factory()->create(['name' => 'John']);
     }
 
     public function test_a_new_booking_is_announced_to_admins_and_to_whoever_manages_bookings(): void
@@ -107,11 +107,11 @@ final class BookingEmailsTest extends ModuleTestCase
 
     public function test_the_reminder_names_the_day_instead_of_saying_tomorrow(): void
     {
-        $message = (new BookingReminderNotification('id', 'Ana', 'Sala grande', '2026-03-16', '10:00', '12:00'))->toMail($this->member);
+        $message = (new BookingReminderNotification('id', 'John', 'Sala grande', '2026-03-16', '10:00', '12:00'))->toMail($this->member);
 
         $this->assertSame('Recordatorio: tu reserva de Sala grande, 16/03/2026', $message->subject);
         $this->assertStringNotContainsString('mañana', (string) $message->subject);
-        $this->assertSame('¡Hola, Ana!', $message->greeting);
+        $this->assertSame('¡Hola, John!', $message->greeting);
         $this->assertContains('**Fecha:** 16/03/2026', $message->introLines);
     }
 
