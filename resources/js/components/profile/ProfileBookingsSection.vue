@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { router } from '@inertiajs/vue3';
+import { router, Link } from '@inertiajs/vue3';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 import BookingCard from '../BookingCard.vue';
 import type { ProfileBookingsData } from '../../types/profile';
@@ -57,118 +57,136 @@ function confirmCancel(): void {
 </script>
 
 <template>
-    <div v-if="profileBookings && profileBookings.total > 0" class="space-y-10">
-        <!-- Upcoming section -->
-        <section>
-            <h2 class="mb-6 flex items-center gap-2 text-lg font-semibold text-base-primary">
-                <span class="flex h-6 w-6 items-center justify-center rounded-full bg-primary-light text-xs font-bold text-primary">
-                    {{ upcomingBookings.length }}
-                </span>
-                {{ t('venueBookings.profile.upcoming') }}
-            </h2>
-
-            <div v-if="upcomingBookings.length > 0" class="space-y-3">
-                <BookingCard
-                    v-for="booking in upcomingBookings"
-                    :key="booking.id"
-                    :booking="booking"
-                    :can-cancel="canCancel"
-                    @cancel="handleCancel"
-                />
-            </div>
-
-            <p
-                v-else
-                class="rounded-lg border border-dashed border-default bg-muted p-6 text-center text-sm text-base-muted"
+    <div class="space-y-10">
+        <!-- Links to the full list and to the calendar: shown with no bookings too -->
+        <div class="flex flex-wrap justify-end gap-3">
+            <Link
+                href="/reservas/mis-reservas"
+                class="inline-flex min-h-[44px] items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
-                {{ t('venueBookings.profile.noUpcoming') }}
-            </p>
-        </section>
-
-        <!-- Past section (collapsible) -->
-        <section v-if="pastBookings.length > 0" class="border-t border-default pt-8">
-            <button
-                type="button"
-                class="mb-4 flex w-full items-center justify-between rounded-lg bg-base-secondary/10 px-4 py-3 text-left transition-colors hover:bg-base-secondary/20"
-                :aria-expanded="showPastSection"
-                @click="togglePastSection"
+                {{ t('venueBookings.profile.viewAll') }}
+            </Link>
+            <Link
+                href="/reservas"
+                class="inline-flex min-h-[44px] items-center gap-2 rounded-md border border-default px-4 py-2 text-sm font-semibold text-base-primary hover:bg-base-secondary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
-                <span class="flex items-center gap-2 text-lg font-semibold text-base-primary">
-                    <span class="flex h-6 w-6 items-center justify-center rounded-full bg-base-secondary/20 text-xs font-bold text-base-secondary">
-                        {{ pastBookings.length }}
+                {{ t('booking_calendar.new_booking') }}
+            </Link>
+        </div>
+
+        <template v-if="profileBookings && profileBookings.total > 0">
+            <!-- Upcoming section -->
+            <section>
+                <h2 class="mb-6 flex items-center gap-2 text-lg font-semibold text-base-primary">
+                    <span class="flex h-6 w-6 items-center justify-center rounded-full bg-primary-light text-xs font-bold text-primary">
+                        {{ upcomingBookings.length }}
                     </span>
-                    {{ t('venueBookings.profile.past') }}
-                </span>
-                <svg
-                    :class="['h-5 w-5 text-base-muted transition-transform', showPastSection ? 'rotate-180' : '']"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
+                    {{ t('venueBookings.profile.upcoming') }}
+                </h2>
+
+                <div v-if="upcomingBookings.length > 0" class="space-y-3">
+                    <BookingCard
+                        v-for="booking in upcomingBookings"
+                        :key="booking.id"
+                        :booking="booking"
+                        :can-cancel="canCancel"
+                        @cancel="handleCancel"
+                    />
+                </div>
+
+                <p
+                    v-else
+                    class="rounded-lg border border-dashed border-default bg-muted p-6 text-center text-sm text-base-muted"
                 >
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
-            </button>
+                    {{ t('venueBookings.profile.noUpcoming') }}
+                </p>
+            </section>
 
-            <div v-if="showPastSection" class="space-y-3">
-                <BookingCard
-                    v-for="booking in visiblePastBookings"
-                    :key="booking.id"
-                    :booking="booking"
-                    :can-cancel="canCancel"
-                    @cancel="handleCancel"
-                />
-
-                <!-- Load more button -->
+            <!-- Past section (collapsible) -->
+            <section v-if="pastBookings.length > 0" class="border-t border-default pt-8">
                 <button
-                    v-if="hasMorePast"
                     type="button"
-                    class="flex w-full items-center justify-center gap-2 rounded-lg border border-default bg-transparent py-3 text-sm font-medium text-base-secondary transition-colors hover:bg-base-secondary/10"
-                    @click="loadMore"
+                    class="mb-4 flex w-full items-center justify-between rounded-lg bg-base-secondary/10 px-4 py-3 text-left transition-colors hover:bg-base-secondary/20"
+                    :aria-expanded="showPastSection"
+                    @click="togglePastSection"
                 >
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    <span class="flex items-center gap-2 text-lg font-semibold text-base-primary">
+                        <span class="flex h-6 w-6 items-center justify-center rounded-full bg-base-secondary/20 text-xs font-bold text-base-secondary">
+                            {{ pastBookings.length }}
+                        </span>
+                        {{ t('venueBookings.profile.past') }}
+                    </span>
+                    <svg
+                        :class="['h-5 w-5 text-base-muted transition-transform', showPastSection ? 'rotate-180' : '']"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                     </svg>
-                    {{ t('venueBookings.profile.loadMore', { count: remainingPastCount }) }}
                 </button>
-            </div>
-        </section>
 
-        <!-- Cancel confirmation dialog -->
-        <ConfirmDialog
-            v-model="showCancelDialog"
-            :title="t('venueBookings.profile.cancelConfirmTitle')"
-            :message="t('venueBookings.profile.cancelConfirmMessage')"
-            :confirm-label="t('venueBookings.profile.cancelConfirmButton')"
-            confirm-variant="danger"
-            @confirm="confirmCancel"
-        />
-    </div>
+                <div v-if="showPastSection" class="space-y-3">
+                    <BookingCard
+                        v-for="booking in visiblePastBookings"
+                        :key="booking.id"
+                        :booking="booking"
+                        :can-cancel="canCancel"
+                        @cancel="handleCancel"
+                    />
 
-    <!-- Empty state when no bookings at all -->
-    <div
-        v-else
-        class="rounded-lg border border-dashed border-default bg-muted p-12 text-center"
-    >
-        <svg
-            class="mx-auto h-12 w-12 text-base-muted"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-        >
-            <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    <!-- Load more button -->
+                    <button
+                        v-if="hasMorePast"
+                        type="button"
+                        class="flex w-full items-center justify-center gap-2 rounded-lg border border-default bg-transparent py-3 text-sm font-medium text-base-secondary transition-colors hover:bg-base-secondary/10"
+                        @click="loadMore"
+                    >
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        {{ t('venueBookings.profile.loadMore', { count: remainingPastCount }) }}
+                    </button>
+                </div>
+            </section>
+
+            <!-- Cancel confirmation dialog -->
+            <ConfirmDialog
+                v-model="showCancelDialog"
+                :title="t('venueBookings.profile.cancelConfirmTitle')"
+                :message="t('venueBookings.profile.cancelConfirmMessage')"
+                :confirm-label="t('venueBookings.profile.cancelConfirmButton')"
+                confirm-variant="danger"
+                @confirm="confirmCancel"
             />
-        </svg>
-        <h3 class="mt-4 text-lg font-medium text-base-primary">
-            {{ t('venueBookings.profile.noBookings') }}
-        </h3>
-        <p class="mt-1 text-sm text-base-muted">
-            {{ t('venueBookings.profile.noBookingsDescription') }}
-        </p>
+        </template>
+
+        <!-- Empty state when no bookings at all -->
+        <div
+            v-else
+            class="rounded-lg border border-dashed border-default bg-muted p-12 text-center"
+        >
+            <svg
+                class="mx-auto h-12 w-12 text-base-muted"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+            </svg>
+            <h3 class="mt-4 text-lg font-medium text-base-primary">
+                {{ t('venueBookings.profile.noBookings') }}
+            </h3>
+            <p class="mt-1 text-sm text-base-muted">
+                {{ t('venueBookings.profile.noBookingsDescription') }}
+            </p>
+        </div>
     </div>
 </template>

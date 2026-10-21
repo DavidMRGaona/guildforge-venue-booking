@@ -2,6 +2,7 @@ export default {
     venueBookings: {
         profile: {
             tabLabel: 'Bookings',
+            viewAll: 'View all my bookings',
             upcoming: 'Upcoming bookings',
             past: 'Past bookings',
             noBookings: 'No bookings',
@@ -25,6 +26,7 @@ export default {
         cancel_confirm: 'Are you sure you want to cancel this booking?',
         cancel_reason: 'Cancellation reason',
         my_bookings: 'My bookings',
+        new_booking: 'Make a booking',
         upcoming: 'Upcoming',
         past: 'Past',
         no_upcoming: 'You have no upcoming bookings',

@@ -2,6 +2,7 @@ export default {
     venueBookings: {
         profile: {
             tabLabel: 'Reservas',
+            viewAll: 'Ver todas mis reservas',
             upcoming: 'Próximas reservas',
             past: 'Reservas pasadas',
             noBookings: 'Sin reservas',
@@ -25,6 +26,7 @@ export default {
         cancel_confirm: '\u00bfEst\u00e1s seguro de que quieres cancelar esta reserva?',
         cancel_reason: 'Motivo de cancelaci\u00f3n',
         my_bookings: 'Mis reservas',
+        new_booking: 'Hacer una reserva',
         upcoming: 'Pr\u00f3ximas',
         past: 'Anteriores',
         no_upcoming: 'No tienes reservas pr\u00f3ximas',
