@@ -128,7 +128,7 @@ function handleCancel(): void {
                         type="button"
                         :disabled="gate.blocked.value"
                         :aria-describedby="gate.blocked.value ? cancelBlockedId : undefined"
-                        class="rounded-lg border border-error px-3 py-1.5 text-sm font-medium text-error transition-colors enabled:hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:enabled:hover:bg-red-900/20 dark:focus:ring-offset-page"
+                        class="rounded-lg border border-error enabled:hover:bg-error/10 px-3 py-1.5 text-sm font-medium text-error transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface disabled:cursor-not-allowed disabled:opacity-50"
                         @click="handleCancel"
                     >
                         {{ t('booking_calendar.cancel_booking') }}

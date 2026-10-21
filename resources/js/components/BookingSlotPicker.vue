@@ -190,7 +190,7 @@ function formatBlockTime(slot: BookingSlot): string {
                     :disabled="isDisabled(slot)"
                     :aria-pressed="isSelected(slot)"
                     :class="[
-                        'flex items-center justify-between rounded-lg border px-4 py-3 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 dark:focus:ring-offset-page',
+                        'flex items-center justify-between rounded-lg border px-4 py-3 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 focus:ring-offset-surface',
                         isSelected(slot)
                             ? 'border-primary-600 bg-primary-600 text-white'
                             : isDisabled(slot)
@@ -241,7 +241,7 @@ function formatBlockTime(slot: BookingSlot): string {
                     :disabled="isDisabled(slot)"
                     :aria-pressed="isSelected(slot)"
                     :class="[
-                        'rounded-lg border px-3 py-2 text-center text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 dark:focus:ring-offset-page',
+                        'rounded-lg border px-3 py-2 text-center text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 focus:ring-offset-surface',
                         isSelected(slot)
                             ? 'border-primary-600 bg-primary-600 text-white'
                             : !slot.is_available

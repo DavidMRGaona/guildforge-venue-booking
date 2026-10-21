@@ -221,7 +221,7 @@ function updateField(key: string, value: string | number | boolean): void {
                         <!-- Error message -->
                         <div
                             v-if="form.hasErrors"
-                            class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-error dark:bg-red-900/20"
+                            class="mb-4 rounded-lg bg-error-light p-3 text-sm text-base-primary"
                             role="alert"
                         >
                             <p v-for="(errorMsg, field) in form.errors" :key="field">
@@ -254,7 +254,7 @@ function updateField(key: string, value: string | number | boolean): void {
                                     type="text"
                                     :required="field.required"
                                     :value="form.field_values[field.key]"
-                                    class="w-full rounded-lg border border-default px-3 py-2 text-sm text-base-primary focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:bg-stone-700 dark:focus:ring-offset-page"
+                                    class="w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-base-primary focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                                     @input="updateField(field.key, ($event.target as HTMLInputElement).value)"
                                 />
 
@@ -265,7 +265,7 @@ function updateField(key: string, value: string | number | boolean): void {
                                     :required="field.required"
                                     :value="form.field_values[field.key] as string"
                                     rows="3"
-                                    class="w-full rounded-lg border border-default px-3 py-2 text-sm text-base-primary focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:bg-stone-700 dark:focus:ring-offset-page"
+                                    class="w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-base-primary focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                                     @input="updateField(field.key, ($event.target as HTMLTextAreaElement).value)"
                                 ></textarea>
 
@@ -277,7 +277,7 @@ function updateField(key: string, value: string | number | boolean): void {
                                     :required="field.required"
                                     :value="form.field_values[field.key]"
                                     min="0"
-                                    class="w-full rounded-lg border border-default px-3 py-2 text-sm text-base-primary focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:bg-stone-700 dark:focus:ring-offset-page"
+                                    class="w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-base-primary focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                                     @input="updateField(field.key, Number(($event.target as HTMLInputElement).value))"
                                 />
 
@@ -287,7 +287,7 @@ function updateField(key: string, value: string | number | boolean): void {
                                     :id="`field-${field.key}`"
                                     :required="field.required"
                                     :value="form.field_values[field.key] as string"
-                                    class="w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-base-primary focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:bg-stone-700"
+                                    class="w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-base-primary focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                                     @change="updateField(field.key, ($event.target as HTMLSelectElement).value)"
                                 >
                                     <option value="" disabled></option>
@@ -309,7 +309,7 @@ function updateField(key: string, value: string | number | boolean): void {
                                         :id="`field-${field.key}`"
                                         type="checkbox"
                                         :checked="!!form.field_values[field.key]"
-                                        class="h-4 w-4 rounded border-default text-primary-600 focus:ring-primary-500 dark:bg-stone-700"
+                                        class="h-4 w-4 rounded border-default text-primary-600 focus:ring-primary-500"
                                         @change="updateField(field.key, ($event.target as HTMLInputElement).checked)"
                                     />
                                 </div>

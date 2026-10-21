@@ -59,7 +59,7 @@ function confirmCancel(): void {
 
 <template>
     <DefaultLayout>
-        <div class="bg-surface shadow dark:shadow-neutral-900/50">
+        <div class="bg-surface shadow">
             <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
                 <h1 class="text-3xl font-bold tracking-tight text-base-primary">
                     {{ t('booking_calendar.my_bookings') }}
