@@ -190,9 +190,9 @@ function formatBlockTime(slot: BookingSlot): string {
                     :disabled="isDisabled(slot)"
                     :aria-pressed="isSelected(slot)"
                     :class="[
-                        'flex items-center justify-between rounded-lg border px-4 py-3 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 dark:focus:ring-offset-page',
+                        'flex items-center justify-between rounded-lg border px-4 py-3 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 focus:ring-offset-surface',
                         isSelected(slot)
-                            ? 'border-primary-600 bg-primary-600 text-white'
+                            ? 'border-primary-600 bg-primary text-white'
                             : isDisabled(slot)
                                 ? 'cursor-not-allowed border-default bg-muted text-base-muted'
                                 : 'border-default bg-surface text-base-primary hover:border-primary-400 hover:bg-primary-light',
@@ -241,9 +241,9 @@ function formatBlockTime(slot: BookingSlot): string {
                     :disabled="isDisabled(slot)"
                     :aria-pressed="isSelected(slot)"
                     :class="[
-                        'rounded-lg border px-3 py-2 text-center text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 dark:focus:ring-offset-page',
+                        'rounded-lg border px-3 py-2 text-center text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 focus:ring-offset-surface',
                         isSelected(slot)
-                            ? 'border-primary-600 bg-primary-600 text-white'
+                            ? 'border-primary-600 bg-primary text-white'
                             : !slot.is_available
                                 ? 'cursor-not-allowed border-default bg-muted text-base-muted line-through'
                                 : isDisabledByConsecutive(slot)

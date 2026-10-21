@@ -43,7 +43,7 @@ function handleTabClick(id: string): void {
             v-if="useDropdown"
             id="resource-selector"
             :value="selectedId ?? ''"
-            class="w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-base-primary focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:bg-stone-700"
+            class="w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-base-primary focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
             @change="handleSelect"
         >
             <option value="" disabled>
@@ -71,9 +71,9 @@ function handleTabClick(id: string): void {
                 type="button"
                 :aria-selected="resource.id === selectedId"
                 :class="[
-                    'rounded-lg px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-page',
+                    'rounded-lg px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-surface',
                     resource.id === selectedId
-                        ? 'bg-primary-600 text-white'
+                        ? 'bg-primary text-white'
                         : 'border border-default bg-surface text-base-secondary hover:bg-muted',
                 ]"
                 @click="handleTabClick(resource.id)"

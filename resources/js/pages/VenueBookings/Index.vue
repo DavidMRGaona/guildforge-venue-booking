@@ -215,7 +215,7 @@ async function onEventSelect(bookingId: string): Promise<void> {
 
 <template>
     <DefaultLayout>
-        <div class="bg-surface shadow dark:shadow-neutral-900/50">
+        <div class="bg-surface shadow">
             <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
                 <h1 class="text-3xl font-bold tracking-tight text-base-primary">
                     {{ t('booking_calendar.title') }}
@@ -345,10 +345,10 @@ async function onEventSelect(bookingId: string): Promise<void> {
                         :disabled="bookButtonDisabled"
                         :aria-describedby="bookingBlocked ? bookBlockedId : undefined"
                         :class="[
-                            'rounded-lg px-8 py-3 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-page',
+                            'rounded-lg px-8 py-3 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-surface',
                             bookButtonDisabled
                                 ? 'cursor-not-allowed bg-primary-400 text-white/70'
-                                : 'bg-primary-600 text-white hover:bg-primary-700',
+                                : 'bg-primary text-white hover:bg-primary-700',
                         ]"
                         @click="openBookingForm"
                     >
