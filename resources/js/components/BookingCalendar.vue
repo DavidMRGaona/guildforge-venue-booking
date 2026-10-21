@@ -2,27 +2,25 @@
 import { ref, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import FullCalendar from '@fullcalendar/vue3';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import timeGridPlugin from '@fullcalendar/timegrid';
-import interactionPlugin from '@fullcalendar/interaction';
-import luxonPlugin from '@fullcalendar/luxon3';
+import dayGridPlugin from '@fullcalendar/vue3/daygrid';
+import timeGridPlugin from '@fullcalendar/vue3/timegrid';
+import interactionPlugin from '@fullcalendar/vue3/interaction';
 import { useCalendarLocale } from '@/composables/useCalendarLocale';
+import { calendarClassOptions, calendarThemePlugin } from '@/utils/calendarTheme';
 import type {
     CalendarOptions,
-    EventClickArg,
-    EventHoveringArg,
-    EventSourceFuncArg,
-} from '@fullcalendar/core';
+    DateClickInfo,
+    EventClickInfo,
+    EventHoveringInfo,
+    EventInput,
+    EventSourceFuncInfo,
+} from '@fullcalendar/vue3';
 import type {
     BookingCalendarEvent,
     BookingTooltipData,
 } from '../types/bookings';
 import BookingTooltip from './BookingTooltip.vue';
 import { VENUE_TIMEZONE } from '@/utils/datetime';
-
-interface DateClickInfo {
-    dateStr: string;
-}
 
 interface Props {
     resourceId: string;
@@ -51,16 +49,8 @@ const tooltipY = ref(0);
 const tooltipVisible = ref(false);
 
 const fetchEvents = async (
-    info: EventSourceFuncArg,
-    successCallback: (
-        events: Array<{
-            id: string;
-            title: string;
-            start: string;
-            end: string;
-            color: string;
-        }>
-    ) => void,
+    info: EventSourceFuncInfo,
+    successCallback: (events: EventInput[]) => void,
     failureCallback: (error: Error) => void
 ): Promise<void> => {
     isLoading.value = true;
@@ -95,14 +85,14 @@ const fetchEvents = async (
             });
         });
 
-        const mappedEvents = data.map((event) => ({
+        const mappedEvents: EventInput[] = data.map((event) => ({
             id: event.id,
             title: event.title,
             start: event.start,
             end: event.end,
             color: event.color,
             // The event colour is a pale status background in both themes
-            textColor: 'var(--color-text-primary)',
+            contrastColor: 'var(--color-text-primary)',
         }));
 
         successCallback(mappedEvents);
@@ -119,12 +109,12 @@ const handleDateClick = (info: DateClickInfo): void => {
     emit('dateSelect', info.dateStr.slice(0, 10));
 };
 
-const handleEventClick = (info: EventClickArg): void => {
+const handleEventClick = (info: EventClickInfo): void => {
     info.jsEvent.preventDefault();
     emit('eventSelect', info.event.id);
 };
 
-const handleMouseEnter = (info: EventHoveringArg): void => {
+const handleMouseEnter = (info: EventHoveringInfo): void => {
     const cached = eventsCache.value.get(info.event.id);
     if (cached) {
         tooltipBooking.value = cached;
@@ -155,7 +145,8 @@ watch(tooltipVisible, (visible) => {
 });
 
 const calendarOptions = computed<CalendarOptions>(() => ({
-    plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin, luxonPlugin],
+    ...calendarClassOptions,
+    plugins: [calendarThemePlugin, dayGridPlugin, timeGridPlugin, interactionPlugin],
     initialView: 'dayGridMonth',
     // The week/day time grids position real hours, so the calendar must resolve
     // them in the venue timezone rather than the visitor's.
@@ -174,16 +165,21 @@ const calendarOptions = computed<CalendarOptions>(() => ({
         minute: '2-digit',
         hour12: false,
     },
+    slotHeaderFormat: {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+    },
     headerToolbar: {
         left: 'prev,next today',
         center: 'title',
         right: 'dayGridMonth,timeGridWeek,timeGridDay',
     },
-    buttonText: {
-        today: t('calendar.today'),
-        month: t('booking_calendar.view_month'),
-        week: t('booking_calendar.view_week'),
-        day: t('booking_calendar.view_day'),
+    buttons: {
+        today: { text: t('calendar.today') },
+        dayGridMonth: { text: t('booking_calendar.view_month') },
+        timeGridWeek: { text: t('booking_calendar.view_week') },
+        timeGridDay: { text: t('booking_calendar.view_day') },
     },
     allDayText: t('booking_calendar.all_day'),
     height: 'auto',
