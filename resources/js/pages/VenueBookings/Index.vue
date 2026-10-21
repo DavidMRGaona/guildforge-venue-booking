@@ -348,7 +348,7 @@ async function onEventSelect(bookingId: string): Promise<void> {
                             'rounded-lg px-8 py-3 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-surface',
                             bookButtonDisabled
                                 ? 'cursor-not-allowed bg-primary-400 text-white/70'
-                                : 'bg-primary-600 text-white hover:bg-primary-700',
+                                : 'bg-primary text-white hover:bg-primary-700',
                         ]"
                         @click="openBookingForm"
                     >

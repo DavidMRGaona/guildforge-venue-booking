@@ -327,7 +327,7 @@ function updateField(key: string, value: string | number | boolean): void {
                                 <button
                                     type="submit"
                                     :disabled="loading || form.processing"
-                                    class="flex-1 rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                    class="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
                                 >
                                     <span
                                         v-if="loading || form.processing"
@@ -371,7 +371,7 @@ function updateField(key: string, value: string | number | boolean): void {
                                 type="button"
                                 disabled
                                 :aria-describedby="verificationBlockedId"
-                                class="flex-1 cursor-not-allowed rounded-lg bg-primary-600 px-4 py-2.5 text-sm font-medium text-white opacity-50"
+                                class="flex-1 cursor-not-allowed rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white opacity-50"
                             >
                                 {{ t('booking_calendar.book') }}
                             </button>
