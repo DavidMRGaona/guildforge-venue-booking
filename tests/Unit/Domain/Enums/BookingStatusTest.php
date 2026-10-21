@@ -145,12 +145,14 @@ final class BookingStatusTest extends TestCase
     public function test_it_returns_css_color_for_each_case(): void
     {
         $expected = [
-            [BookingStatus::Pending, 'var(--color-warning)'],
-            [BookingStatus::Confirmed, 'var(--color-success)'],
-            [BookingStatus::Completed, 'var(--color-secondary)'],
-            [BookingStatus::Cancelled, 'var(--color-error)'],
-            [BookingStatus::NoShow, 'var(--color-error)'],
-            [BookingStatus::Rejected, 'var(--color-error)'],
+            // Pale status backgrounds: the calendar puts the theme text colour on them, which reads in
+            // both themes (white on the strong status colours was about 3:1)
+            [BookingStatus::Pending, 'var(--color-warning-bg)'],
+            [BookingStatus::Confirmed, 'var(--color-success-bg)'],
+            [BookingStatus::Completed, 'var(--color-bg-muted)'],
+            [BookingStatus::Cancelled, 'var(--color-error-bg)'],
+            [BookingStatus::NoShow, 'var(--color-error-bg)'],
+            [BookingStatus::Rejected, 'var(--color-error-bg)'],
         ];
 
         foreach ($expected as [$status, $color]) {

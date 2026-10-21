@@ -101,6 +101,8 @@ const fetchEvents = async (
             start: event.start,
             end: event.end,
             color: event.color,
+            // The event colour is a pale status background in both themes
+            textColor: 'var(--color-text-primary)',
         }));
 
         successCallback(mappedEvents);
