@@ -19,7 +19,7 @@ Sistema de reservas del local para gestionar espacios y horarios, con calendario
 
 ## Requisitos
 
-- GuildForge core `^3.10` (da el rol `member` a toda cuenta registrada y dice a la interfaz si la cuenta debe verificar su email)
+- GuildForge core `^3.12` (FullCalendar 7 y los estilos del calendario con los colores del sitio; da el rol `member` a toda cuenta registrada y dice a la interfaz si la cuenta debe verificar su email)
 - PHP >= 8.5, Laravel >= 13, Filament 5
 
 El core rechaza el módulo si no se cumplen (`module.json` → `requires`).
