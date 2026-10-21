@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Application\DTOs\Response;
 
+use DateTimeZone;
 use Modules\VenueBookings\Domain\Entities\Booking;
 
 final readonly class BookingCalendarEventDTO
@@ -28,7 +29,8 @@ final readonly class BookingCalendarEventDTO
             id: $booking->id->value,
             title: $title,
             start: $booking->date . 'T' . $booking->timeRange->startTime,
-            end: $booking->date . 'T' . $booking->timeRange->endTime,
+            // A range that crosses midnight ends on the next day; times are wall clock, so UTC only picks the date
+            end: $booking->endsAt(new DateTimeZone('UTC'))->format('Y-m-d') . 'T' . $booking->timeRange->endTime,
             color: $booking->status->calendarCssColor(),
             status: $booking->status->value,
             statusLabel: $booking->status->label(),
