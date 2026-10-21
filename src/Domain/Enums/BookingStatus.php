@@ -37,13 +37,16 @@ enum BookingStatus: string
         };
     }
 
+    /**
+     * Pale status background of a calendar event; the calendar writes the theme text colour on it.
+     */
     public function calendarCssColor(): string
     {
         return match ($this) {
-            self::Pending => 'var(--color-warning)',
-            self::Confirmed => 'var(--color-success)',
-            self::Completed => 'var(--color-secondary)',
-            self::Cancelled, self::NoShow, self::Rejected => 'var(--color-error)',
+            self::Pending => 'var(--color-warning-bg)',
+            self::Confirmed => 'var(--color-success-bg)',
+            self::Completed => 'var(--color-bg-muted)',
+            self::Cancelled, self::NoShow, self::Rejected => 'var(--color-error-bg)',
         };
     }
 
