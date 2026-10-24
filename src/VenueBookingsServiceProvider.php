@@ -359,7 +359,7 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
     public function registerPagePrefixes(): array
     {
         return [
-            new PagePrefixDTO(prefix: 'VenueBookings', module: $this->moduleName()),
+            new PagePrefixDTO(prefix: 'VenueBookings', module: $this->moduleName(), usesCoreLayout: true),
         ];
     }
 

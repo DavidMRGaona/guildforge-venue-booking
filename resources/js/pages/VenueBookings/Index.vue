@@ -2,7 +2,6 @@
 import { ref, computed, watch, useId } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Link } from '@inertiajs/vue3';
-import DefaultLayout from '@/layouts/DefaultLayout.vue';
 import { useFlashMessages } from '@/composables/useFlashMessages';
 import { useAuth } from '@/composables/useAuth';
 import { useVerificationGate } from '@/composables/useVerificationGate';
@@ -222,186 +221,184 @@ async function onEventSelect(bookingId: string): Promise<void> {
 </script>
 
 <template>
-    <DefaultLayout>
-        <div class="bg-surface shadow">
-            <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-                <h1 class="text-3xl font-bold tracking-tight text-base-primary">
-                    {{ t('booking_calendar.title') }}
-                </h1>
+    <div class="bg-surface shadow">
+        <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+            <h1 class="text-3xl font-bold tracking-tight text-base-primary">
+                {{ t('booking_calendar.title') }}
+            </h1>
+        </div>
+    </div>
+
+    <main class="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+        <!-- Flash messages -->
+        <div v-if="hasMessages" class="mb-6">
+            <div
+                v-if="success"
+                class="rounded-lg bg-success-light p-4 text-sm font-medium text-success"
+                role="alert"
+            >
+                {{ success }}
+            </div>
+            <div
+                v-if="flashError"
+                class="rounded-lg bg-error-light p-4 text-sm font-medium text-error"
+                role="alert"
+            >
+                {{ flashError }}
             </div>
         </div>
 
-        <main class="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-            <!-- Flash messages -->
-            <div v-if="hasMessages" class="mb-6">
-                <div
-                    v-if="success"
-                    class="rounded-lg bg-success-light p-4 text-sm font-medium text-success"
-                    role="alert"
-                >
-                    {{ success }}
-                </div>
-                <div
-                    v-if="flashError"
-                    class="rounded-lg bg-error-light p-4 text-sm font-medium text-error"
-                    role="alert"
-                >
-                    {{ flashError }}
-                </div>
-            </div>
-
-            <!-- Empty state: no resources -->
-            <div
-                v-if="resources.length === 0"
-                class="flex flex-col items-center justify-center py-16 text-center"
+        <!-- Empty state: no resources -->
+        <div
+            v-if="resources.length === 0"
+            class="flex flex-col items-center justify-center py-16 text-center"
+        >
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                class="mb-4 h-12 w-12 text-base-tertiary"
             >
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="1.5"
-                    stroke="currentColor"
-                    class="mb-4 h-12 w-12 text-base-tertiary"
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"
+                />
+            </svg>
+            <p class="text-base-secondary">
+                {{ t('booking_calendar.no_resources') }}
+            </p>
+        </div>
+
+        <!-- Content when resources exist -->
+        <template v-else>
+            <!-- Resource selector -->
+            <ResourceSelector
+                v-if="resources.length > 1"
+                :resources="resources"
+                :selected-id="currentResourceId"
+                @select="onResourceSelect"
+            />
+
+            <!-- Calendar -->
+            <BookingCalendar
+                v-if="currentResourceId"
+                :resource-id="currentResourceId"
+                :min-date="today"
+                @date-select="onDateSelect"
+                @event-select="onEventSelect"
+            />
+
+            <!-- Date selection prompt -->
+            <p
+                v-if="!selectedDate && currentResourceId"
+                class="mt-6 text-center text-sm text-base-secondary"
+            >
+                {{ t('booking_calendar.select_date') }}
+            </p>
+
+            <!-- Slots loading -->
+            <div
+                v-if="slotsLoading"
+                class="mt-6 flex items-center justify-center"
+            >
+                <div
+                    class="inline-block h-6 w-6 animate-spin rounded-full border-4 border-primary-500 border-t-transparent"
+                ></div>
+                <span class="ml-2 text-sm text-base-secondary">
+                    {{ t('booking_calendar.loading') }}
+                </span>
+            </div>
+
+            <!-- Slots error -->
+            <div
+                v-if="slotsError"
+                class="mt-6 rounded-lg bg-error-light p-4 text-center text-sm font-medium text-error"
+                role="alert"
+            >
+                {{ slotsError }}
+            </div>
+
+            <!-- Slot picker -->
+            <BookingSlotPicker
+                v-if="selectedDate && !slotsLoading && !slotsError"
+                :slots="slots"
+                :selected-slots="selectedSlots"
+                :scheduling-mode="currentSchedulingMode"
+                :min-consecutive-slots="currentMinConsecutiveSlots"
+                :max-consecutive-slots="currentMaxConsecutiveSlots"
+                @update:selected-slots="onSlotsUpdate"
+            />
+
+            <!-- Min consecutive warning -->
+            <div
+                v-if="selectedSlots.length > 0 && selectedSlots.length < currentMinConsecutiveSlots && currentSchedulingMode === 'time_slots'"
+                class="mt-4 rounded-lg bg-warning-light p-3 text-center text-sm text-warning"
+                role="alert"
+            >
+                {{ t('booking_calendar.min_consecutive_required', { min: currentMinConsecutiveSlots }) }}
+            </div>
+
+            <!-- Book button -->
+            <div
+                v-if="selectedSlots.length > 0"
+                class="mt-6 flex flex-col items-center gap-3"
+            >
+                <button
+                    type="button"
+                    :disabled="bookButtonDisabled"
+                    :aria-describedby="bookingBlocked ? bookBlockedId : undefined"
+                    :class="[
+                        'rounded-lg px-8 py-3 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-surface',
+                        bookButtonDisabled
+                            ? 'cursor-not-allowed bg-primary-400 text-white/70'
+                            : 'bg-primary text-white hover:bg-primary-700',
+                    ]"
+                    @click="openBookingForm"
                 >
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"
-                    />
-                </svg>
-                <p class="text-base-secondary">
-                    {{ t('booking_calendar.no_resources') }}
+                    {{ t('booking_calendar.book') }}
+                </button>
+
+                <!-- Why booking is disabled for an account that must verify its email -->
+                <p
+                    v-if="bookingBlocked"
+                    :id="bookBlockedId"
+                    class="rounded-md bg-warning-light p-3 text-center text-sm text-base-primary"
+                >
+                    {{ gate.reason('book') }}
+                    <Link
+                        :href="gate.noticeUrl"
+                        class="font-semibold underline underline-offset-2 hover:no-underline"
+                    >
+                        {{ gate.linkLabel.value }}
+                        <span aria-hidden="true">→</span>
+                    </Link>
                 </p>
             </div>
 
-            <!-- Content when resources exist -->
-            <template v-else>
-                <!-- Resource selector -->
-                <ResourceSelector
-                    v-if="resources.length > 1"
-                    :resources="resources"
-                    :selected-id="currentResourceId"
-                    @select="onResourceSelect"
-                />
+            <!-- Booking form modal -->
+            <BookingForm
+                v-if="showForm && selectedDate"
+                :resource-id="currentResourceId"
+                :date="selectedDate"
+                :start-time="bookingStartTime"
+                :end-time="bookingEndTime"
+                :starts-next-day="bookingStartsNextDay"
+                :field-definitions="currentFieldDefinitions"
+                :eligibility="eligibility"
+                :verification-required="verificationRequired"
+                @close="showForm = false"
+                @submitted="onBookingSubmitted"
+            />
 
-                <!-- Calendar -->
-                <BookingCalendar
-                    v-if="currentResourceId"
-                    :resource-id="currentResourceId"
-                    :min-date="today"
-                    @date-select="onDateSelect"
-                    @event-select="onEventSelect"
-                />
-
-                <!-- Date selection prompt -->
-                <p
-                    v-if="!selectedDate && currentResourceId"
-                    class="mt-6 text-center text-sm text-base-secondary"
-                >
-                    {{ t('booking_calendar.select_date') }}
-                </p>
-
-                <!-- Slots loading -->
-                <div
-                    v-if="slotsLoading"
-                    class="mt-6 flex items-center justify-center"
-                >
-                    <div
-                        class="inline-block h-6 w-6 animate-spin rounded-full border-4 border-primary-500 border-t-transparent"
-                    ></div>
-                    <span class="ml-2 text-sm text-base-secondary">
-                        {{ t('booking_calendar.loading') }}
-                    </span>
-                </div>
-
-                <!-- Slots error -->
-                <div
-                    v-if="slotsError"
-                    class="mt-6 rounded-lg bg-error-light p-4 text-center text-sm font-medium text-error"
-                    role="alert"
-                >
-                    {{ slotsError }}
-                </div>
-
-                <!-- Slot picker -->
-                <BookingSlotPicker
-                    v-if="selectedDate && !slotsLoading && !slotsError"
-                    :slots="slots"
-                    :selected-slots="selectedSlots"
-                    :scheduling-mode="currentSchedulingMode"
-                    :min-consecutive-slots="currentMinConsecutiveSlots"
-                    :max-consecutive-slots="currentMaxConsecutiveSlots"
-                    @update:selected-slots="onSlotsUpdate"
-                />
-
-                <!-- Min consecutive warning -->
-                <div
-                    v-if="selectedSlots.length > 0 && selectedSlots.length < currentMinConsecutiveSlots && currentSchedulingMode === 'time_slots'"
-                    class="mt-4 rounded-lg bg-warning-light p-3 text-center text-sm text-warning"
-                    role="alert"
-                >
-                    {{ t('booking_calendar.min_consecutive_required', { min: currentMinConsecutiveSlots }) }}
-                </div>
-
-                <!-- Book button -->
-                <div
-                    v-if="selectedSlots.length > 0"
-                    class="mt-6 flex flex-col items-center gap-3"
-                >
-                    <button
-                        type="button"
-                        :disabled="bookButtonDisabled"
-                        :aria-describedby="bookingBlocked ? bookBlockedId : undefined"
-                        :class="[
-                            'rounded-lg px-8 py-3 text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-surface',
-                            bookButtonDisabled
-                                ? 'cursor-not-allowed bg-primary-400 text-white/70'
-                                : 'bg-primary text-white hover:bg-primary-700',
-                        ]"
-                        @click="openBookingForm"
-                    >
-                        {{ t('booking_calendar.book') }}
-                    </button>
-
-                    <!-- Why booking is disabled for an account that must verify its email -->
-                    <p
-                        v-if="bookingBlocked"
-                        :id="bookBlockedId"
-                        class="rounded-md bg-warning-light p-3 text-center text-sm text-base-primary"
-                    >
-                        {{ gate.reason('book') }}
-                        <Link
-                            :href="gate.noticeUrl"
-                            class="font-semibold underline underline-offset-2 hover:no-underline"
-                        >
-                            {{ gate.linkLabel.value }}
-                            <span aria-hidden="true">→</span>
-                        </Link>
-                    </p>
-                </div>
-
-                <!-- Booking form modal -->
-                <BookingForm
-                    v-if="showForm && selectedDate"
-                    :resource-id="currentResourceId"
-                    :date="selectedDate"
-                    :start-time="bookingStartTime"
-                    :end-time="bookingEndTime"
-                    :starts-next-day="bookingStartsNextDay"
-                    :field-definitions="currentFieldDefinitions"
-                    :eligibility="eligibility"
-                    :verification-required="verificationRequired"
-                    @close="showForm = false"
-                    @submitted="onBookingSubmitted"
-                />
-
-                <!-- Booking detail modal -->
-                <BookingDetailModal
-                    v-if="selectedBooking"
-                    :booking="selectedBooking"
-                    @close="selectedBooking = null"
-                />
-            </template>
-        </main>
-    </DefaultLayout>
+            <!-- Booking detail modal -->
+            <BookingDetailModal
+                v-if="selectedBooking"
+                :booking="selectedBooking"
+                @close="selectedBooking = null"
+            />
+        </template>
+    </main>
 </template>
