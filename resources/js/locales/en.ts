@@ -55,6 +55,8 @@ export default {
         view_week: 'Week',
         view_day: 'Day',
         all_day: 'All day',
+        next_day: '+1 day',
+        next_day_slot: '{time}, the next day',
     },
     booking_detail: {
         title: 'Booking detail',

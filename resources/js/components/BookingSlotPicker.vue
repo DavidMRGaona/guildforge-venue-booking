@@ -251,9 +251,17 @@ function formatBlockTime(slot: BookingSlot): string {
                                     : 'border-default bg-surface text-base-primary hover:border-primary-400 hover:bg-primary-light',
                     ]"
                     :title="isDisabledByConsecutive(slot) ? t('booking_calendar.max_consecutive_reached') : undefined"
+                    :aria-label="slot.starts_next_day ? t('booking_calendar.next_day_slot', { time: slot.start_time.slice(0, 5) }) : undefined"
                     @click="toggleSlot(slot)"
                 >
                     {{ slot.start_time.slice(0, 5) }}
+                    <span
+                        v-if="slot.starts_next_day"
+                        class="block text-xs font-normal opacity-75"
+                        aria-hidden="true"
+                    >
+                        {{ t('booking_calendar.next_day') }}
+                    </span>
                 </button>
             </div>
 

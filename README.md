@@ -92,6 +92,8 @@ Al crear una reserva desde la web, el servidor exige que la franja esté hecha d
 
 Desde el panel, el personal tiene margen: no le afectan el límite de reservas activas, la antelación mínima ni los días máximos, pero sí los turnos del espacio, los solapes, la franja ya empezada y los espacios inactivos. La reserva se crea con el estado que marca el modo de aprobación y envía los mismos avisos que desde la web. Al editarla, cambiar el espacio, la fecha o las horas de una reserva pendiente o confirmada pasa las mismas comprobaciones, sin contar la propia reserva; si conserva su hora de inicio, se puede alargar o cambiar de espacio aunque ya haya empezado. Las reservas finalizadas (completadas, canceladas, rechazadas o no presentadas) se corrigen sin comprobaciones, porque no ocupan el espacio.
 
+La fecha de una reserva es siempre la del día en que empieza. En el modo `time_slots`, un día que cierra después de la medianoche (por ejemplo, de 22:00 a 02:00) muestra en su lista también los turnos posteriores a la medianoche, marcados con «+1 día»; una reserva que empieza en uno de ellos se guarda con la fecha del día siguiente, que es cuando ocurre, y a ese día se aplican la antelación mínima, los días máximos y la comprobación de franja ya empezada. En el panel se escribe esa misma fecha: el sábado de 00:00 a 01:00 es la noche del viernes. Los bloques del modo `time_blocks` ocurren siempre en su propia fecha.
+
 Una reserva que cruza la medianoche ocupa también las primeras horas del día siguiente: choca con las reservas de ese día que empiezan antes de que termine, y la lista de turnos de ese día las marca como no disponibles.
 
 Dos avisos más pueden aparecer al reservar:

@@ -15,10 +15,13 @@ interface Props {
     eligibility: BookingEligibility | null;
     /** The eligibility check answered that the account must verify its email. */
     verificationRequired?: boolean;
+    /** The first slot is past the midnight of `date`: the booking takes place the next day. */
+    startsNextDay?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     verificationRequired: false,
+    startsNextDay: false,
 });
 
 const emit = defineEmits<{
@@ -70,8 +73,12 @@ const canBook = computed(() => {
     return props.eligibility.can_book;
 });
 
+// Shows the day the booking takes place; the form still sends `date`, the day whose slots were picked
 const formattedDate = computed(() => {
     const date = new Date(`${props.date}T12:00:00Z`);
+    if (props.startsNextDay) {
+        date.setUTCDate(date.getUTCDate() + 1);
+    }
     return date.toLocaleDateString(locale.value, {
         timeZone: VENUE_TIMEZONE,
         weekday: 'long',

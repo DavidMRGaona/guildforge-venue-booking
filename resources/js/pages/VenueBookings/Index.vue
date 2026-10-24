@@ -98,6 +98,14 @@ const bookingStartTime = computed(() => {
     return first ? first.start_time : '';
 });
 
+const bookingStartsNextDay = computed(() => {
+    if (selectedSlots.value.length === 0) return false;
+    const sorted = [...selectedSlots.value].sort((a, b) =>
+        getSlotIndex(a) - getSlotIndex(b)
+    );
+    return sorted[0]?.starts_next_day === true;
+});
+
 const bookingEndTime = computed(() => {
     if (selectedSlots.value.length === 0) return '';
     if (currentSchedulingMode.value === 'time_blocks') {
@@ -379,6 +387,7 @@ async function onEventSelect(bookingId: string): Promise<void> {
                     :date="selectedDate"
                     :start-time="bookingStartTime"
                     :end-time="bookingEndTime"
+                    :starts-next-day="bookingStartsNextDay"
                     :field-definitions="currentFieldDefinitions"
                     :eligibility="eligibility"
                     :verification-required="verificationRequired"

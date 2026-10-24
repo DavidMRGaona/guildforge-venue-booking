@@ -50,6 +50,7 @@ final class BookingSlotTest extends TestCase
             'end_time' => '11:00',
             'is_available' => true,
             'label' => null,
+            'starts_next_day' => false,
         ], $array);
     }
 
@@ -92,6 +93,14 @@ final class BookingSlotTest extends TestCase
             'end_time' => '14:00',
             'is_available' => true,
             'label' => 'Mañana',
+            'starts_next_day' => false,
         ], $array);
+    }
+
+    public function test_to_array_tells_whether_it_starts_the_next_day(): void
+    {
+        $slot = new BookingSlot(startTime: '01:00', endTime: '02:00', isAvailable: true, startsNextDay: true);
+
+        $this->assertTrue($slot->toArray()['starts_next_day']);
     }
 }

@@ -42,6 +42,8 @@ export interface BookingSlot {
     end_time: string;
     is_available: boolean;
     label?: string | null;
+    /** Listed with the day the venue opens but past its midnight: it takes place the next day. */
+    starts_next_day?: boolean;
 }
 
 export interface BookingCalendarEvent {

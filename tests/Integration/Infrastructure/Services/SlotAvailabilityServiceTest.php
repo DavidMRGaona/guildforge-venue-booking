@@ -401,6 +401,41 @@ final class SlotAvailabilityServiceTest extends TestCase
         $this->assertFalse($this->service->isSlotAvailable($this->resource->id, '2026-03-16', new TimeRange('23:30', '01:00')));
     }
 
+    public function test_the_slots_past_midnight_are_checked_against_the_next_day(): void
+    {
+        // Monday 22:00-02:00
+        $this->createScheduleWithMondayOpen('22:00', '02:00');
+
+        // Tuesday 00:00-01:00 is Monday's night; Monday 00:00-01:00 is the morning before
+        foreach (['2026-03-17', '2026-03-16'] as $date) {
+            BookingModel::create([
+                'id' => (string) Str::uuid(),
+                'resource_id' => $this->resource->id,
+                'user_id' => $this->user->id,
+                'date' => $date,
+                'start_time' => '00:00',
+                'end_time' => '01:00',
+                'status' => 'confirmed',
+            ]);
+        }
+
+        $slots = $this->service->getAvailableSlotsForDate($this->resource->id, '2026-03-16');
+
+        $this->assertSame(['22:00', '23:00', '00:00', '01:00'], array_map(fn ($s) => $s->startTime, $slots));
+        $this->assertSame([false, false, true, true], array_map(fn ($s) => $s->startsNextDay, $slots));
+        $this->assertSame([true, true, false, true], array_map(fn ($s) => $s->isAvailable, $slots));
+    }
+
+    public function test_the_slots_past_midnight_stay_open_once_the_evening_has_started(): void
+    {
+        $this->createScheduleWithMondayOpen('22:00', '02:00');
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 23, 30, 0, 'UTC'));
+
+        $slots = $this->service->getAvailableSlotsForDate($this->resource->id, '2026-03-16');
+
+        $this->assertSame([false, false, true, true], array_map(fn ($s) => $s->isAvailable, $slots));
+    }
+
     private function createScheduleWithMondayOpen(string $open = '10:00', string $close = '14:00', int $slotMinutes = 60): void
     {
         OperatingScheduleModel::create([

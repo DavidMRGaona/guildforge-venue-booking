@@ -88,16 +88,12 @@ final class Booking
     }
 
     /**
-     * Whether this booking takes up any of $range on $date. On the same date the times are
-     * compared on the clock, as the slot list does; across dates the real start and end decide,
-     * so a range that crosses midnight meets the early hours of the next day.
+     * Whether this booking takes up any of $range starting on $date. The real start and end
+     * decide (dates are the calendar day each range starts on), so a range that crosses
+     * midnight meets the early hours of the next day.
      */
     public function overlaps(string $date, TimeRange $range): bool
     {
-        if ($date === $this->date) {
-            return $this->timeRange->overlaps($range);
-        }
-
         // Times are wall clock, so UTC only carries them
         $utc = new DateTimeZone('UTC');
         $start = new DateTimeImmutable("{$date} {$range->startTime}", $utc);

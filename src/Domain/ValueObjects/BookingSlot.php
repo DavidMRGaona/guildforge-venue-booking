@@ -11,11 +11,13 @@ final readonly class BookingSlot
         public string $endTime,
         public bool $isAvailable,
         public ?string $label = null,
+        // Listed with the day the venue opens but past its midnight, so it takes place the next day
+        public bool $startsNextDay = false,
     ) {
     }
 
     /**
-     * @return array{start_time: string, end_time: string, is_available: bool, label: ?string}
+     * @return array{start_time: string, end_time: string, is_available: bool, label: ?string, starts_next_day: bool}
      */
     public function toArray(): array
     {
@@ -24,6 +26,7 @@ final readonly class BookingSlot
             'end_time' => $this->endTime,
             'is_available' => $this->isAvailable,
             'label' => $this->label,
+            'starts_next_day' => $this->startsNextDay,
         ];
     }
 }
