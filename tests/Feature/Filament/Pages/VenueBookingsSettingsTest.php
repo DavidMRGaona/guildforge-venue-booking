@@ -121,9 +121,10 @@ final class VenueBookingsSettingsTest extends ModuleTestCase
         app(SettingsServiceInterface::class)->clearCache();
 
         // Load them as a production request does: the provider registers with the row
-        // already in the database, so the stored JSON replaces the module settings whole
+        // already in the database, and the keys the row lacks keep their shipped defaults
         $this->registerProviderWithStoredSettings();
-        $this->assertNull(config('modules.settings.venue-bookings.auto_complete_enabled'));
+        $this->assertTrue(config('modules.settings.venue-bookings.auto_complete_enabled'));
+        $this->assertSame('auto_confirm', config('modules.settings.venue-bookings.approval_mode'));
 
         Livewire::test(VenueBookingsSettings::class)
             ->assertFormSet([
@@ -195,8 +196,7 @@ final class VenueBookingsSettingsTest extends ModuleTestCase
 
     /**
      * Run the module provider's register() again, as every production request does after the
-     * row exists: the core puts the shipped defaults with the stored values on top, then
-     * loadSettingsFromDatabase() replaces them with the raw stored JSON.
+     * row exists: the core puts the shipped defaults with the stored values on top.
      */
     private function registerProviderWithStoredSettings(): void
     {
