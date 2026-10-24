@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Calendar, ChevronDown, Plus } from '@lucide/vue';
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { router, Link } from '@inertiajs/vue3';
@@ -116,15 +117,10 @@ function confirmCancel(): void {
                         </span>
                         {{ t('venueBookings.profile.past') }}
                     </span>
-                    <svg
+                    <ChevronDown
                         :class="['h-5 w-5 text-base-muted transition-transform', showPastSection ? 'rotate-180' : '']"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
                         aria-hidden="true"
-                    >
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
+                    />
                 </button>
 
                 <div v-if="showPastSection" class="space-y-3">
@@ -143,9 +139,7 @@ function confirmCancel(): void {
                         class="flex w-full items-center justify-center gap-2 rounded-lg border border-default bg-transparent py-3 text-sm font-medium text-base-secondary transition-colors hover:bg-base-secondary/10"
                         @click="loadMore"
                     >
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
+                        <Plus class="h-4 w-4" aria-hidden="true" />
                         {{ t('venueBookings.profile.loadMore', { count: remainingPastCount }) }}
                     </button>
                 </div>
@@ -167,20 +161,7 @@ function confirmCancel(): void {
             v-else
             class="rounded-lg border border-dashed border-default bg-muted p-12 text-center"
         >
-            <svg
-                class="mx-auto h-12 w-12 text-base-muted"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-            >
-                <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                />
-            </svg>
+            <Calendar class="mx-auto h-12 w-12 text-base-muted" aria-hidden="true" />
             <h3 class="mt-4 text-lg font-medium text-base-primary">
                 {{ t('venueBookings.profile.noBookings') }}
             </h3>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Clock } from '@lucide/vue';
 import { computed } from 'vue';
 import type { BookingTooltipData } from '../types/bookings';
 import { wallClockTime } from '../utils/wallClock';
@@ -58,19 +59,7 @@ const tooltipStyle = computed(() => ({
 
                 <!-- Time -->
                 <p class="mt-1 text-tooltip-secondary">
-                    <svg
-                        class="mr-1 inline-block h-3 w-3"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                    </svg>
+                    <Clock class="mr-1 inline-block h-3 w-3" aria-hidden="true" />
                     {{ formattedTime }}
                 </p>
 
