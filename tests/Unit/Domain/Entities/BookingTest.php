@@ -298,10 +298,9 @@ final class BookingTest extends TestCase
         $this->assertSame('2026-10-25T04:00:00+01:00', $this->createBooking(date: '2026-10-25', startTime: '01:00', endTime: '04:00')->endsAt($madrid)->format(DATE_ATOM));
         $this->assertSame('2026-10-25T04:00:00+01:00', $this->createBooking(date: '2026-10-24', startTime: '22:00', endTime: '04:00')->endsAt($madrid)->format(DATE_ATOM));
 
-        // 02:30 happens twice that night: a booking of the same day ends at the second one, a
-        // booking that crosses midnight at the first
+        // 02:30 happens twice that night: every booking ends at the second one, whatever day it starts
         $this->assertSame('2026-10-25T02:30:00+01:00', $this->createBooking(date: '2026-10-25', startTime: '01:00', endTime: '02:30')->endsAt($madrid)->format(DATE_ATOM));
-        $this->assertSame('2026-10-25T02:30:00+02:00', $this->createBooking(date: '2026-10-24', startTime: '22:00', endTime: '02:30')->endsAt($madrid)->format(DATE_ATOM));
+        $this->assertSame('2026-10-25T02:30:00+01:00', $this->createBooking(date: '2026-10-24', startTime: '22:00', endTime: '02:30')->endsAt($madrid)->format(DATE_ATOM));
     }
 
     public function test_its_end_accepts_times_with_seconds(): void
