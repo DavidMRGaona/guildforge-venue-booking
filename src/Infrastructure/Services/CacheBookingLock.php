@@ -23,25 +23,17 @@ final readonly class CacheBookingLock implements BookingLockInterface
         private int $waitSeconds = 5,
     ) {}
 
-    public function forBooking(string $userId, string $resourceId, string $date, Closure $callback): mixed
+    public function forBooking(string $userId, string $resourceId, Closure $callback): mixed
     {
-        // Canonical keys: the same user, resource and day always map to the same locks, however
+        // Canonical keys: the same user and resource always map to the same locks, however
         // they were written (PostgreSQL's uuid columns match either case)
         $userKey = strtolower(trim($userId));
         $resourceKey = strtolower(trim($resourceId));
-        $dayKey = $this->canonicalDay($date);
 
         return $this->holding(
             "venue-bookings:booking-lock:user:{$userKey}",
-            fn (): mixed => $this->holding("venue-bookings:booking-lock:resource:{$resourceKey}:{$dayKey}", $callback),
+            fn (): mixed => $this->holding("venue-bookings:booking-lock:resource:{$resourceKey}", $callback),
         );
-    }
-
-    private function canonicalDay(string $date): string
-    {
-        $day = \DateTimeImmutable::createFromFormat('!Y-m-d', trim($date));
-
-        return $day === false ? trim($date) : $day->format('Y-m-d');
     }
 
     /**

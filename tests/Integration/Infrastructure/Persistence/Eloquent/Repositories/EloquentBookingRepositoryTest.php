@@ -466,6 +466,38 @@ final class EloquentBookingRepositoryTest extends TestCase
         $this->assertFalse($result);
     }
 
+    public function test_a_booking_that_crosses_midnight_overlaps_the_next_day(): void
+    {
+        $resourceId = BookableResourceId::fromString($this->resource->id);
+        $this->createBookingOn('2026-03-15', '22:00', '02:00');
+
+        $this->assertTrue($this->repository->hasOverlappingBooking($resourceId, '2026-03-16', new TimeRange('01:00', '03:00')));
+        $this->assertFalse($this->repository->hasOverlappingBooking($resourceId, '2026-03-16', new TimeRange('02:00', '04:00')));
+    }
+
+    public function test_a_range_that_crosses_midnight_overlaps_a_booking_of_the_next_day(): void
+    {
+        $resourceId = BookableResourceId::fromString($this->resource->id);
+        $this->createBookingOn('2026-03-16', '01:00', '03:00');
+
+        $this->assertTrue($this->repository->hasOverlappingBooking($resourceId, '2026-03-15', new TimeRange('22:00', '02:00')));
+        $this->assertFalse($this->repository->hasOverlappingBooking($resourceId, '2026-03-15', new TimeRange('22:00', '01:00')));
+    }
+
+    public function test_the_next_day_overlap_ignores_finished_and_excluded_bookings(): void
+    {
+        $resourceId = BookableResourceId::fromString($this->resource->id);
+        $this->createBookingOn('2026-03-15', '22:00', '02:00', 'cancelled');
+        $excluded = $this->createBookingOn('2026-03-15', '23:00', '01:00');
+
+        $this->assertFalse($this->repository->hasOverlappingBooking(
+            $resourceId,
+            '2026-03-16',
+            new TimeRange('00:00', '03:00'),
+            excludeBookingId: BookingId::fromString($excluded),
+        ));
+    }
+
     public function test_it_gets_bookings_by_resource_in_date_range(): void
     {
         $resourceId = BookableResourceId::fromString($this->resource->id);
@@ -875,5 +907,21 @@ final class EloquentBookingRepositoryTest extends TestCase
         $bookings = $this->repository->getConfirmedEndedBy(new DateTimeImmutable('2026-03-15 12:00', $madrid));
 
         $this->assertSame([$endedEarlier, $endedExactly], array_map(fn (Booking $b): string => $b->id->value, $bookings));
+    }
+
+    private function createBookingOn(string $date, string $start, string $end, string $status = 'confirmed'): string
+    {
+        $id = (string) Str::uuid();
+        BookingModel::create([
+            'id' => $id,
+            'resource_id' => $this->resource->id,
+            'user_id' => $this->user->id,
+            'date' => $date,
+            'start_time' => $start,
+            'end_time' => $end,
+            'status' => $status,
+        ]);
+
+        return $id;
     }
 }

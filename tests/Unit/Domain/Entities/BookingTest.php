@@ -284,6 +284,41 @@ final class BookingTest extends TestCase
         $this->assertSame('2026-03-15T12:00:00+01:00', $booking->endsAt(new DateTimeZone('Europe/Madrid'))->format(DATE_ATOM));
     }
 
+    public function test_ranges_of_the_same_date_overlap_on_the_clock(): void
+    {
+        $booking = $this->createBooking(date: '2026-03-15', startTime: '10:00', endTime: '12:00');
+
+        $this->assertTrue($booking->overlaps('2026-03-15', new TimeRange('11:00', '13:00')));
+        $this->assertFalse($booking->overlaps('2026-03-15', new TimeRange('12:00', '14:00')));
+        $this->assertFalse($booking->overlaps('2026-03-16', new TimeRange('10:00', '12:00')));
+    }
+
+    public function test_a_booking_that_crosses_midnight_overlaps_the_early_hours_of_the_next_day(): void
+    {
+        $booking = $this->createBooking(date: '2026-03-15', startTime: '22:00', endTime: '02:00');
+
+        $this->assertTrue($booking->overlaps('2026-03-16', new TimeRange('01:00', '03:00')));
+        $this->assertTrue($booking->overlaps('2026-03-16', new TimeRange('00:00', '00:30')));
+        $this->assertFalse($booking->overlaps('2026-03-16', new TimeRange('02:00', '04:00')));
+        $this->assertFalse($booking->overlaps('2026-03-14', new TimeRange('22:00', '23:00')));
+    }
+
+    public function test_a_range_that_crosses_midnight_overlaps_a_booking_early_the_next_day(): void
+    {
+        $booking = $this->createBooking(date: '2026-03-16', startTime: '01:00', endTime: '03:00');
+
+        $this->assertTrue($booking->overlaps('2026-03-15', new TimeRange('22:00', '02:00')));
+        $this->assertFalse($booking->overlaps('2026-03-15', new TimeRange('22:00', '01:00')));
+        $this->assertFalse($booking->overlaps('2026-03-15', new TimeRange('20:00', '23:00')));
+    }
+
+    public function test_a_booking_that_crosses_midnight_on_new_years_eve_overlaps_the_new_year(): void
+    {
+        $booking = $this->createBooking(date: '2026-12-31', startTime: '22:00:00', endTime: '02:00:00');
+
+        $this->assertTrue($booking->overlaps('2027-01-01', new TimeRange('00:00', '01:00')));
+    }
+
     private function createBooking(
         ?string $userId = null,
         string $date = '2026-03-15',

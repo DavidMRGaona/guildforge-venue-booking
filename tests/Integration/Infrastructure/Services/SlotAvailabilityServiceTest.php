@@ -361,12 +361,52 @@ final class SlotAvailabilityServiceTest extends TestCase
         $this->assertSame([false, false, false, false], array_map(fn ($s) => $s->isAvailable, $slots));
     }
 
-    private function createScheduleWithMondayOpen(string $open = '10:00', string $close = '14:00'): void
+    public function test_a_booking_of_the_day_before_that_crosses_midnight_takes_the_early_slots(): void
+    {
+        $this->createScheduleWithMondayOpen();
+
+        // Sunday 22:00 to Monday 11:00
+        BookingModel::create([
+            'id' => (string) Str::uuid(),
+            'resource_id' => $this->resource->id,
+            'user_id' => $this->user->id,
+            'date' => '2026-03-15',
+            'start_time' => '22:00',
+            'end_time' => '11:00',
+            'status' => 'confirmed',
+        ]);
+
+        $slots = $this->service->getAvailableSlotsForDate($this->resource->id, '2026-03-16');
+        $this->assertSame([false, true, true, true], array_map(fn ($s) => $s->isAvailable, $slots));
+    }
+
+    public function test_a_slot_that_crosses_midnight_is_taken_by_a_booking_of_the_next_day(): void
+    {
+        // 90-minute slots: 22:00-23:30 and 23:30-01:00
+        $this->createScheduleWithMondayOpen('22:00', '01:00', slotMinutes: 90);
+
+        BookingModel::create([
+            'id' => (string) Str::uuid(),
+            'resource_id' => $this->resource->id,
+            'user_id' => $this->user->id,
+            'date' => '2026-03-17',
+            'start_time' => '00:00',
+            'end_time' => '00:30',
+            'status' => 'confirmed',
+        ]);
+
+        $slots = $this->service->getAvailableSlotsForDate($this->resource->id, '2026-03-16');
+        $this->assertSame(['22:00', '23:30'], array_map(fn ($s) => $s->startTime, $slots));
+        $this->assertSame([true, false], array_map(fn ($s) => $s->isAvailable, $slots));
+        $this->assertFalse($this->service->isSlotAvailable($this->resource->id, '2026-03-16', new TimeRange('23:30', '01:00')));
+    }
+
+    private function createScheduleWithMondayOpen(string $open = '10:00', string $close = '14:00', int $slotMinutes = 60): void
     {
         OperatingScheduleModel::create([
             'id' => (string) Str::uuid(),
             'resource_id' => $this->resource->id,
-            'slot_duration_minutes' => 60,
+            'slot_duration_minutes' => $slotMinutes,
             'min_consecutive_slots' => 1,
             'max_consecutive_slots' => 4,
             'day_schedules' => [
