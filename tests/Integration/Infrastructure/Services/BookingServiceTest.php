@@ -788,25 +788,25 @@ final class BookingServiceTest extends TestCase
         }
     }
 
-    public function test_the_lock_covers_the_user_the_resource_and_the_day(): void
+    public function test_the_lock_covers_the_user_and_the_resource(): void
     {
         Event::fake();
         $locked = [];
-        $lock = $this->lockThatFirstRuns(function (string $userId, string $resourceId, string $date) use (&$locked): void {
-            $locked[] = [$userId, $resourceId, $date];
+        $lock = $this->lockThatFirstRuns(function (string $userId, string $resourceId) use (&$locked): void {
+            $locked[] = [$userId, $resourceId];
         });
 
         $this->makeService($lock)->createBooking($this->dtoFor('2026-03-16', '10:00', '11:00'));
 
-        $this->assertSame([[$this->user->id, $this->resource->id, '2026-03-16']], $locked);
+        $this->assertSame([[$this->user->id, $this->resource->id]], $locked);
     }
 
     public function test_the_lock_uses_the_canonical_resource_id_whatever_its_case(): void
     {
         Event::fake();
         $locked = [];
-        $lock = $this->lockThatFirstRuns(function (string $userId, string $resourceId, string $date) use (&$locked): void {
-            $locked[] = [$userId, $resourceId, $date];
+        $lock = $this->lockThatFirstRuns(function (string $userId, string $resourceId) use (&$locked): void {
+            $locked[] = [$userId, $resourceId];
         });
         $dto = new CreateBookingDTO(
             resourceId: strtoupper($this->resource->id),
@@ -819,7 +819,7 @@ final class BookingServiceTest extends TestCase
         // Whether the upper-case id then fits a schedule depends on the database; the lock does not
         rescue(fn (): mixed => $this->makeService($lock)->createBooking($dto), report: false);
 
-        $this->assertSame([[$this->user->id, strtolower($this->resource->id), '2026-03-16']], $locked);
+        $this->assertSame([[$this->user->id, strtolower($this->resource->id)]], $locked);
     }
 
     public function test_the_overlap_is_checked_while_holding_the_lock(): void
@@ -947,6 +947,41 @@ final class BookingServiceTest extends TestCase
         $this->assertDatabaseHas('venuebookings_bookings', ['id' => $result->id]);
     }
 
+    public function test_it_refuses_a_booking_of_the_next_day_that_overlaps_one_that_crosses_midnight(): void
+    {
+        Event::fake();
+        // Friday 2026-03-20 opens until 02:00; Saturday opens at midnight
+        $this->useSchedule([
+            ['day_of_week' => 5, 'open_time' => '22:00', 'close_time' => '02:00', 'is_enabled' => true],
+            ['day_of_week' => 6, 'open_time' => '00:00', 'close_time' => '04:00', 'is_enabled' => true],
+        ]);
+        $this->service->createBooking($this->dtoFor('2026-03-20', '23:00', '02:00'));
+
+        try {
+            $this->service->createBooking($this->dtoFor('2026-03-21', '01:00', '03:00'));
+            $this->fail('The overlapping booking was saved');
+        } catch (SlotUnavailableException) {
+            $this->assertDatabaseMissing('venuebookings_bookings', ['date' => '2026-03-21']);
+        }
+
+        $result = $this->service->createBooking($this->dtoFor('2026-03-21', '02:00', '03:00'));
+        $this->assertDatabaseHas('venuebookings_bookings', ['id' => $result->id]);
+    }
+
+    public function test_it_refuses_a_booking_that_crosses_midnight_onto_one_of_the_next_day(): void
+    {
+        Event::fake();
+        $this->useSchedule([
+            ['day_of_week' => 5, 'open_time' => '22:00', 'close_time' => '02:00', 'is_enabled' => true],
+            ['day_of_week' => 6, 'open_time' => '00:00', 'close_time' => '04:00', 'is_enabled' => true],
+        ]);
+        $this->service->createBooking($this->dtoFor('2026-03-21', '01:00', '03:00'));
+
+        $this->expectException(SlotUnavailableException::class);
+
+        $this->service->createBooking($this->dtoFor('2026-03-20', '23:00', '02:00'));
+    }
+
     /**
      * @param  array<string>  $permissionKeys
      */
@@ -993,9 +1028,9 @@ final class BookingServiceTest extends TestCase
         {
             public function __construct(private readonly Closure $before) {}
 
-            public function forBooking(string $userId, string $resourceId, string $date, Closure $callback): mixed
+            public function forBooking(string $userId, string $resourceId, Closure $callback): mixed
             {
-                ($this->before)($userId, $resourceId, $date);
+                ($this->before)($userId, $resourceId);
 
                 return $callback();
             }

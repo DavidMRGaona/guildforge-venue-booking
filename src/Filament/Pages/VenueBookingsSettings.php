@@ -70,10 +70,8 @@ final class VenueBookingsSettings extends Page implements HasForms
 
     public function mount(ModuleSettingsStoreInterface $settingsStore): void
     {
-        // The shipped defaults (config/settings.php) with the saved values on top, read
-        // here rather than from config(): loadSettingsFromDatabase() replaces the module
-        // settings with the raw saved JSON, so keys added by a release would load empty
-        // and be saved switched off
+        // The shipped defaults (config/settings.php) with the saved values on top, so keys
+        // added by a release show their defaults instead of loading empty and being saved off
         $this->form->fill($settingsStore->effective('venue-bookings', dirname(__DIR__, 3)));
     }
 

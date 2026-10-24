@@ -41,7 +41,8 @@ interface BookingRepositoryInterface
     public function countActiveByUser(string $userId): int;
 
     /**
-     * Check if a time range overlaps with existing active bookings for a resource on a date.
+     * Check if a time range on a date overlaps an active booking of the resource, also one of
+     * the day before or after when either range crosses midnight (see Booking::overlaps()).
      */
     public function hasOverlappingBooking(
         BookableResourceId $resourceId,

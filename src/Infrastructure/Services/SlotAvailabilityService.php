@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Infrastructure\Services;
 
+use Carbon\CarbonImmutable;
 use Modules\VenueBookings\Application\Services\SlotAvailabilityServiceInterface;
 use Modules\VenueBookings\Domain\Repositories\BookingRepositoryInterface;
 use Modules\VenueBookings\Domain\Repositories\OperatingScheduleRepositoryInterface;
@@ -32,7 +33,18 @@ final readonly class SlotAvailabilityService implements SlotAvailabilityServiceI
         }
 
         $slots = $schedule->generateSlotsForDate($date);
-        $bookings = $this->bookingRepository->getByResourceAndDate($resourceIdVO, $date);
+
+        // Closed, or a date that cannot be read
+        if ($slots === []) {
+            return [];
+        }
+
+        // With the days around it: a booking or slot that crosses midnight meets the next day
+        $bookings = $this->bookingRepository->getByResourceInDateRange(
+            $resourceIdVO,
+            CarbonImmutable::parse($date)->subDay()->toDateString(),
+            CarbonImmutable::parse($date)->addDay()->toDateString(),
+        );
         // Same rules as createBooking(): nothing beyond the days ahead, nothing before the minimum advance
         $tooFar = $this->rules->isTooFar($date);
 
@@ -44,7 +56,7 @@ final readonly class SlotAvailabilityService implements SlotAvailabilityServiceI
             $slotRange = new TimeRange($slot->startTime, $slot->endTime);
 
             foreach ($bookings as $booking) {
-                if (! $booking->status->isFinal() && $booking->timeRange->overlaps($slotRange)) {
+                if ($booking->overlaps($date, $slotRange)) {
                     return $this->unavailable($slot);
                 }
             }

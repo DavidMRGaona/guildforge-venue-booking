@@ -88,12 +88,14 @@ El módulo lo programa cada hora (sin ejecuciones solapadas), junto a los record
 
 ### Franjas y reglas al reservar
 
-Al crear una reserva desde la web, el servidor exige que la franja esté hecha de turnos consecutivos que la página ofrece ese día (en el modo `time_blocks`, un bloque entero) y aplica el límite de reservas activas, la antelación mínima y los días máximos a futuro. La lista de turnos marca como no disponibles los que empiezan antes de la antelación mínima (cualquier día) y los de días más allá del máximo.
+Al crear una reserva desde la web o desde el panel, el servidor exige que la franja esté hecha de turnos consecutivos que la página ofrece ese día (en el modo `time_blocks`, un bloque entero) y aplica el límite de reservas activas, la antelación mínima y los días máximos a futuro. El personal no se salta ninguna de estas reglas: desde el panel, el límite es el de la persona para la que se reserva, el estado inicial sigue el modo de aprobación y se envían los mismos avisos que desde la web. La lista de turnos marca como no disponibles los que empiezan antes de la antelación mínima (cualquier día) y los de días más allá del máximo.
+
+Una reserva que cruza la medianoche ocupa también las primeras horas del día siguiente: choca con las reservas de ese día que empiezan antes de que termine, y la lista de turnos de ese día las marca como no disponibles.
 
 Dos avisos más pueden aparecer al reservar:
 
 - **Este espacio no admite reservas en este momento.** Aparece cuando el espacio no está activo (inactivo o en mantenimiento) y alguien intenta reservarlo igualmente, por ejemplo desde una página abierta antes del cambio. La reserva no se crea; hay que elegir otro espacio o esperar a que el personal lo reactive.
-- **Ahora mismo se está procesando otra reserva. Inténtalo de nuevo en unos segundos.** Aparece cuando otra reserva de la misma persona, del mismo espacio y del mismo día se está guardando a la vez y no termina tras unos segundos de espera. La reserva no se crea; basta con volver a enviarla pasados unos segundos y, si el aviso se repite, revisar *Mis reservas* por si la anterior ya se guardó.
+- **Ahora mismo se está procesando otra reserva. Inténtalo de nuevo en unos segundos.** Aparece cuando otra reserva de la misma persona o del mismo espacio se está guardando a la vez y no termina tras unos segundos de espera. La reserva no se crea; basta con volver a enviarla pasados unos segundos y, si el aviso se repite, revisar *Mis reservas* por si la anterior ya se guardó.
 
 ## Modos de programación
 

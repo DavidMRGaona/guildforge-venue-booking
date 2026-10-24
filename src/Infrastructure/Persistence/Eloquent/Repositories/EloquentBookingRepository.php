@@ -109,29 +109,37 @@ final readonly class EloquentBookingRepository implements BookingRepositoryInter
         TimeRange $timeRange,
         ?BookingId $excludeBookingId = null,
     ): bool {
-        $query = BookingModel::query()
-            ->where('resource_id', $resourceId->value)
-            ->where('date', $date)
-            ->whereIn('status', [
-                BookingStatus::Pending->value,
-                BookingStatus::Confirmed->value,
-            ]);
+        // A booking can only meet the day before (one crossing midnight into $date) and the day
+        // after ($timeRange crossing midnight): narrow to those days in SQL, compare in PHP
+        $bookings = $this->getByResourceInDateRange($resourceId, ...self::neighbourDays($date));
 
-        if ($timeRange->crossesMidnight()) {
-            $query->where(function ($q) use ($timeRange): void {
-                $q->where('start_time', '<', $timeRange->endTime)
-                    ->orWhere('end_time', '>', $timeRange->startTime);
-            });
-        } else {
-            $query->where('start_time', '<', $timeRange->endTime)
-                ->where('end_time', '>', $timeRange->startTime);
+        foreach ($bookings as $booking) {
+            if ($excludeBookingId !== null && $booking->id->equals($excludeBookingId)) {
+                continue;
+            }
+
+            if ($booking->overlaps($date, $timeRange)) {
+                return true;
+            }
         }
 
-        if ($excludeBookingId !== null) {
-            $query->where('id', '!=', $excludeBookingId->value);
+        return false;
+    }
+
+    /**
+     * The days before and after a Y-m-d date; the date itself twice when it cannot be read.
+     *
+     * @return array{string, string}
+     */
+    private static function neighbourDays(string $date): array
+    {
+        $day = DateTimeImmutable::createFromFormat('!Y-m-d', $date, new DateTimeZone('UTC'));
+
+        if ($day === false) {
+            return [$date, $date];
         }
 
-        return $query->exists();
+        return [$day->modify('-1 day')->format('Y-m-d'), $day->modify('+1 day')->format('Y-m-d')];
     }
 
     /**

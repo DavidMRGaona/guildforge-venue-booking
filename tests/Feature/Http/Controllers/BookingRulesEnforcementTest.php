@@ -196,7 +196,7 @@ final class BookingRulesEnforcementTest extends ModuleTestCase
     {
         $this->app->instance(BookingLockInterface::class, new class implements BookingLockInterface
         {
-            public function forBooking(string $userId, string $resourceId, string $date, Closure $callback): mixed
+            public function forBooking(string $userId, string $resourceId, Closure $callback): mixed
             {
                 throw BookingBusyException::create();
             }

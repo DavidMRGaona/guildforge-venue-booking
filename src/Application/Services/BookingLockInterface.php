@@ -9,8 +9,9 @@ use Modules\VenueBookings\Domain\Exceptions\BookingBusyException;
 
 /**
  * Serialises the creation of bookings: the callback runs while holding a lock of the user (the
- * active booking limit spans every resource) and one of the resource and day (the overlap check),
- * so two requests never both pass those checks.
+ * active booking limit spans every resource) and one of the resource (the overlap check, which
+ * reaches the next day for a booking that crosses midnight), so two requests never both pass
+ * those checks.
  */
 interface BookingLockInterface
 {
@@ -22,5 +23,5 @@ interface BookingLockInterface
      *
      * @throws BookingBusyException when the locks are not free in time
      */
-    public function forBooking(string $userId, string $resourceId, string $date, Closure $callback): mixed;
+    public function forBooking(string $userId, string $resourceId, Closure $callback): mixed;
 }

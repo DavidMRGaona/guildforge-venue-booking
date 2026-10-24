@@ -48,62 +48,58 @@ final class DatabaseSettingsLoadingTest extends TestCase
         ]);
 
         // Act
-        $this->triggerLoadSettingsFromDatabase();
+        $this->registerProvider();
 
         // Assert
         $this->assertEquals(ApprovalMode::AutoConfirm, $this->reader->getApprovalMode());
         $this->assertEquals(19, $this->reader->getMaxActiveBookings());
     }
 
-    public function test_file_based_settings_remain_as_fallback_when_no_database_row(): void
+    public function test_shipped_defaults_apply_when_no_database_row(): void
     {
-        // Arrange - set file-based config, no database row
-        config()->set('modules.settings.venue-bookings.approval_mode', 'require_approval');
-
         // Act
-        $this->triggerLoadSettingsFromDatabase();
+        $this->registerProvider();
 
-        // Assert - file-based value should remain
+        // Assert - config/settings.php values
         $this->assertEquals(ApprovalMode::RequireApproval, $this->reader->getApprovalMode());
+        $this->assertEquals(3, $this->reader->getMaxActiveBookings());
     }
 
-    public function test_database_settings_override_file_based_settings(): void
+    public function test_keys_missing_from_the_stored_settings_keep_their_shipped_defaults(): void
     {
-        // Arrange - set file-based config to one value
-        config()->set('modules.settings.venue-bookings.approval_mode', 'require_approval');
-        config()->set('modules.settings.venue-bookings.max_active_bookings_per_user', 5);
-
-        // Insert database row with different values
+        // Arrange - saved by a release without the auto-completion keys and with fewer notification keys
         SettingModel::create([
             'key' => 'module_settings:venue-bookings',
             'value' => json_encode([
                 'approval_mode' => 'auto_confirm',
-                'max_active_bookings_per_user' => 42,
+                'notifications' => ['notify_on_booking_created' => false],
             ]),
         ]);
 
         // Act
-        $this->triggerLoadSettingsFromDatabase();
+        $this->registerProvider();
 
-        // Assert - database values should win
+        // Assert - stored values win, the rest come from config/settings.php
         $this->assertEquals(ApprovalMode::AutoConfirm, $this->reader->getApprovalMode());
-        $this->assertEquals(42, $this->reader->getMaxActiveBookings());
+        $this->assertTrue(config('modules.settings.venue-bookings.auto_complete_enabled'));
+        $this->assertSame(24, config('modules.settings.venue-bookings.auto_complete_after_hours'));
+        $this->assertFalse(config('modules.settings.venue-bookings.notifications.notify_on_booking_created'));
+        $this->assertTrue(config('modules.settings.venue-bookings.notifications.notify_on_booking_reminder'));
+        $this->assertFalse(config('modules.settings.venue-bookings.predefined_fields.notes.enabled'));
     }
 
     /**
-     * Invoke the private loadSettingsFromDatabase() method on the service provider.
-     *
-     * Clears the settings cache first so that DB rows inserted in the test
+     * Run the provider's register() as every request does, once the rows inserted in the test
      * are visible to SettingsService (which caches eagerly).
      */
-    private function triggerLoadSettingsFromDatabase(): void
+    private function registerProvider(): void
     {
         app(SettingsServiceInterface::class)->clearCache();
+        config()->offsetUnset('modules.settings.venue-bookings');
 
         $provider = app()->getProvider(VenueBookingsServiceProvider::class);
         $this->assertNotNull($provider, 'VenueBookingsServiceProvider must be registered');
 
-        $reflection = new \ReflectionMethod($provider, 'loadSettingsFromDatabase');
-        $reflection->invoke($provider);
+        $provider->register();
     }
 }

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings;
 
-use Throwable;
 use Modules\VenueBookings\Filament\Resources\BookableResourceResource;
 use Modules\VenueBookings\Filament\Resources\BookingResource;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
@@ -22,7 +21,6 @@ use App\Application\Modules\DTOs\NavigationItemDTO;
 use App\Application\Modules\DTOs\PagePrefixDTO;
 use App\Application\Modules\DTOs\PermissionDTO;
 use App\Application\Modules\DTOs\SlotRegistrationDTO;
-use App\Application\Services\SettingsServiceInterface;
 use App\Modules\ModuleServiceProvider;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Event;
@@ -71,9 +69,8 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
 
     public function register(): void
     {
+        // The core loads the shipped defaults with the values saved in the panel on top
         parent::register();
-
-        $this->loadSettingsFromDatabase();
 
         // Repository bindings
         $this->app->bind(BookableResourceRepositoryInterface::class, EloquentBookableResourceRepository::class);
@@ -104,24 +101,6 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
         $this->registerCommands();
         $this->registerSchedule();
         $this->shareProfileBookings();
-    }
-
-    private function loadSettingsFromDatabase(): void
-    {
-        try {
-            $settingsService = app(SettingsServiceInterface::class);
-            $value = $settingsService->get('module_settings:venue-bookings');
-
-            if ($value !== null && $value !== '') {
-                $decoded = json_decode((string) $value, true);
-                if (is_array($decoded)) {
-                    config()->set('modules.settings.venue-bookings', $decoded);
-                }
-            }
-        } catch (Throwable) {
-            // DB unavailable (fresh install, migration in progress).
-            // File-based settings from parent::register() remain as fallback.
-        }
     }
 
     private function registerEventListeners(): void

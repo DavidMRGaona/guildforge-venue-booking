@@ -146,6 +146,20 @@ return [
         'invalid_transition' => 'Transición de estado no permitida',
     ],
 
+    // Why the panel refused to create a booking
+    'create_errors' => [
+        'resource_unavailable' => 'Este espacio no admite reservas en este momento.',
+        'limit_exceeded' => 'Esta persona ya tiene el máximo de reservas activas.',
+        'too_far' => 'La fecha supera los días máximos de antelación.',
+        'too_soon' => 'La reserva no respeta la antelación mínima.',
+        'already_started' => 'Esa franja ya ha empezado.',
+        'slot_unavailable' => 'La franja se solapa con otra reserva del espacio.',
+        'minimum_slots_not_met' => 'La franja tiene menos turnos consecutivos de los que exige el espacio.',
+        'maximum_slots_exceeded' => 'La franja tiene más turnos consecutivos de los que permite el espacio.',
+        'slot_outside_schedule' => 'La franja no coincide con los turnos del espacio.',
+        'booking_busy' => 'Ahora mismo se está procesando otra reserva. Inténtalo de nuevo en unos segundos.',
+    ],
+
     'settings' => [
         'title' => 'Configuración de reservas',
         'sections' => [
