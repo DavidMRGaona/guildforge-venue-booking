@@ -1,7 +1,7 @@
 {
   "name": "venue-bookings",
   "displayName": "Reservas del local",
-  "version": "2.12.2",
+  "version": "2.12.3",
   "repository": "DavidMRGaona/guildforge-venue-booking",
   "namespace": "Modules\\VenueBookings",
   "provider": "VenueBookingsServiceProvider",
