@@ -31,7 +31,6 @@ final class DatabaseSettingsLoadingTest extends TestCase
     protected function tearDown(): void
     {
         config()->offsetUnset('modules.settings.venue-bookings');
-        config()->offsetUnset('venue-bookings');
 
         parent::tearDown();
     }

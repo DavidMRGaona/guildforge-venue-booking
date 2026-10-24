@@ -48,7 +48,7 @@ final class BookingResourceCreateTest extends ModuleTestCase
 
         $this->registerOnAdminPanel([BookingResource::class]);
 
-        config()->set('venue-bookings.timezone', self::VENUE_TIMEZONE);
+        config()->set('modules.settings.venue-bookings.timezone', self::VENUE_TIMEZONE);
         $this->travelTo(CarbonImmutable::create(2026, 3, 1, 9, 0, 0, self::VENUE_TIMEZONE));
 
         $this->bookableResource = BookableResourceModel::create([

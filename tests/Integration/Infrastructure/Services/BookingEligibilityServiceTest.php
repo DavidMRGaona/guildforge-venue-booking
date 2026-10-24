@@ -46,10 +46,10 @@ final class BookingEligibilityServiceTest extends TestCase
         $this->user = UserModel::factory()->create();
 
         // Set permissive defaults so tests pass by default
-        config()->set('venue-bookings.max_active_bookings_per_user', 10);
-        config()->set('venue-bookings.min_advance_minutes', 0);
-        config()->set('venue-bookings.max_future_days', 365);
-        config()->set('venue-bookings.timezone', 'UTC');
+        config()->set('modules.settings.venue-bookings.max_active_bookings_per_user', 10);
+        config()->set('modules.settings.venue-bookings.min_advance_minutes', 0);
+        config()->set('modules.settings.venue-bookings.max_future_days', 365);
+        config()->set('modules.settings.venue-bookings.timezone', 'UTC');
     }
 
     public function test_it_returns_eligible_when_all_checks_pass(): void
@@ -65,7 +65,7 @@ final class BookingEligibilityServiceTest extends TestCase
 
     public function test_it_returns_ineligible_when_booking_limit_exceeded(): void
     {
-        config()->set('venue-bookings.max_active_bookings_per_user', 2);
+        config()->set('modules.settings.venue-bookings.max_active_bookings_per_user', 2);
 
         // Create 2 active bookings (pending + confirmed)
         BookingModel::create([
@@ -98,7 +98,7 @@ final class BookingEligibilityServiceTest extends TestCase
 
     public function test_it_returns_ineligible_when_date_too_far_in_future(): void
     {
-        config()->set('venue-bookings.max_future_days', 30);
+        config()->set('modules.settings.venue-bookings.max_future_days', 30);
 
         // Date 60 days from now - beyond the 30-day limit
         $date = date('Y-m-d', strtotime('+60 days'));
@@ -111,7 +111,7 @@ final class BookingEligibilityServiceTest extends TestCase
 
     public function test_it_returns_ineligible_when_booking_too_soon(): void
     {
-        config()->set('venue-bookings.min_advance_minutes', 1440); // 24 hours
+        config()->set('modules.settings.venue-bookings.min_advance_minutes', 1440); // 24 hours
 
         // Date in the past - always too soon
         $date = date('Y-m-d', strtotime('-1 day'));
@@ -124,8 +124,8 @@ final class BookingEligibilityServiceTest extends TestCase
 
     public function test_it_returns_ineligible_with_multiple_reasons(): void
     {
-        config()->set('venue-bookings.max_active_bookings_per_user', 1);
-        config()->set('venue-bookings.max_future_days', 7);
+        config()->set('modules.settings.venue-bookings.max_active_bookings_per_user', 1);
+        config()->set('modules.settings.venue-bookings.max_future_days', 7);
 
         // Create 1 active booking to exceed the limit
         BookingModel::create([
@@ -149,7 +149,7 @@ final class BookingEligibilityServiceTest extends TestCase
 
     public function test_future_date_with_advance_setting_returns_eligible(): void
     {
-        config()->set('venue-bookings.min_advance_minutes', 60);
+        config()->set('modules.settings.venue-bookings.min_advance_minutes', 60);
 
         // Date 2 days in the future — well beyond 60 minutes
         $date = date('Y-m-d', strtotime('+2 days'));
@@ -162,7 +162,7 @@ final class BookingEligibilityServiceTest extends TestCase
 
     public function test_today_date_with_advance_setting_is_eligible(): void
     {
-        config()->set('venue-bookings.min_advance_minutes', 60);
+        config()->set('modules.settings.venue-bookings.min_advance_minutes', 60);
 
         // Travel to early morning so end-of-day (23:59:59) is well beyond cutoff
         $this->travelTo(CarbonImmutable::create(2026, 3, 16, 8, 0, 0, 'UTC'));
@@ -179,7 +179,7 @@ final class BookingEligibilityServiceTest extends TestCase
 
     public function test_date_is_ineligible_when_entire_day_is_before_cutoff(): void
     {
-        config()->set('venue-bookings.min_advance_minutes', 1440); // 24 hours
+        config()->set('modules.settings.venue-bookings.min_advance_minutes', 1440); // 24 hours
 
         // Travel to midday — cutoff is tomorrow midday, so today's end-of-day (23:59:59) < cutoff
         $this->travelTo(CarbonImmutable::create(2026, 3, 16, 12, 0, 0, 'UTC'));
@@ -195,7 +195,7 @@ final class BookingEligibilityServiceTest extends TestCase
 
     public function test_it_does_not_count_cancelled_bookings_toward_limit(): void
     {
-        config()->set('venue-bookings.max_active_bookings_per_user', 1);
+        config()->set('modules.settings.venue-bookings.max_active_bookings_per_user', 1);
 
         // Create a cancelled booking (should not count)
         BookingModel::create([

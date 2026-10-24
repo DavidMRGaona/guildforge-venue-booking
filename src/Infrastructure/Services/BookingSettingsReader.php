@@ -5,16 +5,36 @@ declare(strict_types=1);
 namespace Modules\VenueBookings\Infrastructure\Services;
 
 use DateTimeZone;
+use Illuminate\Support\Arr;
+use LogicException;
 use Modules\VenueBookings\Domain\Enums\ApprovalMode;
 
+/**
+ * The module settings. config/settings.php is the only place their defaults are written: the
+ * core loads it with the values saved in the panel on top, and get() falls back to it when the
+ * settings were not loaded (a provider not registered, as in tests).
+ */
 final readonly class BookingSettingsReader
 {
+    /**
+     * The setting at $key (dot notation): the loaded value, else its default.
+     *
+     * @throws LogicException when config/settings.php does not declare $key
+     */
+    public function get(string $key): mixed
+    {
+        $defaults = self::defaults();
+
+        if (! Arr::has($defaults, $key)) {
+            throw new LogicException("The venue-bookings setting \"{$key}\" is not declared in config/settings.php.");
+        }
+
+        return config("modules.settings.venue-bookings.{$key}") ?? Arr::get($defaults, $key);
+    }
+
     public function getApprovalMode(): ApprovalMode
     {
-        $value = (string) (config('modules.settings.venue-bookings.approval_mode')
-            ?? config('venue-bookings.approval_mode', 'require_approval'));
-
-        return ApprovalMode::from($value);
+        return ApprovalMode::from((string) $this->get('approval_mode'));
     }
 
     public function requiresApproval(): bool
@@ -24,26 +44,22 @@ final readonly class BookingSettingsReader
 
     public function getMaxActiveBookings(): int
     {
-        return (int) (config('modules.settings.venue-bookings.max_active_bookings_per_user')
-            ?? config('venue-bookings.max_active_bookings_per_user', 3));
+        return (int) $this->get('max_active_bookings_per_user');
     }
 
     public function getMinAdvanceMinutes(): int
     {
-        return (int) (config('modules.settings.venue-bookings.min_advance_minutes')
-            ?? config('venue-bookings.min_advance_minutes', 60));
+        return (int) $this->get('min_advance_minutes');
     }
 
     public function getMaxFutureDays(): int
     {
-        return (int) (config('modules.settings.venue-bookings.max_future_days')
-            ?? config('venue-bookings.max_future_days', 30));
+        return (int) $this->get('max_future_days');
     }
 
     public function isAutoCompleteEnabled(): bool
     {
-        return (bool) (config('modules.settings.venue-bookings.auto_complete_enabled')
-            ?? config('venue-bookings.auto_complete_enabled', true));
+        return (bool) $this->get('auto_complete_enabled');
     }
 
     /**
@@ -52,46 +68,37 @@ final readonly class BookingSettingsReader
      */
     public function getAutoCompleteAfterHours(): int
     {
-        $hours = (int) (config('modules.settings.venue-bookings.auto_complete_after_hours')
-            ?? config('venue-bookings.auto_complete_after_hours', 24));
-
-        return max(0, min(720, $hours));
+        return max(0, min(720, (int) $this->get('auto_complete_after_hours')));
     }
 
     public function getReminderHoursBefore(): int
     {
-        return (int) (config('modules.settings.venue-bookings.notifications.reminder_hours_before')
-            ?? config('venue-bookings.notifications.reminder_hours_before', 24));
+        return (int) $this->get('notifications.reminder_hours_before');
     }
 
     public function isNotifyOnBookingCreatedEnabled(): bool
     {
-        return (bool) (config('modules.settings.venue-bookings.notifications.notify_on_booking_created')
-            ?? config('venue-bookings.notifications.notify_on_booking_created', true));
+        return (bool) $this->get('notifications.notify_on_booking_created');
     }
 
     public function isNotifyOnBookingReceivedEnabled(): bool
     {
-        return (bool) (config('modules.settings.venue-bookings.notifications.notify_on_booking_received')
-            ?? config('venue-bookings.notifications.notify_on_booking_received', true));
+        return (bool) $this->get('notifications.notify_on_booking_received');
     }
 
     public function isNotifyOnBookingConfirmedEnabled(): bool
     {
-        return (bool) (config('modules.settings.venue-bookings.notifications.notify_on_booking_confirmed')
-            ?? config('venue-bookings.notifications.notify_on_booking_confirmed', true));
+        return (bool) $this->get('notifications.notify_on_booking_confirmed');
     }
 
     public function isNotifyOnBookingCancelledEnabled(): bool
     {
-        return (bool) (config('modules.settings.venue-bookings.notifications.notify_on_booking_cancelled')
-            ?? config('venue-bookings.notifications.notify_on_booking_cancelled', true));
+        return (bool) $this->get('notifications.notify_on_booking_cancelled');
     }
 
     public function isNotifyOnBookingRejectedEnabled(): bool
     {
-        return (bool) (config('modules.settings.venue-bookings.notifications.notify_on_booking_rejected')
-            ?? config('venue-bookings.notifications.notify_on_booking_rejected', true));
+        return (bool) $this->get('notifications.notify_on_booking_rejected');
     }
 
     /**
@@ -100,14 +107,12 @@ final readonly class BookingSettingsReader
     public function getTimeBlockPresets(): array
     {
         /** @var array<array{label: string, open_time: string, close_time: string}> */
-        return config('modules.settings.venue-bookings.time_block_presets')
-            ?? config('venue-bookings.time_block_presets', []);
+        return (array) $this->get('time_block_presets');
     }
 
     public function getTimezone(): string
     {
-        $tz = config('modules.settings.venue-bookings.timezone')
-            ?? config('venue-bookings.timezone');
+        $tz = $this->get('timezone');
 
         return is_string($tz) && $tz !== '' ? $tz : config('app.timezone', 'UTC');
     }
@@ -122,7 +127,23 @@ final readonly class BookingSettingsReader
 
     public function isReminderEnabled(): bool
     {
-        return (bool) (config('modules.settings.venue-bookings.notifications.notify_on_booking_reminder')
-            ?? config('venue-bookings.notifications.notify_on_booking_reminder', true));
+        return (bool) $this->get('notifications.notify_on_booking_reminder');
+    }
+
+    /**
+     * config/settings.php, read once per process.
+     *
+     * @return array<string, mixed>
+     */
+    private static function defaults(): array
+    {
+        static $defaults = null;
+
+        if ($defaults === null) {
+            $loaded = require dirname(__DIR__, 3).'/config/settings.php';
+            $defaults = is_array($loaded) ? $loaded : [];
+        }
+
+        return $defaults;
     }
 }

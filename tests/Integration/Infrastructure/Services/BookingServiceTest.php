@@ -71,7 +71,7 @@ final class BookingServiceTest extends TestCase
         parent::setUp();
 
         // The fixtures book 2026-03-16: freeze the clock before that day, in the venue timezone
-        config()->set('venue-bookings.timezone', self::VENUE_TIMEZONE);
+        config()->set('modules.settings.venue-bookings.timezone', self::VENUE_TIMEZONE);
         $this->travelTo(CarbonImmutable::create(2026, 3, 1, 9, 0, 0, self::VENUE_TIMEZONE));
 
         $this->bookingRepository = new EloquentBookingRepository;
@@ -94,7 +94,7 @@ final class BookingServiceTest extends TestCase
     public function test_it_creates_booking_with_confirmed_status_when_auto_confirm(): void
     {
         Event::fake();
-        config()->set('venue-bookings.approval_mode', 'auto_confirm');
+        config()->set('modules.settings.venue-bookings.approval_mode', 'auto_confirm');
 
         $dto = new CreateBookingDTO(
             resourceId: $this->resource->id,
@@ -117,7 +117,7 @@ final class BookingServiceTest extends TestCase
     public function test_it_creates_booking_with_pending_status_when_require_approval(): void
     {
         Event::fake();
-        config()->set('venue-bookings.approval_mode', 'require_approval');
+        config()->set('modules.settings.venue-bookings.approval_mode', 'require_approval');
 
         $dto = new CreateBookingDTO(
             resourceId: $this->resource->id,
@@ -140,7 +140,7 @@ final class BookingServiceTest extends TestCase
     public function test_it_throws_slot_unavailable_exception_when_slot_is_taken(): void
     {
         Event::fake();
-        config()->set('venue-bookings.approval_mode', 'auto_confirm');
+        config()->set('modules.settings.venue-bookings.approval_mode', 'auto_confirm');
 
         // Create an existing booking at the same time
         BookingModel::create([
@@ -169,7 +169,7 @@ final class BookingServiceTest extends TestCase
     public function test_it_dispatches_booking_created_event(): void
     {
         Event::fake();
-        config()->set('venue-bookings.approval_mode', 'require_approval');
+        config()->set('modules.settings.venue-bookings.approval_mode', 'require_approval');
 
         $dto = new CreateBookingDTO(
             resourceId: $this->resource->id,
@@ -193,7 +193,7 @@ final class BookingServiceTest extends TestCase
     public function test_it_dispatches_booking_confirmed_event_when_auto_confirm(): void
     {
         Event::fake();
-        config()->set('venue-bookings.approval_mode', 'auto_confirm');
+        config()->set('modules.settings.venue-bookings.approval_mode', 'auto_confirm');
 
         $dto = new CreateBookingDTO(
             resourceId: $this->resource->id,
@@ -214,7 +214,7 @@ final class BookingServiceTest extends TestCase
     public function test_it_does_not_dispatch_confirmed_event_when_require_approval(): void
     {
         Event::fake();
-        config()->set('venue-bookings.approval_mode', 'require_approval');
+        config()->set('modules.settings.venue-bookings.approval_mode', 'require_approval');
 
         $dto = new CreateBookingDTO(
             resourceId: $this->resource->id,
@@ -363,7 +363,7 @@ final class BookingServiceTest extends TestCase
     public function test_it_throws_when_booking_has_fewer_than_minimum_consecutive_slots(): void
     {
         Event::fake();
-        config()->set('venue-bookings.approval_mode', 'auto_confirm');
+        config()->set('modules.settings.venue-bookings.approval_mode', 'auto_confirm');
 
         $this->useSchedule(
             [['day_of_week' => 1, 'open_time' => '10:00', 'close_time' => '20:00', 'is_enabled' => true]],
@@ -387,7 +387,7 @@ final class BookingServiceTest extends TestCase
     public function test_it_allows_booking_when_meeting_minimum_consecutive_slots(): void
     {
         Event::fake();
-        config()->set('venue-bookings.approval_mode', 'auto_confirm');
+        config()->set('modules.settings.venue-bookings.approval_mode', 'auto_confirm');
 
         $this->useSchedule(
             [['day_of_week' => 1, 'open_time' => '10:00', 'close_time' => '20:00', 'is_enabled' => true]],
@@ -529,7 +529,7 @@ final class BookingServiceTest extends TestCase
     {
         Event::fake();
         // These tests are about the start cutoff, not the minimum advance
-        config()->set('venue-bookings.min_advance_minutes', 0);
+        config()->set('modules.settings.venue-bookings.min_advance_minutes', 0);
         $this->travelTo(CarbonImmutable::create(2026, 3, 16, 9, 59, 59, self::VENUE_TIMEZONE));
 
         $result = $this->service->createBooking($this->dtoFor('2026-03-16', '10:00', '12:00'));
@@ -551,10 +551,10 @@ final class BookingServiceTest extends TestCase
     {
         Event::fake();
         // These tests are about the start cutoff, not the minimum advance
-        config()->set('venue-bookings.min_advance_minutes', 0);
+        config()->set('modules.settings.venue-bookings.min_advance_minutes', 0);
         // Canary time is UTC+0 in March, an hour behind Madrid: 09:30 there is 10:30 in Madrid,
         // so a 10:00 slot at a Canary venue has not started yet
-        config()->set('venue-bookings.timezone', 'Atlantic/Canary');
+        config()->set('modules.settings.venue-bookings.timezone', 'Atlantic/Canary');
         $this->travelTo(CarbonImmutable::create(2026, 3, 16, 9, 30, 0, 'Atlantic/Canary'));
 
         $result = $this->service->createBooking($this->dtoFor('2026-03-16', '10:00', '12:00'));
@@ -637,7 +637,7 @@ final class BookingServiceTest extends TestCase
     public function test_it_refuses_a_slot_inside_the_minimum_advance(): void
     {
         Event::fake();
-        config()->set('venue-bookings.min_advance_minutes', 60);
+        config()->set('modules.settings.venue-bookings.min_advance_minutes', 60);
         $this->travelTo(CarbonImmutable::create(2026, 3, 16, 9, 30, 0, self::VENUE_TIMEZONE));
 
         try {
@@ -652,7 +652,7 @@ final class BookingServiceTest extends TestCase
     public function test_it_accepts_a_slot_starting_right_at_the_minimum_advance(): void
     {
         Event::fake();
-        config()->set('venue-bookings.min_advance_minutes', 60);
+        config()->set('modules.settings.venue-bookings.min_advance_minutes', 60);
         $this->travelTo(CarbonImmutable::create(2026, 3, 16, 9, 0, 0, self::VENUE_TIMEZONE));
 
         $result = $this->service->createBooking($this->dtoFor('2026-03-16', '10:00', '11:00'));
@@ -664,7 +664,7 @@ final class BookingServiceTest extends TestCase
     {
         Event::fake();
         // From 2026-03-01 (setUp), 15 days ahead end on 2026-03-16
-        config()->set('venue-bookings.max_future_days', 15);
+        config()->set('modules.settings.venue-bookings.max_future_days', 15);
 
         $this->service->createBooking($this->dtoFor('2026-03-16', '10:00', '11:00'));
 
@@ -676,7 +676,7 @@ final class BookingServiceTest extends TestCase
     public function test_it_refuses_a_user_at_the_active_booking_limit(): void
     {
         Event::fake();
-        config()->set('venue-bookings.max_active_bookings_per_user', 2);
+        config()->set('modules.settings.venue-bookings.max_active_bookings_per_user', 2);
         $this->createConfirmedBookingOf($this->user);
         BookingModel::create([
             'id' => (string) Str::uuid(),
@@ -696,7 +696,7 @@ final class BookingServiceTest extends TestCase
     public function test_the_rules_bind_administrators_too(): void
     {
         Event::fake();
-        config()->set('venue-bookings.max_active_bookings_per_user', 1);
+        config()->set('modules.settings.venue-bookings.max_active_bookings_per_user', 1);
         $admin = UserModel::factory()->admin()->create();
         $this->createConfirmedBookingOf($admin);
 
@@ -755,9 +755,9 @@ final class BookingServiceTest extends TestCase
     public function test_the_staff_book_without_the_settings_rules(): void
     {
         Event::fake();
-        config()->set('venue-bookings.max_active_bookings_per_user', 1);
-        config()->set('venue-bookings.max_future_days', 15);
-        config()->set('venue-bookings.min_advance_minutes', 24 * 60);
+        config()->set('modules.settings.venue-bookings.max_active_bookings_per_user', 1);
+        config()->set('modules.settings.venue-bookings.max_future_days', 15);
+        config()->set('modules.settings.venue-bookings.min_advance_minutes', 24 * 60);
         $this->createConfirmedBookingOf($this->user);
 
         // At the limit, beyond the days ahead, and within the day of advance (09:00 now)
@@ -953,7 +953,7 @@ final class BookingServiceTest extends TestCase
     public function test_the_active_booking_limit_is_checked_while_holding_the_lock(): void
     {
         Event::fake();
-        config()->set('venue-bookings.max_active_bookings_per_user', 1);
+        config()->set('modules.settings.venue-bookings.max_active_bookings_per_user', 1);
         // Another request of the same user, holding the lock, takes their last booking
         $service = $this->makeService($this->lockThatFirstRuns(function (): void {
             $this->createConfirmedBookingOf($this->user);

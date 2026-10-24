@@ -22,7 +22,6 @@ final class BookingSettingsReaderTest extends TestCase
     {
         // Reset config keys to avoid bleeding between tests
         config()->offsetUnset('modules.settings.venue-bookings');
-        config()->offsetUnset('venue-bookings');
         parent::tearDown();
     }
 
@@ -44,10 +43,8 @@ final class BookingSettingsReaderTest extends TestCase
 
     public function test_requires_approval_defaults_to_true_when_config_key_is_missing(): void
     {
-        // Both config keys are null — this is the bug scenario.
-        // The safe default must be 'require_approval' (not 'auto_confirm').
+        // Settings not loaded: the safe default of config/settings.php is 'require_approval'
         config()->offsetUnset('modules.settings.venue-bookings');
-        config()->offsetUnset('venue-bookings');
 
         $this->assertTrue($this->reader->requiresApproval());
         $this->assertEquals(ApprovalMode::RequireApproval, $this->reader->getApprovalMode());
@@ -63,7 +60,6 @@ final class BookingSettingsReaderTest extends TestCase
     public function test_get_max_active_bookings_returns_default_when_config_missing(): void
     {
         config()->offsetUnset('modules.settings.venue-bookings');
-        config()->offsetUnset('venue-bookings');
 
         $this->assertEquals(3, $this->reader->getMaxActiveBookings());
     }
@@ -82,7 +78,6 @@ final class BookingSettingsReaderTest extends TestCase
     public function test_reminders_are_enabled_by_default(): void
     {
         config()->offsetUnset('modules.settings.venue-bookings');
-        config()->offsetUnset('venue-bookings');
 
         $this->assertTrue($this->reader->isReminderEnabled());
     }
@@ -97,7 +92,6 @@ final class BookingSettingsReaderTest extends TestCase
     public function test_the_venue_timezone_falls_back_to_the_app_timezone(): void
     {
         config()->offsetUnset('modules.settings.venue-bookings');
-        config()->offsetUnset('venue-bookings');
         config()->set('app.timezone', 'America/Bogota');
 
         $this->assertSame('America/Bogota', $this->reader->getDateTimeZone()->getName());
@@ -106,7 +100,6 @@ final class BookingSettingsReaderTest extends TestCase
     public function test_auto_completion_is_on_after_24_hours_by_default(): void
     {
         config()->offsetUnset('modules.settings.venue-bookings');
-        config()->offsetUnset('venue-bookings');
 
         $this->assertTrue($this->reader->isAutoCompleteEnabled());
         $this->assertSame(24, $this->reader->getAutoCompleteAfterHours());
@@ -131,5 +124,66 @@ final class BookingSettingsReaderTest extends TestCase
 
         config()->set('modules.settings.venue-bookings.auto_complete_after_hours', 0);
         $this->assertSame(0, $this->reader->getAutoCompleteAfterHours());
+    }
+
+    public function test_without_loaded_settings_every_value_comes_from_config_settings(): void
+    {
+        $defaults = require dirname(__DIR__, 4).'/config/settings.php';
+        config()->offsetUnset('modules.settings.venue-bookings');
+
+        $this->assertSame($defaults['approval_mode'], $this->reader->getApprovalMode()->value);
+        $this->assertSame($defaults['max_active_bookings_per_user'], $this->reader->getMaxActiveBookings());
+        $this->assertSame($defaults['min_advance_minutes'], $this->reader->getMinAdvanceMinutes());
+        $this->assertSame($defaults['max_future_days'], $this->reader->getMaxFutureDays());
+        $this->assertSame($defaults['auto_complete_enabled'], $this->reader->isAutoCompleteEnabled());
+        $this->assertSame($defaults['auto_complete_after_hours'], $this->reader->getAutoCompleteAfterHours());
+        $this->assertSame($defaults['time_block_presets'], $this->reader->getTimeBlockPresets());
+        $this->assertSame($defaults['notifications']['reminder_hours_before'], $this->reader->getReminderHoursBefore());
+        $this->assertSame($defaults['notifications']['notify_on_booking_created'], $this->reader->isNotifyOnBookingCreatedEnabled());
+        $this->assertSame($defaults['notifications']['notify_on_booking_received'], $this->reader->isNotifyOnBookingReceivedEnabled());
+        $this->assertSame($defaults['notifications']['notify_on_booking_confirmed'], $this->reader->isNotifyOnBookingConfirmedEnabled());
+        $this->assertSame($defaults['notifications']['notify_on_booking_cancelled'], $this->reader->isNotifyOnBookingCancelledEnabled());
+        $this->assertSame($defaults['notifications']['notify_on_booking_rejected'], $this->reader->isNotifyOnBookingRejectedEnabled());
+        $this->assertSame($defaults['notifications']['notify_on_booking_reminder'], $this->reader->isReminderEnabled());
+        $this->assertSame($defaults['associations']['game_tables_visibility'], $this->reader->get('associations.game_tables_visibility'));
+    }
+
+    public function test_a_loaded_value_wins_over_its_default_even_when_false(): void
+    {
+        config()->set('modules.settings.venue-bookings.notifications.notify_on_booking_created', false);
+        config()->set('modules.settings.venue-bookings.time_block_presets', []);
+
+        $this->assertFalse($this->reader->isNotifyOnBookingCreatedEnabled());
+        $this->assertSame([], $this->reader->getTimeBlockPresets());
+        // Keys not loaded keep their default
+        $this->assertTrue($this->reader->isNotifyOnBookingConfirmedEnabled());
+    }
+
+    public function test_it_refuses_a_setting_missing_from_config_settings(): void
+    {
+        $this->expectException(\LogicException::class);
+
+        $this->reader->get('notifications.notify_on_something_else');
+    }
+
+    public function test_every_setting_the_code_reads_is_declared_in_config_settings(): void
+    {
+        $read = [];
+
+        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(dirname(__DIR__, 4).'/src')) as $file) {
+            if ($file->isFile() && $file->getExtension() === 'php') {
+                preg_match_all("/(?:settings|this)->get\\('([a-z_.]+)'\\)/", (string) file_get_contents($file->getPathname()), $matches);
+                $read = [...$read, ...$matches[1]];
+            }
+        }
+
+        $this->assertNotEmpty($read);
+
+        foreach (array_unique($read) as $key) {
+            // get() throws for a key config/settings.php does not declare
+            $this->reader->get($key);
+        }
+
+        $this->addToAssertionCount(count(array_unique($read)));
     }
 }

@@ -33,8 +33,8 @@ final class SlotAvailabilityServiceTest extends TestCase
     {
         parent::setUp();
 
-        config()->set('venue-bookings.min_advance_minutes', 0);
-        config()->set('venue-bookings.timezone', 'UTC');
+        config()->set('modules.settings.venue-bookings.min_advance_minutes', 0);
+        config()->set('modules.settings.venue-bookings.timezone', 'UTC');
 
         $bookingRepository = new EloquentBookingRepository;
         $this->service = new SlotAvailabilityService(
@@ -205,7 +205,7 @@ final class SlotAvailabilityServiceTest extends TestCase
 
     public function test_slots_within_min_advance_minutes_are_unavailable(): void
     {
-        config()->set('venue-bookings.min_advance_minutes', 60);
+        config()->set('modules.settings.venue-bookings.min_advance_minutes', 60);
 
         $this->travelTo(CarbonImmutable::create(2026, 3, 16, 10, 30, 0, 'UTC'));
 
@@ -245,7 +245,7 @@ final class SlotAvailabilityServiceTest extends TestCase
 
     public function test_min_advance_zero_only_filters_past_slots(): void
     {
-        config()->set('venue-bookings.min_advance_minutes', 0);
+        config()->set('modules.settings.venue-bookings.min_advance_minutes', 0);
 
         $this->travelTo(CarbonImmutable::create(2026, 3, 16, 11, 30, 0, 'UTC'));
 
@@ -267,8 +267,8 @@ final class SlotAvailabilityServiceTest extends TestCase
 
     public function test_slots_use_configured_timezone_for_cutoff(): void
     {
-        config()->set('venue-bookings.timezone', 'Europe/Madrid');
-        config()->set('venue-bookings.min_advance_minutes', 60);
+        config()->set('modules.settings.venue-bookings.timezone', 'Europe/Madrid');
+        config()->set('modules.settings.venue-bookings.min_advance_minutes', 60);
 
         // 09:30 UTC = 10:30 Europe/Madrid (CET, UTC+1 in March).
         // With 60 min advance, cutoff = 11:30 Madrid time.
@@ -292,7 +292,7 @@ final class SlotAvailabilityServiceTest extends TestCase
 
     public function test_started_late_slots_stay_hidden_when_the_advance_crosses_midnight(): void
     {
-        config()->set('venue-bookings.min_advance_minutes', 60);
+        config()->set('modules.settings.venue-bookings.min_advance_minutes', 60);
         $this->travelTo(CarbonImmutable::create(2026, 3, 16, 23, 30, 0, 'UTC'));
 
         $this->createScheduleWithMondayOpen('20:00', '23:59');
@@ -307,7 +307,7 @@ final class SlotAvailabilityServiceTest extends TestCase
 
     public function test_a_slot_that_started_earlier_in_the_same_minute_is_hidden_without_advance(): void
     {
-        config()->set('venue-bookings.min_advance_minutes', 0);
+        config()->set('modules.settings.venue-bookings.min_advance_minutes', 0);
         $this->travelTo(CarbonImmutable::create(2026, 3, 16, 10, 0, 30, 'UTC'));
 
         $this->createScheduleWithMondayOpen();
@@ -325,7 +325,7 @@ final class SlotAvailabilityServiceTest extends TestCase
     public function test_the_minimum_advance_also_hides_early_slots_of_a_later_day(): void
     {
         // 23:30 on the 15th plus 12 hours reaches 11:30 on the 16th
-        config()->set('venue-bookings.min_advance_minutes', 720);
+        config()->set('modules.settings.venue-bookings.min_advance_minutes', 720);
         $this->travelTo(CarbonImmutable::create(2026, 3, 15, 23, 30, 0, 'UTC'));
         $this->createScheduleWithMondayOpen();
 
@@ -352,11 +352,11 @@ final class SlotAvailabilityServiceTest extends TestCase
         // From 1 March, 15 days ahead reach the 16th exactly; 14 stop on the 15th
         $this->createScheduleWithMondayOpen();
 
-        config()->set('venue-bookings.max_future_days', 15);
+        config()->set('modules.settings.venue-bookings.max_future_days', 15);
         $slots = $this->service->getAvailableSlotsForDate($this->resource->id, '2026-03-16');
         $this->assertSame([true, true, true, true], array_map(fn ($s) => $s->isAvailable, $slots));
 
-        config()->set('venue-bookings.max_future_days', 14);
+        config()->set('modules.settings.venue-bookings.max_future_days', 14);
         $slots = $this->service->getAvailableSlotsForDate($this->resource->id, '2026-03-16');
         $this->assertSame([false, false, false, false], array_map(fn ($s) => $s->isAvailable, $slots));
     }

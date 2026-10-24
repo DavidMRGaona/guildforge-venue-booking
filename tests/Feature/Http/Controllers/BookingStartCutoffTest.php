@@ -48,7 +48,7 @@ final class BookingStartCutoffTest extends ModuleTestCase
         app('router')->getRoutes()->refreshNameLookups();
 
         // Tuesday 2026-11-10, 18:30 at the venue
-        config()->set('venue-bookings.timezone', self::VENUE_TIMEZONE);
+        config()->set('modules.settings.venue-bookings.timezone', self::VENUE_TIMEZONE);
         $this->travelTo(CarbonImmutable::create(2026, 11, 10, 18, 30, 0, self::VENUE_TIMEZONE));
 
         $this->room = BookableResourceModel::create([
@@ -104,7 +104,7 @@ final class BookingStartCutoffTest extends ModuleTestCase
     {
         // At 01:00 on the 11th in Auckland (12:00 UTC on the 10th),
         // where the 10th is already over
-        config()->set('venue-bookings.timezone', 'Pacific/Auckland');
+        config()->set('modules.settings.venue-bookings.timezone', 'Pacific/Auckland');
         $this->travelTo(CarbonImmutable::create(2026, 11, 11, 1, 0, 0, 'Pacific/Auckland'));
 
         $this->actingAs($this->user)
@@ -214,7 +214,7 @@ final class BookingStartCutoffTest extends ModuleTestCase
     public function test_the_profile_splits_upcoming_and_past_on_the_venue_day(): void
     {
         // 12:00 UTC on 2026-11-10 is already the 11th in Auckland (UTC+13)
-        config()->set('venue-bookings.timezone', 'Pacific/Auckland');
+        config()->set('modules.settings.venue-bookings.timezone', 'Pacific/Auckland');
         $this->travelTo(CarbonImmutable::create(2026, 11, 11, 1, 0, 0, 'Pacific/Auckland'));
 
         $yesterdayAtVenue = $this->bookingOf($this->user, '20:00', '21:00', '2026-11-10');
@@ -236,7 +236,7 @@ final class BookingStartCutoffTest extends ModuleTestCase
                 ->where('today', '2026-11-10'));
 
         // At 12:00 UTC on 2026-11-10 it is already the 11th in Auckland (UTC+13)
-        config()->set('venue-bookings.timezone', 'Pacific/Auckland');
+        config()->set('modules.settings.venue-bookings.timezone', 'Pacific/Auckland');
         $this->travelTo(CarbonImmutable::create(2026, 11, 10, 12, 0, 0, 'UTC'));
 
         $this->get(route('bookings.index'))
