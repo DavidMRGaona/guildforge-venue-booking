@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Tests\Feature\Filament\Pages;
 
+use App\Application\Modules\Services\ModuleSettingsStoreInterface;
 use App\Application\Services\SettingsServiceInterface;
 use App\Infrastructure\Persistence\Eloquent\Models\SettingModel;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Livewire\Livewire;
+use Mockery;
 use Modules\VenueBookings\Filament\Pages\VenueBookingsSettings;
 use Modules\VenueBookings\VenueBookingsServiceProvider;
 use Tests\Support\Modules\InteractsWithModulePanel;
@@ -192,6 +194,25 @@ final class VenueBookingsSettingsTest extends ModuleTestCase
         $decoded = json_decode((string) SettingModel::where('key', 'module_settings:venue-bookings')->value('value'), true);
         $this->assertIsArray($decoded);
         $this->assertFalse($decoded['auto_complete_enabled']);
+    }
+
+    public function test_the_defaults_are_read_from_the_module_path_the_core_resolves(): void
+    {
+        $this->actingAs($this->admin);
+
+        // Wherever the core keeps its modules, not where this file happens to be
+        $modulesPath = sys_get_temp_dir().'/venue-bookings-modules-'.uniqid();
+        config(['modules.path' => $modulesPath]);
+
+        $store = Mockery::mock(ModuleSettingsStoreInterface::class);
+        $store->shouldReceive('effective')
+            ->once()
+            ->with('venue-bookings', $modulesPath.'/venue-bookings')
+            ->andReturn(['approval_mode' => 'auto_confirm']);
+        $this->app->instance(ModuleSettingsStoreInterface::class, $store);
+
+        Livewire::test(VenueBookingsSettings::class)
+            ->assertFormSet(['approval_mode' => 'auto_confirm']);
     }
 
     /**

@@ -277,6 +277,33 @@ final class BookingTest extends TestCase
         $this->assertSame('2026-03-16T02:00:00+01:00', $booking->endsAt(new DateTimeZone('Europe/Madrid'))->format(DATE_ATOM));
     }
 
+    public function test_its_end_follows_the_clocks_going_forward(): void
+    {
+        $madrid = new DateTimeZone('Europe/Madrid');
+
+        // Madrid jumps from 02:00 to 03:00 on 2026-03-29
+        $this->assertSame('2026-03-29T04:00:00+02:00', $this->createBooking(date: '2026-03-29', startTime: '01:00', endTime: '04:00')->endsAt($madrid)->format(DATE_ATOM));
+        $this->assertSame('2026-03-29T04:00:00+02:00', $this->createBooking(date: '2026-03-28', startTime: '22:00', endTime: '04:00')->endsAt($madrid)->format(DATE_ATOM));
+
+        // 02:30 does not exist that night: the end is the instant one hour after 02:00, which the
+        // clock shows as 03:30
+        $this->assertSame('2026-03-29T03:30:00+02:00', $this->createBooking(date: '2026-03-28', startTime: '22:00', endTime: '02:30')->endsAt($madrid)->format(DATE_ATOM));
+    }
+
+    public function test_its_end_follows_the_clocks_going_back(): void
+    {
+        $madrid = new DateTimeZone('Europe/Madrid');
+
+        // Madrid goes back from 03:00 to 02:00 on 2026-10-25
+        $this->assertSame('2026-10-25T04:00:00+01:00', $this->createBooking(date: '2026-10-25', startTime: '01:00', endTime: '04:00')->endsAt($madrid)->format(DATE_ATOM));
+        $this->assertSame('2026-10-25T04:00:00+01:00', $this->createBooking(date: '2026-10-24', startTime: '22:00', endTime: '04:00')->endsAt($madrid)->format(DATE_ATOM));
+
+        // 02:30 happens twice that night: a booking of the same day ends at the second one, a
+        // booking that crosses midnight at the first
+        $this->assertSame('2026-10-25T02:30:00+01:00', $this->createBooking(date: '2026-10-25', startTime: '01:00', endTime: '02:30')->endsAt($madrid)->format(DATE_ATOM));
+        $this->assertSame('2026-10-25T02:30:00+02:00', $this->createBooking(date: '2026-10-24', startTime: '22:00', endTime: '02:30')->endsAt($madrid)->format(DATE_ATOM));
+    }
+
     public function test_its_end_accepts_times_with_seconds(): void
     {
         $booking = $this->createBooking(date: '2026-03-15', startTime: '10:00:00', endTime: '12:00:00');

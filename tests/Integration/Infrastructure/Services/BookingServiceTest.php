@@ -857,6 +857,32 @@ final class BookingServiceTest extends TestCase
         $this->service->createBooking($this->dtoFor('2026-03-16', '10:00', '11:00'));
     }
 
+    public function test_a_booking_is_checked_for_its_start_then_the_rules_then_the_schedule_then_overlaps(): void
+    {
+        Event::fake();
+        // At the limit with a booking on the 17th, against another user's booking on the 16th
+        config()->set('modules.settings.venue-bookings.max_active_bookings_per_user', 1);
+        $this->createConfirmedBookingOf($this->user, '2026-03-17');
+        $this->createConfirmedBookingOf(UserModel::factory()->create(), '2026-03-16');
+
+        // Off the slot boundaries and over the other booking: it breaks every check at once
+        $offTheSlots = $this->dtoFor('2026-03-16', '10:30', '11:30');
+
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 11, 0, 0, self::VENUE_TIMEZONE));
+        $this->assertSame(BookingAlreadyStartedException::class, $this->refusalOf($offTheSlots));
+
+        $this->travelTo(CarbonImmutable::create(2026, 3, 1, 9, 0, 0, self::VENUE_TIMEZONE));
+        $this->assertSame(BookingLimitExceededException::class, $this->refusalOf($offTheSlots));
+
+        config()->set('modules.settings.venue-bookings.max_active_bookings_per_user', 5);
+        $this->assertSame(SlotOutsideScheduleException::class, $this->refusalOf($offTheSlots));
+
+        $this->assertSame(SlotUnavailableException::class, $this->refusalOf($this->dtoFor('2026-03-16', '10:00', '11:00')));
+
+        $this->assertDatabaseCount('venuebookings_bookings', 2);
+        Event::assertNotDispatched(BookingCreated::class);
+    }
+
     public function test_it_refuses_a_resource_that_is_not_active(): void
     {
         Event::fake();
@@ -1150,6 +1176,20 @@ final class BookingServiceTest extends TestCase
             startTime: $startTime,
             endTime: $endTime,
         );
+    }
+
+    /**
+     * The class of the exception that refuses $dto.
+     */
+    private function refusalOf(CreateBookingDTO $dto): string
+    {
+        try {
+            $this->service->createBooking($dto);
+        } catch (\Throwable $e) {
+            return $e::class;
+        }
+
+        $this->fail('The booking was not refused.');
     }
 
     private function createConfirmedBookingOf(UserModel $user, string $date = '2026-03-16'): string

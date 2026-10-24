@@ -8,6 +8,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Grid;
+use App\Application\Modules\Services\ModuleContextServiceInterface;
 use App\Application\Modules\Services\ModuleSettingsStoreInterface;
 use App\Application\Services\SettingsServiceInterface;
 use App\Filament\Concerns\ChecksPermissions;
@@ -68,11 +69,11 @@ final class VenueBookingsSettings extends Page implements HasForms
         return self::userCan('venuebookings:bookings.settings');
     }
 
-    public function mount(ModuleSettingsStoreInterface $settingsStore): void
+    public function mount(ModuleSettingsStoreInterface $settingsStore, ModuleContextServiceInterface $moduleContext): void
     {
         // The shipped defaults (config/settings.php) with the saved values on top, so keys
         // added by a release show their defaults instead of loading empty and being saved off
-        $this->form->fill($settingsStore->effective('venue-bookings', dirname(__DIR__, 3)));
+        $this->form->fill($settingsStore->effective('venue-bookings', $moduleContext->modulePath('venue-bookings')));
     }
 
     /**
