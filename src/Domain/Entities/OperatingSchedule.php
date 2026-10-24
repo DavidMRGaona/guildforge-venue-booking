@@ -49,10 +49,11 @@ final class OperatingSchedule
     }
 
     /**
-     * Slots of $date (Y-m-d). Times are wall-clock values counted in minutes from
-     * midnight, so they depend neither on PHP's default timezone nor on today's date.
-     * As before, the last slot may run past the closing time when the slot duration
-     * does not divide the opening hours.
+     * Slots of $date (Y-m-d), the day the venue opens. Times are wall-clock values counted in
+     * minutes from midnight, so they depend neither on PHP's default timezone nor on today's
+     * date. On a day open past midnight (e.g. 22:00-02:00), the slots after midnight are listed
+     * here too and marked as starting the next day. As before, the last slot may run past the
+     * closing time when the slot duration does not divide the opening hours.
      *
      * @return array<BookingSlot>
      */
@@ -89,6 +90,7 @@ final class OperatingSchedule
                 startTime: self::formatMinutes($start),
                 endTime: self::formatMinutes($start + $this->slotDurationMinutes),
                 isAvailable: true,
+                startsNextDay: $start >= self::MINUTES_PER_DAY,
             );
         }
 
@@ -96,11 +98,56 @@ final class OperatingSchedule
     }
 
     /**
-     * How many slots of $date the range covers exactly, or null when it is not made of
-     * them: the day is closed, or the range does not start and end on slot boundaries.
-     * In block mode the range must be one whole block, which counts as one slot.
+     * How many slots listed for $date (the day the venue opens) the range covers exactly, or
+     * null when it is not made of them: the day is closed, or the range does not start and end
+     * on slot boundaries. In block mode the range must be one whole block, which counts as one slot.
      */
     public function slotsCoveredBy(string $date, TimeRange $range): ?int
+    {
+        return $this->findRun($date, $range)['count'] ?? null;
+    }
+
+    /**
+     * Like slotsCoveredBy(), for a range that starts on $startDate (the calendar day): made of
+     * the slots of $startDate that start before its midnight, or of the slots the day before
+     * lists past its midnight.
+     */
+    public function slotsCoveredOn(string $startDate, TimeRange $range): ?int
+    {
+        $own = $this->findRun($startDate, $range);
+
+        if ($own !== null && ! $own['startsNextDay']) {
+            return $own['count'];
+        }
+
+        $dayBefore = self::shiftDays($startDate, -1);
+        $tail = $dayBefore === null ? null : $this->findRun($dayBefore, $range);
+
+        return $tail !== null && $tail['startsNextDay'] ? $tail['count'] : null;
+    }
+
+    /**
+     * The calendar day a range picked from the slots of $openingDate starts on: the next day
+     * when its first slot is past that day's midnight, $openingDate otherwise.
+     */
+    public function startDateOf(string $openingDate, TimeRange $range): string
+    {
+        $run = $this->findRun($openingDate, $range);
+
+        if ($run === null || ! $run['startsNextDay']) {
+            return $openingDate;
+        }
+
+        return self::shiftDays($openingDate, 1) ?? $openingDate;
+    }
+
+    /**
+     * The run of slots listed for $date that the range covers exactly, and whether its first
+     * slot starts the next day.
+     *
+     * @return array{count: int, startsNextDay: bool}|null
+     */
+    private function findRun(string $date, TimeRange $range): ?array
     {
         $slots = $this->generateSlotsForDate($date);
         $start = self::toMinutes($range->startTime);
@@ -109,7 +156,7 @@ final class OperatingSchedule
         if ($this->schedulingMode === SchedulingMode::TimeBlocks) {
             foreach ($slots as $block) {
                 if (self::toMinutes($block->startTime) === $start && self::toMinutes($block->endTime) === $end) {
-                    return 1;
+                    return ['count' => 1, 'startsNextDay' => false];
                 }
             }
 
@@ -118,6 +165,7 @@ final class OperatingSchedule
 
         // Time slots are contiguous: walk from the slot the range starts on to the one it ends on
         $count = null;
+        $startsNextDay = false;
 
         foreach ($slots as $slot) {
             if ($count === null) {
@@ -126,12 +174,13 @@ final class OperatingSchedule
                 }
 
                 $count = 0;
+                $startsNextDay = $slot->startsNextDay;
             }
 
             $count++;
 
             if (self::toMinutes($slot->endTime) === $end) {
-                return $count;
+                return ['count' => $count, 'startsNextDay' => $startsNextDay];
             }
         }
 
@@ -167,6 +216,16 @@ final class OperatingSchedule
         $day = DateTimeImmutable::createFromFormat('!Y-m-d', $date, new DateTimeZone('UTC'));
 
         return $day === false ? null : (int) $day->format('w');
+    }
+
+    /**
+     * The Y-m-d date $days away from $date, or null when $date cannot be read.
+     */
+    private static function shiftDays(string $date, int $days): ?string
+    {
+        $day = DateTimeImmutable::createFromFormat('!Y-m-d', $date, new DateTimeZone('UTC'));
+
+        return $day === false ? null : $day->modify(sprintf('%+d day', $days))->format('Y-m-d');
     }
 
     /**

@@ -711,6 +711,47 @@ final class BookingServiceTest extends TestCase
         ));
     }
 
+    public function test_a_slot_past_midnight_is_stored_on_the_day_it_takes_place(): void
+    {
+        Event::fake();
+        // Monday 2026-03-16 opens 22:00-02:00
+        $this->useSchedule([['day_of_week' => 1, 'open_time' => '22:00', 'close_time' => '02:00', 'is_enabled' => true]]);
+
+        $tail = $this->service->createBooking($this->dtoFor('2026-03-16', '00:00', '02:00'));
+        $evening = $this->service->createBooking($this->dtoFor('2026-03-16', '22:00', '00:00'));
+
+        $this->assertDatabaseHas('venuebookings_bookings', ['id' => $tail->id, 'date' => '2026-03-17']);
+        $this->assertDatabaseHas('venuebookings_bookings', ['id' => $evening->id, 'date' => '2026-03-16']);
+        $this->assertSame('2026-03-17', $tail->date);
+    }
+
+    public function test_a_slot_past_midnight_can_be_booked_during_that_evening(): void
+    {
+        Event::fake();
+        $this->useSchedule([['day_of_week' => 1, 'open_time' => '22:00', 'close_time' => '02:00', 'is_enabled' => true]]);
+        // 22:30 on Monday: 00:00 is still ahead, and beyond the default hour of advance
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 22, 30, 0, self::VENUE_TIMEZONE));
+
+        $result = $this->service->createBooking($this->dtoFor('2026-03-16', '00:00', '01:00'));
+
+        $this->assertDatabaseHas('venuebookings_bookings', ['id' => $result->id, 'date' => '2026-03-17']);
+    }
+
+    public function test_the_staff_book_the_night_past_midnight_on_its_calendar_day(): void
+    {
+        Event::fake();
+        $this->useSchedule([['day_of_week' => 1, 'open_time' => '22:00', 'close_time' => '02:00', 'is_enabled' => true]]);
+
+        // Tuesday 00:00 is Monday's night
+        $result = $this->service->createBookingAsStaff($this->dtoFor('2026-03-17', '00:00', '01:00'));
+        $this->assertDatabaseHas('venuebookings_bookings', ['id' => $result->id, 'date' => '2026-03-17']);
+
+        // Monday 00:00 would be Sunday's night, and Sunday is closed
+        $this->expectException(SlotOutsideScheduleException::class);
+
+        $this->service->createBookingAsStaff($this->dtoFor('2026-03-16', '00:00', '01:00'));
+    }
+
     public function test_the_staff_book_without_the_settings_rules(): void
     {
         Event::fake();

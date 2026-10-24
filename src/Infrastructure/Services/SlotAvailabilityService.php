@@ -39,24 +39,29 @@ final readonly class SlotAvailabilityService implements SlotAvailabilityServiceI
             return [];
         }
 
-        // With the days around it: a booking or slot that crosses midnight meets the next day
+        $nextDay = CarbonImmutable::parse($date)->addDay()->toDateString();
+
+        // With the days around it: a booking or slot that crosses midnight meets the next day,
+        // and the slots past midnight take place on it
         $bookings = $this->bookingRepository->getByResourceInDateRange(
             $resourceIdVO,
             CarbonImmutable::parse($date)->subDay()->toDateString(),
-            CarbonImmutable::parse($date)->addDay()->toDateString(),
+            $nextDay,
         );
-        // Same rules as createBooking(): nothing beyond the days ahead, nothing before the minimum advance
-        $tooFar = $this->rules->isTooFar($date);
 
-        return array_map(function (BookingSlot $slot) use ($bookings, $date, $tooFar): BookingSlot {
-            if ($tooFar || $this->rules->startsTooSoon($date, $slot->startTime)) {
+        return array_map(function (BookingSlot $slot) use ($bookings, $date, $nextDay): BookingSlot {
+            $startDate = $slot->startsNextDay ? $nextDay : $date;
+
+            // Same rules as createBooking(), on the day the slot takes place: nothing beyond the
+            // days ahead, nothing before the minimum advance
+            if ($this->rules->isTooFar($startDate) || $this->rules->startsTooSoon($startDate, $slot->startTime)) {
                 return $this->unavailable($slot);
             }
 
             $slotRange = new TimeRange($slot->startTime, $slot->endTime);
 
             foreach ($bookings as $booking) {
-                if ($booking->overlaps($date, $slotRange)) {
+                if ($booking->overlaps($startDate, $slotRange)) {
                     return $this->unavailable($slot);
                 }
             }
@@ -79,6 +84,7 @@ final readonly class SlotAvailabilityService implements SlotAvailabilityServiceI
             endTime: $slot->endTime,
             isAvailable: false,
             label: $slot->label,
+            startsNextDay: $slot->startsNextDay,
         );
     }
 }

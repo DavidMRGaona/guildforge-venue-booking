@@ -54,12 +54,18 @@ final readonly class BookingService implements BookingServiceInterface
 
     public function createBooking(CreateBookingDTO $dto): BookingResponseDTO
     {
-        return $this->create($dto, applySettingsRules: true);
+        // The website sends the day whose slots the range was picked from; one past that day's
+        // midnight is stored on the day it takes place
+        $schedule = $this->scheduleRepository->findByResource(BookableResourceId::fromString($dto->resourceId));
+        $date = $schedule?->startDateOf($dto->date, new TimeRange($dto->startTime, $dto->endTime)) ?? $dto->date;
+
+        return $this->create($dto, $date, applySettingsRules: true);
     }
 
     public function createBookingAsStaff(CreateBookingDTO $dto): BookingResponseDTO
     {
-        return $this->create($dto, applySettingsRules: false);
+        // The staff write the day the booking starts on
+        return $this->create($dto, $dto->date, applySettingsRules: false);
     }
 
     public function moveBookingAsStaff(MoveBookingDTO $dto): BookingResponseDTO
@@ -102,7 +108,7 @@ final readonly class BookingService implements BookingServiceInterface
         return BookingResponseDTO::fromEntity($moved);
     }
 
-    private function create(CreateBookingDTO $dto, bool $applySettingsRules): BookingResponseDTO
+    private function create(CreateBookingDTO $dto, string $date, bool $applySettingsRules): BookingResponseDTO
     {
         $timeRange = new TimeRange($dto->startTime, $dto->endTime);
         $resourceId = BookableResourceId::fromString($dto->resourceId);
@@ -128,7 +134,7 @@ final readonly class BookingService implements BookingServiceInterface
             id: BookingId::generate(),
             resourceId: $resourceId,
             userId: $dto->userId,
-            date: $dto->date,
+            date: $date,
             timeRange: $timeRange,
             status: $initialStatus,
             eventId: $dto->eventId,
@@ -146,22 +152,22 @@ final readonly class BookingService implements BookingServiceInterface
         // Locked by the stored id of the resource when it exists, not by the id as it was sent
         $lockedResourceId = strtolower($resource !== null ? $resource->id->value : $dto->resourceId);
 
-        $this->lock->forBooking($dto->userId, $lockedResourceId, function () use ($booking, $dto, $resourceId, $timeRange, $applySettingsRules): void {
+        $this->lock->forBooking($dto->userId, $lockedResourceId, function () use ($booking, $dto, $date, $resourceId, $timeRange, $applySettingsRules): void {
             // Whoever asks, a slot that has already started cannot be booked
             if ($this->hasStarted($booking)) {
-                throw BookingAlreadyStartedException::forSlot($dto->date, $dto->startTime);
+                throw BookingAlreadyStartedException::forSlot($date, $dto->startTime);
             }
 
             // The rules of the settings share the space among members booking on the website,
             // administrators included; staff booking in the panel make the exception on purpose
             if ($applySettingsRules) {
-                $this->rules->assertCanBook($dto->userId, $dto->date, $dto->startTime);
+                $this->rules->assertCanBook($dto->userId, $date, $dto->startTime);
             }
 
-            $this->assertFitsSchedule($resourceId, $dto->date, $timeRange);
+            $this->assertFitsSchedule($resourceId, $date, $timeRange);
 
-            if (! $this->slotAvailabilityService->isSlotAvailable($dto->resourceId, $dto->date, $timeRange)) {
-                throw SlotUnavailableException::forTimeRange($dto->date, $dto->startTime, $dto->endTime);
+            if (! $this->slotAvailabilityService->isSlotAvailable($dto->resourceId, $date, $timeRange)) {
+                throw SlotUnavailableException::forTimeRange($date, $dto->startTime, $dto->endTime);
             }
 
             $this->bookingRepository->save($booking);
@@ -286,14 +292,15 @@ final readonly class BookingService implements BookingServiceInterface
     }
 
     /**
-     * The range must be made of the slots the booking page offers for that day: the day is
-     * open, the range starts and ends on slot boundaries (one whole block in block mode)
-     * and, in slot mode, it spans between the minimum and the maximum consecutive slots.
+     * The range, starting on $date, must be made of the slots the booking page offers: those of
+     * $date, or those the day before lists past its midnight. The day is open, the range starts
+     * and ends on slot boundaries (one whole block in block mode) and, in slot mode, it spans
+     * between the minimum and the maximum consecutive slots.
      */
     private function assertFitsSchedule(BookableResourceId $resourceId, string $date, TimeRange $timeRange): void
     {
         $schedule = $this->scheduleRepository->findByResource($resourceId);
-        $slotCount = $schedule?->slotsCoveredBy($date, $timeRange);
+        $slotCount = $schedule?->slotsCoveredOn($date, $timeRange);
 
         if ($schedule === null || $slotCount === null) {
             throw SlotOutsideScheduleException::forTimeRange($date, $timeRange->startTime, $timeRange->endTime);

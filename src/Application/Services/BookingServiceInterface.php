@@ -12,7 +12,9 @@ use Modules\VenueBookings\Application\DTOs\Response\BookingResponseDTO;
 interface BookingServiceInterface
 {
     /**
-     * Create a booking. Refused for any caller, administrators included, once the slot has
+     * Create a booking from the website. The DTO's date is the day whose slots the range was
+     * picked from; a range starting past that day's midnight is stored on the next day, the
+     * day it takes place. Refused for any caller, administrators included, once the slot has
      * started (venue timezone), when a settings rule forbids it (active bookings per user,
      * minimum advance, days ahead), when the range is not made of the resource's slots for
      * that day or spans fewer or more consecutive slots than allowed, or when it overlaps
@@ -30,7 +32,8 @@ interface BookingServiceInterface
     public function createBooking(CreateBookingDTO $dto): BookingResponseDTO;
 
     /**
-     * Create a booking from the admin panel, which authorizes the caller. The same checks as
+     * Create a booking from the admin panel, which authorizes the caller. The DTO's date is the
+     * day the booking starts on. The same checks as
      * createBooking() except the settings rules (active bookings per user, minimum advance,
      * days ahead): the staff make the exception on purpose.
      *

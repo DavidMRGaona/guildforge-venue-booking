@@ -438,6 +438,61 @@ final class OperatingScheduleTest extends TestCase
         $this->assertSame(1, $schedule->slotsCoveredBy('2026-03-06', new TimeRange('22:00', '02:00')));
     }
 
+    public function test_slots_past_midnight_are_marked_as_starting_the_next_day(): void
+    {
+        // 2026-03-06 is a Friday, open 22:00-02:00
+        $schedule = $this->fridayNight();
+
+        $slots = $schedule->generateSlotsForDate('2026-03-06');
+
+        $this->assertSame([false, false, true, true], array_map(fn (BookingSlot $s): bool => $s->startsNextDay, $slots));
+        $this->assertTrue($slots[2]->toArray()['starts_next_day']);
+    }
+
+    public function test_a_range_starting_past_midnight_takes_place_the_next_day(): void
+    {
+        $schedule = $this->fridayNight();
+
+        $this->assertSame('2026-03-07', $schedule->startDateOf('2026-03-06', new TimeRange('00:00', '02:00')));
+        $this->assertSame('2026-03-07', $schedule->startDateOf('2026-03-06', new TimeRange('01:00', '02:00')));
+        // Starts before midnight, or not made of the day's slots
+        $this->assertSame('2026-03-06', $schedule->startDateOf('2026-03-06', new TimeRange('23:00', '01:00')));
+        $this->assertSame('2026-03-06', $schedule->startDateOf('2026-03-06', new TimeRange('00:30', '01:30')));
+    }
+
+    public function test_the_range_of_a_calendar_day_may_come_from_the_night_before(): void
+    {
+        $schedule = $this->fridayNight();
+
+        // Saturday 00:00-02:00 is Friday's night
+        $this->assertSame(2, $schedule->slotsCoveredOn('2026-03-07', new TimeRange('00:00', '02:00')));
+        // Friday 23:00-01:00 starts on Friday
+        $this->assertSame(2, $schedule->slotsCoveredOn('2026-03-06', new TimeRange('23:00', '01:00')));
+        // Friday 00:00-01:00 would be Thursday's night, and Thursday is closed
+        $this->assertNull($schedule->slotsCoveredOn('2026-03-06', new TimeRange('00:00', '01:00')));
+        // Saturday 23:00 is not open
+        $this->assertNull($schedule->slotsCoveredOn('2026-03-07', new TimeRange('23:00', '00:00')));
+    }
+
+    public function test_blocks_take_place_on_their_own_date(): void
+    {
+        $schedule = $this->createScheduleWithDays(
+            daySchedules: [new DaySchedule(dayOfWeek: 5, openTime: '00:00', closeTime: '03:00', isEnabled: true, label: 'Madrugada')],
+            schedulingMode: SchedulingMode::TimeBlocks,
+        );
+
+        $this->assertSame('2026-03-06', $schedule->startDateOf('2026-03-06', new TimeRange('00:00', '03:00')));
+        $this->assertSame(1, $schedule->slotsCoveredOn('2026-03-06', new TimeRange('00:00', '03:00')));
+        $this->assertNull($schedule->slotsCoveredOn('2026-03-07', new TimeRange('00:00', '03:00')));
+    }
+
+    private function fridayNight(): OperatingSchedule
+    {
+        return $this->createScheduleWithDays(
+            daySchedules: [new DaySchedule(dayOfWeek: 5, openTime: '22:00', closeTime: '02:00', isEnabled: true)],
+        );
+    }
+
     /**
      * @param  array<DaySchedule>  $daySchedules
      */

@@ -293,6 +293,15 @@ final class BookingTest extends TestCase
         $this->assertFalse($booking->overlaps('2026-03-16', new TimeRange('10:00', '12:00')));
     }
 
+    public function test_the_early_hours_of_a_date_do_not_meet_its_night(): void
+    {
+        // 01:00-02:00 of the 15th is that morning, long before 22:00 of the same day
+        $booking = $this->createBooking(date: '2026-03-15', startTime: '22:00', endTime: '02:00');
+
+        $this->assertFalse($booking->overlaps('2026-03-15', new TimeRange('01:00', '02:00')));
+        $this->assertTrue($booking->overlaps('2026-03-15', new TimeRange('23:00', '00:00')));
+    }
+
     public function test_a_booking_that_crosses_midnight_overlaps_the_early_hours_of_the_next_day(): void
     {
         $booking = $this->createBooking(date: '2026-03-15', startTime: '22:00', endTime: '02:00');

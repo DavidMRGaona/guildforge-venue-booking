@@ -13,6 +13,7 @@ final readonly class BookingSlotResponseDTO
         public string $endTime,
         public bool $isAvailable,
         public ?string $label = null,
+        public bool $startsNextDay = false,
     ) {
     }
 
@@ -23,6 +24,7 @@ final readonly class BookingSlotResponseDTO
             endTime: $slot->endTime,
             isAvailable: $slot->isAvailable,
             label: $slot->label,
+            startsNextDay: $slot->startsNextDay,
         );
     }
 
@@ -36,6 +38,7 @@ final readonly class BookingSlotResponseDTO
             'end_time' => $this->endTime,
             'is_available' => $this->isAvailable,
             'label' => $this->label,
+            'starts_next_day' => $this->startsNextDay,
         ];
     }
 }
