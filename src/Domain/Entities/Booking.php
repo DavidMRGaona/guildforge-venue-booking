@@ -79,12 +79,18 @@ final class Booking
     /**
      * When the booking ends, read in the venue timezone the caller passes. A range that
      * crosses midnight ends on the next day.
+     *
+     * The end date is worked out first and the end read straight from it, so an end time
+     * that happens twice (clocks going back) is always the same moment, whatever day the
+     * booking starts: moving an instant a day forward would keep the offset it started with.
      */
     public function endsAt(DateTimeZone $timezone): DateTimeImmutable
     {
-        $end = new DateTimeImmutable("{$this->date} {$this->timeRange->endTime}", $timezone);
+        $date = $this->timeRange->crossesMidnight()
+            ? (new DateTimeImmutable($this->date, new DateTimeZone('UTC')))->modify('+1 day')->format('Y-m-d')
+            : $this->date;
 
-        return $this->timeRange->crossesMidnight() ? $end->modify('+1 day') : $end;
+        return new DateTimeImmutable("{$date} {$this->timeRange->endTime}", $timezone);
     }
 
     /**
