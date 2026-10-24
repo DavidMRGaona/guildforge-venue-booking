@@ -319,6 +319,34 @@ final class BookingTest extends TestCase
         $this->assertTrue($booking->overlaps('2027-01-01', new TimeRange('00:00', '01:00')));
     }
 
+    public function test_a_moved_booking_keeps_everything_but_where_and_when(): void
+    {
+        $booking = $this->createBooking(date: '2026-03-15', startTime: '10:00', endTime: '12:00');
+        $booking->confirm();
+        $booking->adminNotes = 'Llaves';
+        $resourceId = BookableResourceId::generate();
+
+        $moved = $booking->movedTo($resourceId, '2026-03-16', new TimeRange('14:00', '16:00'));
+
+        $this->assertTrue($moved->id->equals($booking->id));
+        $this->assertSame($resourceId, $moved->resourceId);
+        $this->assertSame('2026-03-16', $moved->date);
+        $this->assertSame('14:00', $moved->timeRange->startTime);
+        $this->assertSame(BookingStatus::Confirmed, $moved->status);
+        $this->assertSame('Llaves', $moved->adminNotes);
+        $this->assertSame($booking->confirmedAt, $moved->confirmedAt);
+        $this->assertSame($booking->userId, $moved->userId);
+    }
+
+    public function test_it_tells_whether_another_booking_starts_at_another_time(): void
+    {
+        $booking = $this->createBooking(date: '2026-03-15', startTime: '10:00', endTime: '12:00');
+
+        $this->assertFalse($booking->movedTo($booking->resourceId, '2026-03-15', new TimeRange('10:00:00', '13:00'))->startsAtAnotherTimeThan($booking));
+        $this->assertTrue($booking->movedTo($booking->resourceId, '2026-03-15', new TimeRange('09:00', '12:00'))->startsAtAnotherTimeThan($booking));
+        $this->assertTrue($booking->movedTo($booking->resourceId, '2026-03-16', new TimeRange('10:00', '12:00'))->startsAtAnotherTimeThan($booking));
+    }
+
     private function createBooking(
         ?string $userId = null,
         string $date = '2026-03-15',

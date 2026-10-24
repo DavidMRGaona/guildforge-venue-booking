@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 use Modules\VenueBookings\Application\DTOs\CancelBookingDTO;
 use Modules\VenueBookings\Application\DTOs\CreateBookingDTO;
+use Modules\VenueBookings\Application\DTOs\MoveBookingDTO;
 use Modules\VenueBookings\Application\Services\BookingLockInterface;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
 use Modules\VenueBookings\Domain\Events\BookingCancelled;
@@ -710,6 +711,68 @@ final class BookingServiceTest extends TestCase
         ));
     }
 
+    public function test_the_staff_book_without_the_settings_rules(): void
+    {
+        Event::fake();
+        config()->set('venue-bookings.max_active_bookings_per_user', 1);
+        config()->set('venue-bookings.max_future_days', 15);
+        config()->set('venue-bookings.min_advance_minutes', 24 * 60);
+        $this->createConfirmedBookingOf($this->user);
+
+        // At the limit, beyond the days ahead, and within the day of advance (09:00 now)
+        $far = $this->service->createBookingAsStaff($this->dtoFor('2026-03-30', '10:00', '11:00'));
+        $soon = $this->service->createBookingAsStaff($this->dtoFor('2026-03-01', '12:00', '13:00'));
+
+        $this->assertDatabaseHas('venuebookings_bookings', ['id' => $far->id]);
+        $this->assertDatabaseHas('venuebookings_bookings', ['id' => $soon->id]);
+    }
+
+    public function test_the_staff_cannot_book_over_another_booking(): void
+    {
+        Event::fake();
+        $this->createConfirmedBookingOf($this->user);
+
+        $this->expectException(SlotUnavailableException::class);
+
+        $this->service->createBookingAsStaff($this->dtoFor('2026-03-16', '11:00', '12:00'));
+    }
+
+    public function test_the_staff_cannot_book_a_slot_that_has_started(): void
+    {
+        Event::fake();
+
+        $this->expectException(BookingAlreadyStartedException::class);
+
+        $this->service->createBookingAsStaff($this->dtoFor('2026-03-01', '08:00', '10:00'));
+    }
+
+    public function test_a_move_is_checked_against_other_bookings_but_not_itself(): void
+    {
+        $bookingId = $this->createConfirmedBookingOf($this->user);
+        $this->createConfirmedBookingOf(UserModel::factory()->create(), '2026-03-17');
+
+        $this->service->moveBookingAsStaff(new MoveBookingDTO($bookingId, $this->resource->id, '2026-03-16', '09:00', '13:00'));
+        $this->assertDatabaseHas('venuebookings_bookings', ['id' => $bookingId, 'start_time' => '09:00', 'end_time' => '13:00']);
+
+        $this->expectException(SlotUnavailableException::class);
+
+        $this->service->moveBookingAsStaff(new MoveBookingDTO($bookingId, $this->resource->id, '2026-03-17', '11:00', '12:00'));
+    }
+
+    public function test_a_move_resets_the_reminder_and_keeps_the_rest_of_the_booking(): void
+    {
+        $bookingId = $this->createConfirmedBookingOf($this->user);
+        BookingModel::query()->whereKey($bookingId)->update(['reminder_sent_at' => now(), 'admin_notes' => 'Llaves']);
+
+        $this->service->moveBookingAsStaff(new MoveBookingDTO($bookingId, $this->resource->id, '2026-03-18', '10:00', '12:00'));
+
+        $booking = BookingModel::query()->findOrFail($bookingId);
+        $this->assertNull($booking->reminder_sent_at);
+        $this->assertSame('Llaves', $booking->admin_notes);
+        $this->assertSame(BookingStatus::Confirmed, $booking->status);
+        $this->assertSame($this->user->id, $booking->user_id);
+    }
+
     public function test_it_refuses_a_range_off_the_slot_boundaries(): void
     {
         Event::fake();
@@ -1048,14 +1111,14 @@ final class BookingServiceTest extends TestCase
         );
     }
 
-    private function createConfirmedBookingOf(UserModel $user): string
+    private function createConfirmedBookingOf(UserModel $user, string $date = '2026-03-16'): string
     {
         $bookingId = (string) Str::uuid();
         BookingModel::create([
             'id' => $bookingId,
             'resource_id' => $this->resource->id,
             'user_id' => $user->id,
-            'date' => '2026-03-16',
+            'date' => $date,
             'start_time' => '10:00',
             'end_time' => '12:00',
             'status' => 'confirmed',

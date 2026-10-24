@@ -119,6 +119,39 @@ final class Booking
         return $now >= $this->startsAt($timezone);
     }
 
+    /**
+     * The same booking on another resource, date or time range, with everything else kept.
+     */
+    public function movedTo(BookableResourceId $resourceId, string $date, TimeRange $timeRange): self
+    {
+        return new self(
+            id: $this->id,
+            resourceId: $resourceId,
+            userId: $this->userId,
+            date: $date,
+            timeRange: $timeRange,
+            status: $this->status,
+            eventId: $this->eventId,
+            gameTableId: $this->gameTableId,
+            tournamentId: $this->tournamentId,
+            campaignId: $this->campaignId,
+            fieldValues: $this->fieldValues,
+            cancellationReason: $this->cancellationReason,
+            adminNotes: $this->adminNotes,
+            confirmedAt: $this->confirmedAt,
+            cancelledAt: $this->cancelledAt,
+        );
+    }
+
+    /**
+     * Whether $other starts at a different moment (date or start time; seconds ignored).
+     */
+    public function startsAtAnotherTimeThan(self $other): bool
+    {
+        return $this->date !== $other->date
+            || substr($this->timeRange->startTime, 0, 5) !== substr($other->timeRange->startTime, 0, 5);
+    }
+
     public function belongsTo(string $userId): bool
     {
         return $this->userId === $userId;
