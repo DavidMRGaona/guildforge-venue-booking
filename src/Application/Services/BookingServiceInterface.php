@@ -6,6 +6,7 @@ namespace Modules\VenueBookings\Application\Services;
 
 use Modules\VenueBookings\Application\DTOs\CancelBookingDTO;
 use Modules\VenueBookings\Application\DTOs\CreateBookingDTO;
+use Modules\VenueBookings\Application\DTOs\MoveBookingDTO;
 use Modules\VenueBookings\Application\DTOs\Response\BookingResponseDTO;
 
 interface BookingServiceInterface
@@ -27,6 +28,37 @@ interface BookingServiceInterface
      * @throws \Modules\VenueBookings\Domain\Exceptions\SlotUnavailableException
      */
     public function createBooking(CreateBookingDTO $dto): BookingResponseDTO;
+
+    /**
+     * Create a booking from the admin panel, which authorizes the caller. The same checks as
+     * createBooking() except the settings rules (active bookings per user, minimum advance,
+     * days ahead): the staff make the exception on purpose.
+     *
+     * @throws \Modules\VenueBookings\Domain\Exceptions\BookableResourceUnavailableException
+     * @throws \Modules\VenueBookings\Domain\Exceptions\BookingAlreadyStartedException
+     * @throws \Modules\VenueBookings\Domain\Exceptions\SlotOutsideScheduleException
+     * @throws \Modules\VenueBookings\Domain\Exceptions\MinimumSlotsNotMetException
+     * @throws \Modules\VenueBookings\Domain\Exceptions\MaximumSlotsExceededException
+     * @throws \Modules\VenueBookings\Domain\Exceptions\SlotUnavailableException
+     */
+    public function createBookingAsStaff(CreateBookingDTO $dto): BookingResponseDTO;
+
+    /**
+     * Move a booking to another resource, date or time range from the admin panel, which
+     * authorizes the caller. A finished booking is moved without checks. An active one is
+     * refused onto an inactive resource, when its start changes to a moment already past,
+     * when the range does not fit the resource's slots, or when it overlaps another active
+     * booking; the settings rules do not apply.
+     *
+     * @throws \Modules\VenueBookings\Domain\Exceptions\BookingNotFoundException
+     * @throws \Modules\VenueBookings\Domain\Exceptions\BookableResourceUnavailableException
+     * @throws \Modules\VenueBookings\Domain\Exceptions\BookingAlreadyStartedException
+     * @throws \Modules\VenueBookings\Domain\Exceptions\SlotOutsideScheduleException
+     * @throws \Modules\VenueBookings\Domain\Exceptions\MinimumSlotsNotMetException
+     * @throws \Modules\VenueBookings\Domain\Exceptions\MaximumSlotsExceededException
+     * @throws \Modules\VenueBookings\Domain\Exceptions\SlotUnavailableException
+     */
+    public function moveBookingAsStaff(MoveBookingDTO $dto): BookingResponseDTO;
 
     public function confirmBooking(string $bookingId): BookingResponseDTO;
 

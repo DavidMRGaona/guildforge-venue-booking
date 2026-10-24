@@ -23,8 +23,8 @@ use Tests\Support\Modules\InteractsWithModulePanel;
 use Tests\Support\Modules\ModuleTestCase;
 
 /**
- * Bookings created in the panel go through BookingService: the same overlap, schedule and
- * settings rules as the website, under the same lock.
+ * Bookings created in the panel go through BookingService: the same overlap and schedule checks
+ * as the website under the same lock, without the settings rules (the staff make the exception).
  */
 final class BookingResourceCreateTest extends ModuleTestCase
 {
@@ -159,8 +159,9 @@ final class BookingResourceCreateTest extends ModuleTestCase
         $this->assertSame(0, BookingModel::query()->count());
     }
 
-    public function test_the_active_booking_limit_binds_the_staff_too(): void
+    public function test_the_staff_may_exceed_the_active_booking_limit(): void
     {
+        Event::fake([BookingCreated::class, BookingConfirmed::class]);
         config()->set('modules.settings.venue-bookings.max_active_bookings_per_user', 1);
         $this->actingAs($this->admin);
         $this->createBookingOf($this->member, '2026-03-17', '10:00', '11:00');
@@ -168,31 +169,46 @@ final class BookingResourceCreateTest extends ModuleTestCase
         Livewire::test(CreateBooking::class)
             ->fillForm($this->formFor('2026-03-16', '10:00', '11:00'))
             ->call('create')
-            ->assertHasFormErrors(['user_id']);
+            ->assertHasNoFormErrors();
 
-        $this->assertSame(1, BookingModel::query()->count());
+        $this->assertSame(2, BookingModel::query()->count());
     }
 
-    public function test_the_days_ahead_bind_the_staff_too(): void
+    public function test_the_staff_may_book_beyond_the_days_ahead(): void
     {
+        Event::fake([BookingCreated::class, BookingConfirmed::class]);
         $this->actingAs($this->admin);
 
         Livewire::test(CreateBooking::class)
             ->fillForm($this->formFor('2026-04-15', '10:00', '11:00'))
             ->call('create')
-            ->assertHasFormErrors(['date']);
+            ->assertHasNoFormErrors();
 
-        $this->assertSame(0, BookingModel::query()->count());
+        $this->assertSame(1, BookingModel::query()->count());
     }
 
-    public function test_the_minimum_advance_binds_the_staff_too(): void
+    public function test_the_staff_may_book_within_the_minimum_advance(): void
     {
         // 09:00 now: 10:00 starts within the two hours of advance
+        Event::fake([BookingCreated::class, BookingConfirmed::class]);
         config()->set('modules.settings.venue-bookings.min_advance_minutes', 120);
         $this->actingAs($this->admin);
 
         Livewire::test(CreateBooking::class)
             ->fillForm($this->formFor('2026-03-01', '10:00', '11:00'))
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame(1, BookingModel::query()->count());
+    }
+
+    public function test_a_slot_that_has_started_cannot_be_booked(): void
+    {
+        // 09:00 now
+        $this->actingAs($this->admin);
+
+        Livewire::test(CreateBooking::class)
+            ->fillForm($this->formFor('2026-03-01', '08:00', '10:00'))
             ->call('create')
             ->assertHasFormErrors(['start_time']);
 

@@ -146,12 +146,9 @@ return [
         'invalid_transition' => 'Transición de estado no permitida',
     ],
 
-    // Why the panel refused to create a booking
-    'create_errors' => [
+    // Why the panel refused to create or move a booking
+    'panel_refusals' => [
         'resource_unavailable' => 'Este espacio no admite reservas en este momento.',
-        'limit_exceeded' => 'Esta persona ya tiene el máximo de reservas activas.',
-        'too_far' => 'La fecha supera los días máximos de antelación.',
-        'too_soon' => 'La reserva no respeta la antelación mínima.',
         'already_started' => 'Esa franja ya ha empezado.',
         'slot_unavailable' => 'La franja se solapa con otra reserva del espacio.',
         'minimum_slots_not_met' => 'La franja tiene menos turnos consecutivos de los que exige el espacio.',

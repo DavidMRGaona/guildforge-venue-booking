@@ -9,6 +9,7 @@ use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Carbon\CarbonImmutable;
 use Modules\VenueBookings\Application\DTOs\CancelBookingDTO;
 use Modules\VenueBookings\Application\DTOs\CreateBookingDTO;
+use Modules\VenueBookings\Application\DTOs\MoveBookingDTO;
 use Modules\VenueBookings\Application\DTOs\Response\BookingResponseDTO;
 use Modules\VenueBookings\Application\Services\BookingLockInterface;
 use Modules\VenueBookings\Application\Services\BookingServiceInterface;
@@ -53,6 +54,56 @@ final readonly class BookingService implements BookingServiceInterface
 
     public function createBooking(CreateBookingDTO $dto): BookingResponseDTO
     {
+        return $this->create($dto, applySettingsRules: true);
+    }
+
+    public function createBookingAsStaff(CreateBookingDTO $dto): BookingResponseDTO
+    {
+        return $this->create($dto, applySettingsRules: false);
+    }
+
+    public function moveBookingAsStaff(MoveBookingDTO $dto): BookingResponseDTO
+    {
+        $booking = $this->bookingRepository->findOrFail(BookingId::fromString($dto->bookingId));
+        $resourceId = BookableResourceId::fromString($dto->resourceId);
+        $timeRange = new TimeRange($dto->startTime, $dto->endTime);
+        $moved = $booking->movedTo($resourceId, $dto->date, $timeRange);
+
+        // A finished booking takes up no slot: the staff correct its record freely
+        if ($booking->status->isFinal()) {
+            $this->bookingRepository->save($moved);
+
+            return BookingResponseDTO::fromEntity($moved);
+        }
+
+        $resource = $this->resourceRepository->find($resourceId);
+
+        if (! $resourceId->equals($booking->resourceId) && $resource !== null && ! $resource->isActive()) {
+            throw BookableResourceUnavailableException::withId($dto->resourceId);
+        }
+
+        $lockedResourceId = strtolower($resource !== null ? $resource->id->value : $dto->resourceId);
+
+        $this->lock->forBooking($booking->userId, $lockedResourceId, function () use ($booking, $moved, $dto, $resourceId, $timeRange): void {
+            // A booking keeping its start may be lengthened or change room while under way
+            if ($moved->startsAtAnotherTimeThan($booking) && $this->hasStarted($moved)) {
+                throw BookingAlreadyStartedException::forSlot($dto->date, $dto->startTime);
+            }
+
+            $this->assertFitsSchedule($resourceId, $dto->date, $timeRange);
+
+            if ($this->bookingRepository->hasOverlappingBooking($resourceId, $dto->date, $timeRange, $booking->id)) {
+                throw SlotUnavailableException::forTimeRange($dto->date, $dto->startTime, $dto->endTime);
+            }
+
+            $this->bookingRepository->save($moved);
+        });
+
+        return BookingResponseDTO::fromEntity($moved);
+    }
+
+    private function create(CreateBookingDTO $dto, bool $applySettingsRules): BookingResponseDTO
+    {
         $timeRange = new TimeRange($dto->startTime, $dto->endTime);
         $resourceId = BookableResourceId::fromString($dto->resourceId);
 
@@ -95,14 +146,17 @@ final readonly class BookingService implements BookingServiceInterface
         // Locked by the stored id of the resource when it exists, not by the id as it was sent
         $lockedResourceId = strtolower($resource !== null ? $resource->id->value : $dto->resourceId);
 
-        $this->lock->forBooking($dto->userId, $lockedResourceId, function () use ($booking, $dto, $resourceId, $timeRange): void {
+        $this->lock->forBooking($dto->userId, $lockedResourceId, function () use ($booking, $dto, $resourceId, $timeRange, $applySettingsRules): void {
             // Whoever asks, a slot that has already started cannot be booked
             if ($this->hasStarted($booking)) {
                 throw BookingAlreadyStartedException::forSlot($dto->date, $dto->startTime);
             }
 
-            // The rules of the settings bind everyone, staff and administrators included
-            $this->rules->assertCanBook($dto->userId, $dto->date, $dto->startTime);
+            // The rules of the settings share the space among members booking on the website,
+            // administrators included; staff booking in the panel make the exception on purpose
+            if ($applySettingsRules) {
+                $this->rules->assertCanBook($dto->userId, $dto->date, $dto->startTime);
+            }
 
             $this->assertFitsSchedule($resourceId, $dto->date, $timeRange);
 

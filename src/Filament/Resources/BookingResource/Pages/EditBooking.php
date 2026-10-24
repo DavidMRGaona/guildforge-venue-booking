@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Filament\Resources\BookingResource\Pages;
 
+use DomainException;
 use Filament\Actions\DeleteAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
@@ -11,17 +12,26 @@ use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use InvalidArgumentException;
 use Modules\VenueBookings\Application\DTOs\CancelBookingDTO;
+use Modules\VenueBookings\Application\DTOs\MoveBookingDTO;
 use Modules\VenueBookings\Application\Services\BookingFieldConfigServiceInterface;
 use Modules\VenueBookings\Application\Services\BookingServiceInterface;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
 use Modules\VenueBookings\Domain\Exceptions\InvalidStatusTransitionException;
 use Modules\VenueBookings\Filament\Resources\BookingResource;
+use Modules\VenueBookings\Filament\Resources\BookingResource\Pages\Concerns\ShowsBookingRefusals;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
 
 final class EditBooking extends EditRecord
 {
+    use ShowsBookingRefusals;
+
     protected static string $resource = BookingResource::class;
+
+    // BookingService saves a move under its lock; a transaction around it would commit after
+    // the lock is released, and another request could miss the move in its overlap check
+    protected ?bool $hasDatabaseTransactions = false;
 
     public function getTitle(): string|Htmlable
     {
@@ -106,6 +116,25 @@ final class EditBooking extends EditRecord
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
         /** @var BookingModel $record */
+        // Moved first, so a refused move leaves the booking as it was
+        if ($this->movesBooking($record, $data)) {
+            try {
+                app(BookingServiceInterface::class)->moveBookingAsStaff(new MoveBookingDTO(
+                    bookingId: $record->id,
+                    resourceId: (string) $data['resource_id'],
+                    date: (string) $data['date'],
+                    startTime: (string) $data['start_time'],
+                    endTime: (string) $data['end_time'],
+                ));
+            } catch (DomainException|InvalidArgumentException $exception) {
+                $this->refuse($exception);
+            }
+
+            $record->refresh();
+        }
+
+        unset($data['resource_id'], $data['date'], $data['start_time'], $data['end_time']);
+
         $newStatusValue = $data['status'] ?? null;
         $oldStatus = $record->status;
         $newStatus = $newStatusValue !== null ? BookingStatus::from($newStatusValue) : $oldStatus;
@@ -155,5 +184,20 @@ final class EditBooking extends EditRecord
         $record->update($data);
 
         return $record;
+    }
+
+    /**
+     * Whether the form changes the resource, the date or the times (seconds ignored).
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function movesBooking(BookingModel $record, array $data): bool
+    {
+        $time = static fn (mixed $value): string => substr(trim((string) $value), 0, 5);
+
+        return strtolower((string) ($data['resource_id'] ?? '')) !== strtolower($record->resource_id)
+            || (string) ($data['date'] ?? '') !== $record->date->format('Y-m-d')
+            || $time($data['start_time'] ?? '') !== $time($record->start_time)
+            || $time($data['end_time'] ?? '') !== $time($record->end_time);
     }
 }

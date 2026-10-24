@@ -88,7 +88,9 @@ El módulo lo programa cada hora (sin ejecuciones solapadas), junto a los record
 
 ### Franjas y reglas al reservar
 
-Al crear una reserva desde la web o desde el panel, el servidor exige que la franja esté hecha de turnos consecutivos que la página ofrece ese día (en el modo `time_blocks`, un bloque entero) y aplica el límite de reservas activas, la antelación mínima y los días máximos a futuro. El personal no se salta ninguna de estas reglas: desde el panel, el límite es el de la persona para la que se reserva, el estado inicial sigue el modo de aprobación y se envían los mismos avisos que desde la web. La lista de turnos marca como no disponibles los que empiezan antes de la antelación mínima (cualquier día) y los de días más allá del máximo.
+Al crear una reserva desde la web, el servidor exige que la franja esté hecha de turnos consecutivos que la página ofrece ese día (en el modo `time_blocks`, un bloque entero), que no se solape con otra reserva activa y que no haya empezado, y aplica el límite de reservas activas, la antelación mínima y los días máximos a futuro. La lista de turnos marca como no disponibles los que empiezan antes de la antelación mínima (cualquier día) y los de días más allá del máximo.
+
+Desde el panel, el personal tiene margen: no le afectan el límite de reservas activas, la antelación mínima ni los días máximos, pero sí los turnos del espacio, los solapes, la franja ya empezada y los espacios inactivos. La reserva se crea con el estado que marca el modo de aprobación y envía los mismos avisos que desde la web. Al editarla, cambiar el espacio, la fecha o las horas de una reserva pendiente o confirmada pasa las mismas comprobaciones, sin contar la propia reserva; si conserva su hora de inicio, se puede alargar o cambiar de espacio aunque ya haya empezado. Las reservas finalizadas (completadas, canceladas, rechazadas o no presentadas) se corrigen sin comprobaciones, porque no ocupan el espacio.
 
 Una reserva que cruza la medianoche ocupa también las primeras horas del día siguiente: choca con las reservas de ese día que empiezan antes de que termine, y la lista de turnos de ese día las marca como no disponibles.
 
