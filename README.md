@@ -48,7 +48,7 @@ En las releases los assets los compila el workflow y van dentro del ZIP.
 
 ## Configuración
 
-Se configura en el panel: **Reservas del local → Configuración de reservas** (permiso `bookings.settings`; los administradores siempre tienen acceso). Los valores se guardan en la tabla `settings` (clave `module_settings:venue-bookings`), así que se conservan al actualizar el módulo. `config/settings.php` solo aporta los valores de una instalación nueva.
+Se configura en el panel: **Reservas del local → Configuración de reservas** (permiso `bookings.settings`; los administradores siempre tienen acceso). Los valores se guardan en la tabla `settings` (clave `module_settings:venue-bookings`), así que se conservan al actualizar el módulo. `config/settings.php` es el único sitio donde se escriben los valores por defecto: se aplican a una instalación nueva y a toda opción que no se haya guardado aún (por ejemplo, la que añade una versión nueva). El código lee los ajustes con `BookingSettingsReader::get()`, que rechaza cualquier clave que no esté declarada en ese fichero.
 
 | Clave | Valor de una instalación nueva | Descripción |
 |-------|--------------------------------|-------------|
@@ -62,9 +62,10 @@ Se configura en el panel: **Reservas del local → Configuración de reservas** 
 | `predefined_fields` | actividad, participantes, teléfono y notas, todos desactivados | Campos predefinidos con visibilidad configurable |
 | `custom_fields` | ninguno | Campos personalizados |
 | `notifications` | todas activadas, recordatorio 24 horas antes | Avisos por email y recordatorio |
-| `associations` | desactivadas | Asociación con mesas de rol y campañas |
+| `associations` | desactivadas, visibles para usuarios registrados | Asociación con mesas de rol, campañas y torneos |
+| `timezone` | ninguna (la de la aplicación) | Zona horaria del local; no se configura en el panel |
 
-Las fechas y horas de las reservas se interpretan en la zona horaria de la aplicación (`app.timezone`). En esa misma zona se decide cuándo empieza una reserva y cuál es el día de hoy para el calendario y para rechazar días pasados.
+Las fechas y horas de las reservas se interpretan en la zona horaria del local (`timezone`; si no se fija, la de la aplicación, `app.timezone`). En esa misma zona se decide cuándo empieza una reserva y cuál es el día de hoy para el calendario y para rechazar días pasados.
 
 Si una instalación antigua aún guarda la configuración en `config/settings.php`, `php artisan venue-bookings:migrate-settings` la copia a la tabla `settings` (no hace nada si ya existe).
 

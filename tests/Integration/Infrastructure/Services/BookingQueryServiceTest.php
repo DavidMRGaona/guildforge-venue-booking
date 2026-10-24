@@ -142,7 +142,7 @@ final class BookingQueryServiceTest extends TestCase
 
     public function test_it_flags_started_bookings_for_a_date(): void
     {
-        config()->set('venue-bookings.timezone', 'Europe/Madrid');
+        config()->set('modules.settings.venue-bookings.timezone', 'Europe/Madrid');
         $this->travelTo(CarbonImmutable::create(2026, 3, 16, 11, 30, 0, 'Europe/Madrid'));
 
         foreach (['10:00', '14:00'] as $start) {
@@ -294,7 +294,7 @@ final class BookingQueryServiceTest extends TestCase
 
     public function test_user_bookings_are_cancellable_only_until_they_start(): void
     {
-        config()->set('venue-bookings.timezone', 'Europe/Madrid');
+        config()->set('modules.settings.venue-bookings.timezone', 'Europe/Madrid');
         $this->travelTo(CarbonImmutable::create(2026, 3, 16, 11, 0, 0, 'Europe/Madrid'));
 
         $started = $this->createBookingFor('2026-03-16', '10:00', '12:00', 'confirmed');

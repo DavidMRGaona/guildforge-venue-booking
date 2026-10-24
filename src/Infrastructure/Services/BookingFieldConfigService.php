@@ -19,6 +19,7 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
     public function __construct(
         private ModuleIntegrationServiceInterface $moduleIntegration,
         private BookableResourceRepositoryInterface $resourceRepository,
+        private BookingSettingsReader $settings = new BookingSettingsReader,
     ) {}
 
     /**
@@ -87,16 +88,13 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
         $fields = [];
 
         if ($this->moduleIntegration->isGameTablesModuleAvailable()) {
-            $enabled = (bool) (config('modules.settings.venue-bookings.associations.game_tables_enabled')
-                ?? config('venue-bookings.associations.game_tables_enabled', false));
+            $enabled = (bool) $this->settings->get('associations.game_tables_enabled');
 
             if ($enabled) {
                 $visibility = FieldVisibility::from(
-                    (string) (config('modules.settings.venue-bookings.associations.game_tables_visibility')
-                        ?? config('venue-bookings.associations.game_tables_visibility', 'authenticated')),
+                    (string) $this->settings->get('associations.game_tables_visibility'),
                 );
-                $required = (bool) (config('modules.settings.venue-bookings.associations.game_tables_required')
-                    ?? config('venue-bookings.associations.game_tables_required', false));
+                $required = (bool) $this->settings->get('associations.game_tables_required');
 
                 $gameTables = $user !== null
                     ? $this->moduleIntegration->getUserGameTables((string) $user->id)
@@ -117,16 +115,13 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
         }
 
         if ($this->moduleIntegration->isGameTablesModuleAvailable()) {
-            $enabled = (bool) (config('modules.settings.venue-bookings.associations.campaigns_enabled')
-                ?? config('venue-bookings.associations.campaigns_enabled', false));
+            $enabled = (bool) $this->settings->get('associations.campaigns_enabled');
 
             if ($enabled) {
                 $visibility = FieldVisibility::from(
-                    (string) (config('modules.settings.venue-bookings.associations.campaigns_visibility')
-                        ?? config('venue-bookings.associations.campaigns_visibility', 'authenticated')),
+                    (string) $this->settings->get('associations.campaigns_visibility'),
                 );
-                $required = (bool) (config('modules.settings.venue-bookings.associations.campaigns_required')
-                    ?? config('venue-bookings.associations.campaigns_required', false));
+                $required = (bool) $this->settings->get('associations.campaigns_required');
 
                 $campaigns = $user !== null
                     ? $this->moduleIntegration->getUserCampaigns((string) $user->id)
@@ -147,16 +142,13 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
         }
 
         if ($this->moduleIntegration->isTournamentsModuleAvailable()) {
-            $enabled = (bool) (config('modules.settings.venue-bookings.associations.tournaments_enabled')
-                ?? config('venue-bookings.associations.tournaments_enabled', false));
+            $enabled = (bool) $this->settings->get('associations.tournaments_enabled');
 
             if ($enabled) {
                 $visibility = FieldVisibility::from(
-                    (string) (config('modules.settings.venue-bookings.associations.tournaments_visibility')
-                        ?? config('venue-bookings.associations.tournaments_visibility', 'authenticated')),
+                    (string) $this->settings->get('associations.tournaments_visibility'),
                 );
-                $required = (bool) (config('modules.settings.venue-bookings.associations.tournaments_required')
-                    ?? config('venue-bookings.associations.tournaments_required', false));
+                $required = (bool) $this->settings->get('associations.tournaments_required');
 
                 $fields[] = new BookingFieldConfig(
                     key: 'tournament_id',
@@ -177,10 +169,8 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
 
     public function getDefaultFieldConfig(): ResourceFieldConfig
     {
-        $predefinedFields = (array) (config('modules.settings.venue-bookings.predefined_fields')
-            ?? config('venue-bookings.predefined_fields', []));
-        $customFields = (array) (config('modules.settings.venue-bookings.custom_fields')
-            ?? config('venue-bookings.custom_fields', []));
+        $predefinedFields = (array) $this->settings->get('predefined_fields');
+        $customFields = (array) $this->settings->get('custom_fields');
 
         return ResourceFieldConfig::fromGlobalConfig($predefinedFields, $customFields);
     }

@@ -46,7 +46,7 @@ final class BookingRulesEnforcementTest extends ModuleTestCase
         app('router')->getRoutes()->refreshNameLookups();
 
         // Tuesday 2026-11-10, 12:00 at the venue
-        config()->set('venue-bookings.timezone', self::VENUE_TIMEZONE);
+        config()->set('modules.settings.venue-bookings.timezone', self::VENUE_TIMEZONE);
         $this->travelTo(CarbonImmutable::create(2026, 11, 10, 12, 0, 0, self::VENUE_TIMEZONE));
 
         config()->set('modules.settings.venue-bookings.max_active_bookings_per_user', 2);

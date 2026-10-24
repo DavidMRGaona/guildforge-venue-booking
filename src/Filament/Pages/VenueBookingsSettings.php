@@ -88,7 +88,6 @@ final class VenueBookingsSettings extends Page implements HasForms
                     Select::make('approval_mode')
                         ->label(__('venue-bookings::messages.settings.fields.approval_mode'))
                         ->options(ApprovalMode::options())
-                        ->default(ApprovalMode::AutoConfirm->value)
                         ->native(false)
                         ->required(),
                 ]),
@@ -99,21 +98,18 @@ final class VenueBookingsSettings extends Page implements HasForms
                         ->label(__('venue-bookings::messages.settings.fields.max_active_bookings_per_user'))
                         ->numeric()
                         ->minValue(1)
-                        ->default(5)
                         ->required(),
 
                     TextInput::make('min_advance_minutes')
                         ->label(__('venue-bookings::messages.settings.fields.min_advance_minutes'))
                         ->numeric()
                         ->minValue(0)
-                        ->default(60)
                         ->required(),
 
                     TextInput::make('max_future_days')
                         ->label(__('venue-bookings::messages.settings.fields.max_future_days'))
                         ->numeric()
                         ->minValue(1)
-                        ->default(30)
                         ->required(),
                 ])
                 ->columns(3),
@@ -123,7 +119,6 @@ final class VenueBookingsSettings extends Page implements HasForms
                     Toggle::make('auto_complete_enabled')
                         ->label(__('venue-bookings::messages.settings.fields.auto_complete_enabled'))
                         ->helperText(__('venue-bookings::messages.settings.fields.auto_complete_enabled_help'))
-                        ->default(true)
                         ->live(),
 
                     TextInput::make('auto_complete_after_hours')
@@ -132,7 +127,6 @@ final class VenueBookingsSettings extends Page implements HasForms
                         ->integer()
                         ->minValue(0)
                         ->maxValue(720)
-                        ->default(24)
                         ->required()
                         ->visible(fn (Get $get): bool => (bool) $get('auto_complete_enabled')),
                 ])
@@ -222,36 +216,29 @@ final class VenueBookingsSettings extends Page implements HasForms
                 ->schema([
                     Toggle::make('notifications.notify_on_booking_created')
                         ->label(__('venue-bookings::messages.settings.fields.notify_on_booking_created'))
-                        ->helperText(__('venue-bookings::messages.settings.fields.notify_on_booking_created_help'))
-                        ->default(true),
+                        ->helperText(__('venue-bookings::messages.settings.fields.notify_on_booking_created_help')),
 
                     Toggle::make('notifications.notify_on_booking_received')
                         ->label(__('venue-bookings::messages.settings.fields.notify_on_booking_received'))
-                        ->helperText(__('venue-bookings::messages.settings.fields.notify_on_booking_received_help'))
-                        ->default(true),
+                        ->helperText(__('venue-bookings::messages.settings.fields.notify_on_booking_received_help')),
 
                     Toggle::make('notifications.notify_on_booking_confirmed')
-                        ->label(__('venue-bookings::messages.settings.fields.notify_on_booking_confirmed'))
-                        ->default(true),
+                        ->label(__('venue-bookings::messages.settings.fields.notify_on_booking_confirmed')),
 
                     Toggle::make('notifications.notify_on_booking_cancelled')
-                        ->label(__('venue-bookings::messages.settings.fields.notify_on_booking_cancelled'))
-                        ->default(true),
+                        ->label(__('venue-bookings::messages.settings.fields.notify_on_booking_cancelled')),
 
                     Toggle::make('notifications.notify_on_booking_rejected')
-                        ->label(__('venue-bookings::messages.settings.fields.notify_on_booking_rejected'))
-                        ->default(true),
+                        ->label(__('venue-bookings::messages.settings.fields.notify_on_booking_rejected')),
 
                     Toggle::make('notifications.notify_on_booking_reminder')
-                        ->label(__('venue-bookings::messages.settings.fields.notify_on_booking_reminder'))
-                        ->default(true),
+                        ->label(__('venue-bookings::messages.settings.fields.notify_on_booking_reminder')),
 
                     TextInput::make('notifications.reminder_hours_before')
                         ->label(__('venue-bookings::messages.settings.fields.reminder_hours_before'))
                         ->numeric()
                         ->minValue(1)
-                        ->maxValue(72)
-                        ->default(24),
+                        ->maxValue(72),
                 ])
                 ->columns(3),
 
@@ -259,23 +246,19 @@ final class VenueBookingsSettings extends Page implements HasForms
                 ->schema([
                     Toggle::make('associations.game_tables_enabled')
                         ->label(__('venue-bookings::messages.settings.fields.game_tables_enabled'))
-                        ->default(false)
                         ->live(),
                     Select::make('associations.game_tables_visibility')
                         ->label(__('venue-bookings::messages.settings.fields.field_visibility'))
                         ->options(FieldVisibility::options())
-                        ->default(FieldVisibility::Authenticated->value)
                         ->native(false)
                         ->visible(fn (Get $get): bool => (bool) $get('associations.game_tables_enabled')),
 
                     Toggle::make('associations.campaigns_enabled')
                         ->label(__('venue-bookings::messages.settings.fields.campaigns_enabled'))
-                        ->default(false)
                         ->live(),
                     Select::make('associations.campaigns_visibility')
                         ->label(__('venue-bookings::messages.settings.fields.field_visibility'))
                         ->options(FieldVisibility::options())
-                        ->default(FieldVisibility::Authenticated->value)
                         ->native(false)
                         ->visible(fn (Get $get): bool => (bool) $get('associations.campaigns_enabled')),
                 ])
@@ -328,7 +311,6 @@ final class VenueBookingsSettings extends Page implements HasForms
             ->schema([
                 Toggle::make("predefined_fields.{$fieldKey}.enabled")
                     ->label(__($labelKey))
-                    ->default(false)
                     ->live(),
 
                 Toggle::make("predefined_fields.{$fieldKey}.required")
@@ -338,7 +320,6 @@ final class VenueBookingsSettings extends Page implements HasForms
                 Select::make("predefined_fields.{$fieldKey}.visibility")
                     ->label(__('venue-bookings::messages.settings.fields.field_visibility'))
                     ->options(FieldVisibility::options())
-                    ->default(FieldVisibility::Public->value)
                     ->native(false)
                     ->visible(fn (Get $get): bool => (bool) $get("predefined_fields.{$fieldKey}.enabled")),
             ]);

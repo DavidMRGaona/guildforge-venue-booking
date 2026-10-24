@@ -42,7 +42,7 @@ final class BookingEmailsTest extends ModuleTestCase
 
         app()->setLocale('es');
         Notification::fake();
-        config()->set('venue-bookings.timezone', 'Europe/Madrid');
+        config()->set('modules.settings.venue-bookings.timezone', 'Europe/Madrid');
         $this->travelTo(CarbonImmutable::create(2026, 3, 1, 9, 0, 0, 'Europe/Madrid'));
 
         $this->room = BookableResourceModel::create([

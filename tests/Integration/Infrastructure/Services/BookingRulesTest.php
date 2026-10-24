@@ -32,10 +32,10 @@ final class BookingRulesTest extends TestCase
     {
         parent::setUp();
 
-        config()->set('venue-bookings.timezone', 'Europe/Madrid');
-        config()->set('venue-bookings.max_active_bookings_per_user', 2);
-        config()->set('venue-bookings.min_advance_minutes', 60);
-        config()->set('venue-bookings.max_future_days', 30);
+        config()->set('modules.settings.venue-bookings.timezone', 'Europe/Madrid');
+        config()->set('modules.settings.venue-bookings.max_active_bookings_per_user', 2);
+        config()->set('modules.settings.venue-bookings.min_advance_minutes', 60);
+        config()->set('modules.settings.venue-bookings.max_future_days', 30);
 
         $this->rules = new BookingRules(new EloquentBookingRepository, new BookingSettingsReader);
 
@@ -71,7 +71,7 @@ final class BookingRulesTest extends TestCase
     public function test_the_minimum_advance_is_read_on_the_venue_clock(): void
     {
         // 09:30 in the Canaries is 10:30 in Madrid: with a Canary venue a 10:30 start is exactly one hour ahead
-        config()->set('venue-bookings.timezone', 'Atlantic/Canary');
+        config()->set('modules.settings.venue-bookings.timezone', 'Atlantic/Canary');
         $this->travelTo(CarbonImmutable::create(2026, 3, 16, 9, 30, 0, 'Atlantic/Canary'));
 
         $this->assertFalse($this->rules->startsTooSoon('2026-03-16', '10:30'));
@@ -80,7 +80,7 @@ final class BookingRulesTest extends TestCase
 
     public function test_a_day_is_too_soon_only_when_all_of_it_is_before_the_earliest_start(): void
     {
-        config()->set('venue-bookings.min_advance_minutes', 1440);
+        config()->set('modules.settings.venue-bookings.min_advance_minutes', 1440);
         $this->travelTo(CarbonImmutable::create(2026, 3, 16, 12, 0, 0, 'Europe/Madrid'));
 
         $this->assertTrue($this->rules->dayIsTooSoon('2026-03-16'));
