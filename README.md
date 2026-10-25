@@ -252,6 +252,7 @@ src/modules/venue-bookings/
 ├── resources/js/
 │   ├── components/            # Componentes Vue
 │   │   └── profile/           # Componentes de perfil
+│   ├── composables/           # Composables (diálogo modal nativo)
 │   ├── locales/               # Traducciones i18n (frontend)
 │   ├── pages/
 │   │   └── VenueBookings/     # Páginas Inertia
@@ -288,9 +289,13 @@ src/modules/venue-bookings/
 ├── tests/
 │   ├── Unit/                  # Tests unitarios (entidades, enums, VOs)
 │   ├── Integration/           # Tests de integración (repositorios, servicios, migraciones de datos)
-│   └── Feature/               # Tests funcionales (comandos, Filament, HTTP)
+│   ├── Feature/               # Tests funcionales (comandos, Filament, HTTP)
+│   └── js/                    # Tests de los componentes Vue (Vitest)
 ├── module.json                # Manifiesto del módulo
-└── phpunit.xml                # Configuración de tests
+├── package.json
+├── phpunit.xml                # Configuración de tests
+├── vite.config.ts
+└── vitest.config.ts
 ```
 
 ## Tests
@@ -303,6 +308,15 @@ vendor/bin/phpunit -c modules/venue-bookings/phpunit.xml --testsuite=Unit
 ```
 
 `php artisan test` no ejecuta los tests de los módulos.
+
+Los componentes Vue tienen sus propios tests en `tests/js` (Vitest, Vue Test Utils y happy-dom). Se ejecutan con el módulo dentro del core, porque los componentes importan sus fuentes con `@/`, y con las dependencias de npm del core y del módulo instaladas:
+
+```bash
+cd modules/venue-bookings
+npm test
+```
+
+`tests/js/setup.ts` carga los textos del core y del módulo en castellano y sustituye Inertia (router, formularios y enlaces). En cada pull request los ejecuta el job *Vue tests* de `tests.yml`.
 
 ## Publicar una versión
 
