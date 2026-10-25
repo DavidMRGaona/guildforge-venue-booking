@@ -169,6 +169,20 @@ final class BookingResource extends BaseResource
                     ->native(false)
                     ->visible(fn (): bool => app(ModuleIntegrationServiceInterface::class)->isGameTablesModuleAvailable()),
 
+                Select::make('tournament_id')
+                    ->label(__('venue-bookings::messages.fields.tournament'))
+                    ->options(function (): array {
+                        $integration = app(ModuleIntegrationServiceInterface::class);
+                        if (! $integration->isTournamentsModuleAvailable()) {
+                            return [];
+                        }
+
+                        return array_column($integration->getAvailableTournaments(), 'label', 'id');
+                    })
+                    ->searchable()
+                    ->native(false)
+                    ->visible(fn (): bool => app(ModuleIntegrationServiceInterface::class)->isTournamentsModuleAvailable()),
+
                 Section::make(__('venue-bookings::messages.settings.sections.resource_predefined_fields'))
                     ->schema(static function (Get $get): array {
                         $resourceId = $get('resource_id');
@@ -178,7 +192,11 @@ final class BookingResource extends BaseResource
                         }
 
                         $fieldConfigService = app(BookingFieldConfigServiceInterface::class);
-                        $fields = $fieldConfigService->getEnabledFields($resourceId);
+                        // The game table, campaign and tournament have their own selects above
+                        $fields = array_values(array_filter(
+                            $fieldConfigService->getEnabledFields($resourceId),
+                            static fn (BookingFieldConfig $field): bool => ! $field->isAssociation(),
+                        ));
 
                         return array_map(static fn (BookingFieldConfig $field) => match (BookingFieldType::from($field->type)) {
                             BookingFieldType::Text => TextInput::make("field_values.{$field->key}")
@@ -193,7 +211,7 @@ final class BookingResource extends BaseResource
                                 ->required($field->required),
                             BookingFieldType::Select => Select::make("field_values.{$field->key}")
                                 ->label($field->label)
-                                ->options(array_combine($field->options ?? [], $field->options ?? []))
+                                ->options(array_column($field->options ?? [], 'label', 'value'))
                                 ->native(false)
                                 ->required($field->required),
                             BookingFieldType::Toggle => Toggle::make("field_values.{$field->key}")

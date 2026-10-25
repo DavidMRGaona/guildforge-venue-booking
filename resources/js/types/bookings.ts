@@ -68,12 +68,18 @@ export interface BookingTooltipData {
 
 export type BookingFieldType = 'text' | 'textarea' | 'number' | 'select' | 'toggle';
 
+/** A select option: sent as `value` (a game table's or campaign's id), shown as `label`. */
+export interface FieldOption {
+    value: string;
+    label: string;
+}
+
 export interface FieldDefinition {
     key: string;
     label: string;
     type: BookingFieldType;
     required: boolean;
-    options: string[] | null;
+    options: FieldOption[] | null;
 }
 
 export interface BookingEligibility {

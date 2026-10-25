@@ -29,7 +29,10 @@ final class BookingFieldConfigTest extends TestCase
 
     public function test_it_creates_select_field_with_options(): void
     {
-        $options = ['warhammer_40k', 'age_of_sigmar', 'dnd_5e'];
+        $options = [
+            ['value' => 'warhammer_40k', 'label' => 'Warhammer 40K'],
+            ['value' => 'dnd_5e', 'label' => 'D&D 5e'],
+        ];
 
         $config = new BookingFieldConfig(
             key: 'game_system',
@@ -52,7 +55,7 @@ final class BookingFieldConfigTest extends TestCase
             type: 'select',
             required: true,
             visibility: 'public',
-            options: ['option1', 'option2'],
+            options: [['value' => 'option1', 'label' => 'Option 1']],
         );
 
         $textConfig = new BookingFieldConfig(
@@ -98,7 +101,7 @@ final class BookingFieldConfigTest extends TestCase
             'type' => 'select',
             'required' => true,
             'visibility' => 'public',
-            'options' => ['warhammer_40k', 'dnd_5e'],
+            'options' => [['value' => 'warhammer_40k', 'label' => 'Warhammer 40K']],
         ]);
 
         $this->assertEquals('game_system', $config->key);
@@ -106,7 +109,7 @@ final class BookingFieldConfigTest extends TestCase
         $this->assertEquals('select', $config->type);
         $this->assertTrue($config->required);
         $this->assertEquals('public', $config->visibility);
-        $this->assertEquals(['warhammer_40k', 'dnd_5e'], $config->options);
+        $this->assertEquals([['value' => 'warhammer_40k', 'label' => 'Warhammer 40K']], $config->options);
     }
 
     public function test_it_defaults_options_to_null(): void
