@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Tests\Unit\Infrastructure\Services;
 
+use Illuminate\Database\Eloquent\Model;
 use Modules\GameTables\Application\DTOs\CampaignResponseDTO;
 use Modules\GameTables\Application\DTOs\GameTableListDTO;
 use Modules\GameTables\Application\Services\CampaignQueryServiceInterface;
@@ -34,8 +35,8 @@ final class GameTablesIntegrationContractTest extends TestCase
 
     public function test_the_query_services_offer_the_methods_the_integration_calls(): void
     {
-        $this->assertReturnsArray(GameTableQueryServiceInterface::class, 'getUpcomingTables');
-        $this->assertReturnsArray(CampaignQueryServiceInterface::class, 'getPublishedCampaignsPaginated');
+        $this->assertReturnsArray(GameTableQueryServiceInterface::class, 'getUpcomingTables'); // @phpstan-ignore class.notFound (game-tables is optional)
+        $this->assertReturnsArray(CampaignQueryServiceInterface::class, 'getPublishedCampaignsPaginated'); // @phpstan-ignore class.notFound (game-tables is optional)
     }
 
     /**
@@ -53,7 +54,7 @@ final class GameTablesIntegrationContractTest extends TestCase
     }
 
     /**
-     * @param  class-string<GameTableModel|CampaignModel>  $model
+     * @param  class-string<Model>  $model
      */
     #[DataProvider('models')]
     public function test_the_models_have_the_columns_the_integration_queries(string $model): void
@@ -71,8 +72,8 @@ final class GameTablesIntegrationContractTest extends TestCase
     public static function dtos(): array
     {
         return [
-            'game table' => [GameTableListDTO::class],
-            'campaign' => [CampaignResponseDTO::class],
+            'game table' => [GameTableListDTO::class], // @phpstan-ignore class.notFound (game-tables is optional)
+            'campaign' => [CampaignResponseDTO::class], // @phpstan-ignore class.notFound (game-tables is optional)
         ];
     }
 
@@ -82,8 +83,8 @@ final class GameTablesIntegrationContractTest extends TestCase
     public static function models(): array
     {
         return [
-            'game table' => [GameTableModel::class],
-            'campaign' => [CampaignModel::class],
+            'game table' => [GameTableModel::class], // @phpstan-ignore class.notFound (game-tables is optional)
+            'campaign' => [CampaignModel::class], // @phpstan-ignore class.notFound (game-tables is optional)
         ];
     }
 

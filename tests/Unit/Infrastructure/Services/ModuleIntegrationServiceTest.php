@@ -39,18 +39,18 @@ final class ModuleIntegrationServiceTest extends TestCase
         ], (new ModuleIntegrationService)->getAvailableGameTables());
     }
 
-    private function gameTable(string $id, string $title): GameTableListDTO
+    private function gameTable(string $id, string $title): GameTableListDTO // @phpstan-ignore class.notFound (game-tables is optional)
     {
-        return new GameTableListDTO(
+        return new GameTableListDTO( // @phpstan-ignore class.notFound (game-tables is optional)
             id: $id,
             title: $title,
             slug: null,
             gameSystemName: 'D&D 5e',
             startsAt: null,
             durationMinutes: 180,
-            tableFormat: TableFormat::cases()[0],
-            tableType: TableType::cases()[0],
-            status: TableStatus::cases()[0],
+            tableFormat: TableFormat::cases()[0], // @phpstan-ignore class.notFound (game-tables is optional)
+            tableType: TableType::cases()[0], // @phpstan-ignore class.notFound (game-tables is optional)
+            status: TableStatus::cases()[0], // @phpstan-ignore class.notFound (game-tables is optional)
             location: null,
             onlineUrl: null,
             minPlayers: 2,
