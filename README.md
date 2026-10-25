@@ -41,7 +41,12 @@ Con el repositorio clonado en `src/modules/venue-bookings`:
 ```bash
 php artisan module:discover
 php artisan module:enable venue-bookings
-php artisan module:build venue-bookings   # compila los componentes Vue (--force para recompilar)
+```
+
+Los componentes Vue se compilan con las herramientas del core, desde `src/`:
+
+```bash
+docker exec guildforge_node npm run build:module -- venue-bookings
 ```
 
 En las releases los assets los compila el workflow y van dentro del ZIP.
@@ -292,7 +297,6 @@ src/modules/venue-bookings/
 │   ├── Feature/               # Tests funcionales (comandos, Filament, HTTP)
 │   └── js/                    # Tests de los componentes Vue (Vitest)
 ├── module.json                # Manifiesto del módulo
-├── package.json
 ├── phpunit.xml                # Configuración de tests
 ├── vite.config.ts
 └── vitest.config.ts
@@ -317,11 +321,10 @@ vendor/bin/phpstan analyse -c modules/venue-bookings/phpstan.neon
 
 Necesita el módulo game-tables instalado al lado, porque `ModuleIntegrationService` usa sus clases.
 
-Los componentes Vue tienen sus propios tests en `tests/js` (Vitest, Vue Test Utils y happy-dom). Se ejecutan con el módulo dentro del core, porque los componentes importan sus fuentes con `@/`, y con las dependencias de npm del core y del módulo instaladas:
+Los componentes Vue tienen sus propios tests en `tests/js` (Vitest, Vue Test Utils y happy-dom). Se ejecutan con el módulo dentro del core y con las herramientas del core (`vitest.config.ts` usa `defineModuleTestConfig`), porque los componentes importan sus fuentes con `@/`:
 
 ```bash
-cd modules/venue-bookings
-npm test
+docker exec guildforge_node sh -c 'cd modules/venue-bookings && ../../node_modules/.bin/vitest run'
 ```
 
 `tests/js/setup.ts` carga los textos del core y del módulo en castellano y sustituye Inertia (router, formularios y enlaces). En cada pull request los ejecuta el job *Vue tests* de `tests.yml`.
