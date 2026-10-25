@@ -34,11 +34,9 @@ final class StoreBookingRequest extends FormRequest
             'date' => ['bail', 'required', 'date_format:Y-m-d', 'after_or_equal:'.$venueToday],
             'start_time' => ['required', 'date_format:H:i'],
             'end_time' => ['required', 'date_format:H:i'],
+            // The game table and campaign come inside field_values, checked against the ones
+            // offered to the user; an id sent anywhere else is not read
             'field_values' => ['nullable', 'array'],
-            'event_id' => ['nullable', 'string', 'uuid'],
-            'game_table_id' => ['nullable', 'string'],
-            'tournament_id' => ['nullable', 'string'],
-            'campaign_id' => ['nullable', 'string'],
         ], $fieldRules);
     }
 

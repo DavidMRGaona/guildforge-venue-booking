@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Modules\VenueBookings\Application\Services\BookingLockInterface;
+use Modules\VenueBookings\Application\Services\ModuleIntegrationServiceInterface;
 use Modules\VenueBookings\Domain\Events\BookingConfirmed;
 use Modules\VenueBookings\Domain\Events\BookingCreated;
 use Modules\VenueBookings\Domain\Exceptions\BookingBusyException;
@@ -232,6 +233,43 @@ final class BookingResourceCreateTest extends ModuleTestCase
             ->assertNotified('Ahora mismo se está procesando otra reserva. Inténtalo de nuevo en unos segundos.');
 
         $this->assertSame(0, BookingModel::query()->count());
+    }
+
+    public function test_the_game_table_campaign_and_tournament_are_chosen_by_id_and_not_repeated_among_the_fields(): void
+    {
+        config()->set('modules.settings.venue-bookings.associations.game_tables_enabled', true);
+        config()->set('modules.settings.venue-bookings.associations.campaigns_enabled', true);
+        config()->set('modules.settings.venue-bookings.associations.tournaments_enabled', true);
+
+        $tableId = (string) Str::uuid();
+        $campaignId = (string) Str::uuid();
+        $tournamentId = (string) Str::uuid();
+        $integration = $this->createStub(ModuleIntegrationServiceInterface::class);
+        $integration->method('isGameTablesModuleAvailable')->willReturn(true);
+        $integration->method('getAvailableGameTables')->willReturn([['id' => $tableId, 'label' => 'La tumba de los horrores']]);
+        $integration->method('getAvailableCampaigns')->willReturn([['id' => $campaignId, 'label' => 'La maldición de Strahd']]);
+        $integration->method('isTournamentsModuleAvailable')->willReturn(true);
+        $integration->method('getAvailableTournaments')->willReturn([['id' => $tournamentId, 'label' => 'Torneo de primavera']]);
+        $this->app->instance(ModuleIntegrationServiceInterface::class, $integration);
+
+        $this->actingAs($this->admin);
+
+        // The panel has its own selects for them: the booking fields do not offer them again
+        Livewire::test(CreateBooking::class)
+            ->fillForm($this->formFor('2026-03-16', '10:00', '12:00') + ['game_table_id' => $tableId, 'campaign_id' => $campaignId, 'tournament_id' => $tournamentId])
+            ->assertFormFieldExists('game_table_id')
+            ->assertFormFieldExists('tournament_id')
+            ->assertFormFieldDoesNotExist('field_values.game_table_id')
+            ->assertFormFieldDoesNotExist('field_values.campaign_id')
+            ->assertFormFieldDoesNotExist('field_values.tournament_id')
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $booking = BookingModel::query()->sole();
+        $this->assertSame($tableId, $booking->game_table_id);
+        $this->assertSame($campaignId, $booking->campaign_id);
+        $this->assertSame($tournamentId, $booking->tournament_id);
+        $this->assertSame([], $booking->field_values ?? []);
     }
 
     /**

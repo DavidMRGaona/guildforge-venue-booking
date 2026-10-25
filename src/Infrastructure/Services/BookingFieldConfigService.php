@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\VenueBookings\Infrastructure\Services;
 
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
+use Illuminate\Validation\Rule;
 use Modules\VenueBookings\Application\Services\BookingFieldConfigServiceInterface;
 use Modules\VenueBookings\Application\Services\ModuleIntegrationServiceInterface;
 use Modules\VenueBookings\Domain\Enums\BookingFieldType;
@@ -58,23 +59,17 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
         $visibleFields = $this->getVisibleFields($resourceId, $user);
 
         foreach ($visibleFields as $field) {
-            $fieldRules = [];
-
-            if ($field->required) {
-                $fieldRules[] = 'required';
-            } else {
-                $fieldRules[] = 'nullable';
-            }
-
-            $fieldRules[] = match (BookingFieldType::from($field->type)) {
-                BookingFieldType::Text => 'string|max:255',
-                BookingFieldType::Textarea => 'string|max:2000',
-                BookingFieldType::Number => 'integer|min:0',
-                BookingFieldType::Select => 'string|in:'.implode(',', $field->options ?? []),
-                BookingFieldType::Toggle => 'boolean',
-            };
-
-            $rules["field_values.{$field->key}"] = implode('|', $fieldRules);
+            // Rule objects rather than a pipe string: an option may contain a comma or a pipe
+            $rules["field_values.{$field->key}"] = [
+                $field->required ? 'required' : 'nullable',
+                ...match (BookingFieldType::from($field->type)) {
+                    BookingFieldType::Text => ['string', 'max:255'],
+                    BookingFieldType::Textarea => ['string', 'max:2000'],
+                    BookingFieldType::Number => ['integer', 'min:0'],
+                    BookingFieldType::Select => ['string', Rule::in($field->optionValues())],
+                    BookingFieldType::Toggle => ['boolean'],
+                },
+            ];
         }
 
         return $rules;
@@ -101,15 +96,12 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
                     : $this->moduleIntegration->getAvailableGameTables();
 
                 $fields[] = new BookingFieldConfig(
-                    key: 'game_table_id',
+                    key: BookingFieldConfig::GAME_TABLE_KEY,
                     label: __('venue-bookings::messages.fields.game_table'),
                     type: BookingFieldType::Select->value,
                     required: $required,
                     visibility: $visibility->value,
-                    options: array_map(
-                        fn (array $t): string => $t['label'],
-                        $gameTables,
-                    ),
+                    options: $this->associationOptions($gameTables),
                 );
             }
         }
@@ -128,15 +120,12 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
                     : $this->moduleIntegration->getAvailableCampaigns();
 
                 $fields[] = new BookingFieldConfig(
-                    key: 'campaign_id',
+                    key: BookingFieldConfig::CAMPAIGN_KEY,
                     label: __('venue-bookings::messages.fields.campaign'),
                     type: BookingFieldType::Select->value,
                     required: $required,
                     visibility: $visibility->value,
-                    options: array_map(
-                        fn (array $c): string => $c['label'],
-                        $campaigns,
-                    ),
+                    options: $this->associationOptions($campaigns),
                 );
             }
         }
@@ -151,15 +140,12 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
                 $required = (bool) $this->settings->get('associations.tournaments_required');
 
                 $fields[] = new BookingFieldConfig(
-                    key: 'tournament_id',
+                    key: BookingFieldConfig::TOURNAMENT_KEY,
                     label: __('venue-bookings::messages.fields.tournament'),
                     type: BookingFieldType::Select->value,
                     required: $required,
                     visibility: $visibility->value,
-                    options: array_map(
-                        fn (array $t): string => $t['label'],
-                        $this->moduleIntegration->getAvailableTournaments(),
-                    ),
+                    options: $this->associationOptions($this->moduleIntegration->getAvailableTournaments()),
                 );
             }
         }
@@ -247,9 +233,10 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
     }
 
     /**
-     * The admin form stores the options of a select field as text, one per line.
+     * The admin form stores the options of a select field as text, one per line; each option is
+     * its own value.
      *
-     * @return array<string>|null
+     * @return list<array{value: string, label: string}>|null
      */
     private function parseOptions(?string $options): ?array
     {
@@ -257,9 +244,28 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
             return null;
         }
 
-        return array_values(array_filter(
+        $lines = array_filter(
             array_map(trim(...), preg_split('/\R/', $options) ?: []),
             fn (string $option): bool => $option !== '',
+        );
+
+        return array_values(array_map(
+            fn (string $option): array => ['value' => $option, 'label' => $option],
+            $lines,
+        ));
+    }
+
+    /**
+     * A game table, campaign or tournament is sent by its id and shown by its title.
+     *
+     * @param  array<array{id: string, label: string}>  $items
+     * @return list<array{value: string, label: string}>
+     */
+    private function associationOptions(array $items): array
+    {
+        return array_values(array_map(
+            fn (array $item): array => ['value' => $item['id'], 'label' => $item['label']],
+            $items,
         ));
     }
 

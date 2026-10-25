@@ -73,6 +73,21 @@ describe('BookingForm', () => {
         expect(wrapper.emitted('close')).toHaveLength(1);
     });
 
+    it('offers each option by its value with its label as text', () => {
+        mountForm([
+            {
+                key: 'game_table_id',
+                label: 'Partida',
+                type: 'select',
+                required: false,
+                options: [{ value: 'table-1', label: 'La tumba de los horrores' }],
+            } as FieldDefinition,
+        ]);
+
+        const option = document.body.querySelector<HTMLOptionElement>('#field-game_table_id option[value="table-1"]');
+        expect(option?.textContent?.trim()).toBe('La tumba de los horrores');
+    });
+
     it('gives the focus back to the element that opened it', () => {
         const opener = focusedOpener();
         const wrapper = mountForm();

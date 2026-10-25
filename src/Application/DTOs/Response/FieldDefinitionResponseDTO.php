@@ -9,7 +9,7 @@ use Modules\VenueBookings\Domain\ValueObjects\BookingFieldConfig;
 final readonly class FieldDefinitionResponseDTO
 {
     /**
-     * @param  array<string>|null  $options
+     * @param  list<array{value: string, label: string}>|null  $options
      */
     public function __construct(
         public string $key,

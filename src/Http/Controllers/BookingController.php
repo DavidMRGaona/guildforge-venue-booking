@@ -30,6 +30,7 @@ use Modules\VenueBookings\Domain\Exceptions\SlotOutsideScheduleException;
 use Modules\VenueBookings\Domain\Exceptions\SlotUnavailableException;
 use Modules\VenueBookings\Domain\Exceptions\TooFarToBookException;
 use Modules\VenueBookings\Domain\Exceptions\TooSoonToBookException;
+use Modules\VenueBookings\Domain\ValueObjects\BookingFieldConfig;
 use Modules\VenueBookings\Http\Requests\StoreBookingRequest;
 
 final class BookingController extends Controller
@@ -53,19 +54,25 @@ final class BookingController extends Controller
 
         $rawFieldValues = $validated['field_values'] ?? [];
 
-        // Extract association IDs from field_values (frontend sends them inside field_values)
-        $gameTableId = $validated['game_table_id'] ?? ($rawFieldValues['game_table_id'] ?? null);
-        $campaignId = $validated['campaign_id'] ?? ($rawFieldValues['campaign_id'] ?? null);
-        $tournamentId = $validated['tournament_id'] ?? ($rawFieldValues['tournament_id'] ?? null);
-
-        // Remove from field values so they're stored in dedicated columns, not in JSON
-        unset($rawFieldValues['game_table_id'], $rawFieldValues['campaign_id'], $rawFieldValues['tournament_id']);
-
         $fieldConfigs = $this->fieldConfigService->getVisibleFields($validated['resource_id'], $user);
         $fieldConfigsByKey = [];
         foreach ($fieldConfigs as $config) {
             $fieldConfigsByKey[$config->key] = $config;
         }
+
+        // A game table, campaign or tournament is only read from its field, when the user is offered
+        // it (and the request validated the id against the offer); it goes to its own column
+        $associationId = static fn (string $key): mixed => isset($fieldConfigsByKey[$key])
+            ? ($rawFieldValues[$key] ?? null)
+            : null;
+        $gameTableId = $associationId(BookingFieldConfig::GAME_TABLE_KEY);
+        $campaignId = $associationId(BookingFieldConfig::CAMPAIGN_KEY);
+        $tournamentId = $associationId(BookingFieldConfig::TOURNAMENT_KEY);
+        unset(
+            $rawFieldValues[BookingFieldConfig::GAME_TABLE_KEY],
+            $rawFieldValues[BookingFieldConfig::CAMPAIGN_KEY],
+            $rawFieldValues[BookingFieldConfig::TOURNAMENT_KEY],
+        );
 
         $fieldValues = [];
         foreach ($rawFieldValues as $key => $value) {
@@ -87,7 +94,6 @@ final class BookingController extends Controller
             startTime: $validated['start_time'],
             endTime: $validated['end_time'],
             fieldValues: $fieldValues,
-            eventId: $validated['event_id'] ?? null,
             gameTableId: $gameTableId,
             tournamentId: $tournamentId,
             campaignId: $campaignId,

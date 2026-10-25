@@ -185,9 +185,35 @@ final class BookingFieldConfigServiceTest extends TestCase
         $fields = $this->service->getEnabledFields($this->resourceId);
 
         $this->assertCount(3, $fields);
-        $this->assertSame(['Warhammer', 'D&D', 'Pathfinder'], $fields[0]->options);
+        // A custom option is its own value
+        $this->assertSame([
+            ['value' => 'Warhammer', 'label' => 'Warhammer'],
+            ['value' => 'D&D', 'label' => 'D&D'],
+            ['value' => 'Pathfinder', 'label' => 'Pathfinder'],
+        ], $fields[0]->options);
         $this->assertNull($fields[1]->options);
         $this->assertNull($fields[2]->options);
+    }
+
+    public function test_game_tables_and_campaigns_are_offered_by_id_with_their_title_as_label(): void
+    {
+        config()->set('modules.settings.venue-bookings.associations.game_tables_enabled', true);
+        config()->set('modules.settings.venue-bookings.associations.campaigns_enabled', true);
+        config()->set('modules.settings.venue-bookings.predefined_fields', []);
+        config()->set('modules.settings.venue-bookings.custom_fields', []);
+
+        $integration = $this->createStub(ModuleIntegrationServiceInterface::class);
+        $integration->method('isGameTablesModuleAvailable')->willReturn(true);
+        $integration->method('getAvailableGameTables')->willReturn([['id' => 'table-1', 'label' => 'Kill Team, liga']]);
+        $integration->method('getAvailableCampaigns')->willReturn([['id' => 'campaign-1', 'label' => 'La maldición de Strahd']]);
+        $this->resourceRepository->method('find')->willReturn(null);
+        $service = new BookingFieldConfigService($integration, $this->resourceRepository);
+
+        $fields = $service->getEnabledFields($this->resourceId);
+
+        $this->assertSame(['game_table_id', 'campaign_id'], array_map(fn ($field): string => $field->key, $fields));
+        $this->assertSame([['value' => 'table-1', 'label' => 'Kill Team, liga']], $fields[0]->options);
+        $this->assertSame([['value' => 'campaign-1', 'label' => 'La maldición de Strahd']], $fields[1]->options);
     }
 
     public function test_get_default_field_config_reads_from_global_config(): void

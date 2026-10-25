@@ -13,7 +13,7 @@ Sistema de reservas del local para gestionar espacios y horarios, con calendario
 - **Mis reservas**: cada usuario ve sus reservas en `/reservas/mis-reservas` y en la pestaña **Reservas** de su perfil, y las cancela si tiene el permiso `bookings.cancel_own`
 - **Cierre a la hora de inicio**: desde la web no se puede reservar un día pasado ni una franja que ya ha empezado, ni cancelar una reserva empezada. El panel no tiene ese límite
 - **Completado automático**: las reservas confirmadas pasan a completadas cuando ha pasado su hora de fin más un margen configurable
-- **Integración con módulos**: asociación de la reserva con una mesa de rol o una campaña (configurable en el panel)
+- **Integración con módulos**: asociación de la reserva con una mesa de rol, una campaña o un torneo (configurable en el panel). En la web se elige entre las que se le ofrecen al usuario y se guarda su id; en el panel cada una tiene su propio selector
 - **Notificaciones por email**: creación, confirmación, cancelación, rechazo y recordatorio antes del inicio
 - **Panel de administración**: espacios, reservas, configuración y dos widgets para el escritorio
 
