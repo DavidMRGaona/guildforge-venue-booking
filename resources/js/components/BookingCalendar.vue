@@ -15,10 +15,7 @@ import type {
     EventInput,
     EventSourceFuncInfo,
 } from '@fullcalendar/vue3';
-import type {
-    BookingCalendarEvent,
-    BookingTooltipData,
-} from '../types/bookings';
+import type { BookingCalendarEvent, BookingTooltipData } from '../types/bookings';
 import BookingTooltip from './BookingTooltip.vue';
 import { VENUE_TIMEZONE } from '@/utils/datetime';
 
@@ -193,11 +190,7 @@ const calendarOptions = computed<CalendarOptions>(() => ({
 
 <template>
     <div class="event-calendar booking-calendar">
-        <div
-            v-if="error"
-            role="alert"
-            class="mb-4 rounded-lg bg-error-light p-4 text-center"
-        >
+        <div v-if="error" role="alert" class="mb-4 rounded-lg bg-error-light p-4 text-center">
             <p class="text-sm font-medium text-error">
                 {{ error }}
             </p>

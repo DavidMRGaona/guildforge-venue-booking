@@ -8,6 +8,7 @@ use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Illuminate\Validation\Rule;
 use Modules\VenueBookings\Application\Services\BookingFieldConfigServiceInterface;
 use Modules\VenueBookings\Application\Services\ModuleIntegrationServiceInterface;
+use Modules\VenueBookings\Domain\Entities\BookableResource;
 use Modules\VenueBookings\Domain\Enums\BookingFieldType;
 use Modules\VenueBookings\Domain\Enums\FieldVisibility;
 use Modules\VenueBookings\Domain\Repositories\BookableResourceRepositoryInterface;
@@ -32,9 +33,8 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
 
         $fields = $this->getPredefinedFieldsForConfig($config);
         $fields = array_merge($fields, $this->getCustomFieldsForConfig($config));
-        $fields = array_merge($fields, $this->getAssociationFields($user));
 
-        return $fields;
+        return array_merge($fields, $this->getAssociationFields($user));
     }
 
     /**
@@ -91,7 +91,7 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
                 );
                 $required = (bool) $this->settings->get('associations.game_tables_required');
 
-                $gameTables = $user !== null
+                $gameTables = $user instanceof UserModel
                     ? $this->moduleIntegration->getUserGameTables((string) $user->id)
                     : $this->moduleIntegration->getAvailableGameTables();
 
@@ -115,7 +115,7 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
                 );
                 $required = (bool) $this->settings->get('associations.campaigns_required');
 
-                $campaigns = $user !== null
+                $campaigns = $user instanceof UserModel
                     ? $this->moduleIntegration->getUserCampaigns((string) $user->id)
                     : $this->moduleIntegration->getAvailableCampaigns();
 
@@ -165,7 +165,7 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
     {
         $resource = $this->resourceRepository->find(BookableResourceId::fromString($resourceId));
 
-        if ($resource !== null && $resource->fieldConfig !== null) {
+        if ($resource instanceof BookableResource && $resource->fieldConfig instanceof ResourceFieldConfig) {
             return $resource->fieldConfig;
         }
 
@@ -273,9 +273,9 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
     {
         return match (FieldVisibility::from($field->visibility)) {
             FieldVisibility::Public => true,
-            FieldVisibility::Authenticated => $user !== null,
-            FieldVisibility::Permission => $user !== null && $user->isAdmin(),
-            FieldVisibility::AdminOnly => $user !== null && $user->isAdmin(),
+            FieldVisibility::Authenticated => $user instanceof UserModel,
+            FieldVisibility::Permission => $user instanceof UserModel && $user->isAdmin(),
+            FieldVisibility::AdminOnly => $user instanceof UserModel && $user->isAdmin(),
         };
     }
 }

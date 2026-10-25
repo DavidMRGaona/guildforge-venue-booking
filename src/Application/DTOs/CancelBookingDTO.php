@@ -10,6 +10,5 @@ final readonly class CancelBookingDTO
         public string $bookingId,
         public string $userId,
         public ?string $reason = null,
-    ) {
-    }
+    ) {}
 }

@@ -34,7 +34,7 @@ final readonly class EloquentOperatingScheduleRepository implements OperatingSch
     {
         $entity = $this->find($id);
 
-        if ($entity === null) {
+        if (! $entity instanceof OperatingSchedule) {
             throw BookableResourceNotFoundException::withId($id->value);
         }
 
@@ -58,7 +58,7 @@ final readonly class EloquentOperatingScheduleRepository implements OperatingSch
     private function toEntity(OperatingScheduleModel $model): OperatingSchedule
     {
         $daySchedules = array_map(
-            fn (array $data): DaySchedule => DaySchedule::fromArray($data),
+            DaySchedule::fromArray(...),
             $model->day_schedules ?? [],
         );
 

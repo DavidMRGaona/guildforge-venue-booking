@@ -7,14 +7,13 @@ namespace Modules\VenueBookings\Domain\Events;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-final class BookingNoShow
+final readonly class BookingNoShow
 {
     use Dispatchable;
     use SerializesModels;
 
     public function __construct(
-        public readonly string $bookingId,
-        public readonly string $userId,
-    ) {
-    }
+        public string $bookingId,
+        public string $userId,
+    ) {}
 }

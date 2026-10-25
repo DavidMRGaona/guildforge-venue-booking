@@ -26,8 +26,7 @@ final readonly class BookingFieldConfig
         public bool $required,
         public string $visibility,
         public ?array $options = null,
-    ) {
-    }
+    ) {}
 
     public function isSelectField(): bool
     {

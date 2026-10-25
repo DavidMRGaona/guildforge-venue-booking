@@ -25,8 +25,7 @@ final readonly class BookingListDTO
         public ?string $cancellationReason = null,
         // Started bookings can no longer be cancelled from the website
         public bool $hasStarted = false,
-    ) {
-    }
+    ) {}
 
     public static function fromEntity(
         Booking $booking,

@@ -35,7 +35,7 @@ final class EloquentBookingRepositoryTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->repository = new EloquentBookingRepository();
+        $this->repository = new EloquentBookingRepository;
 
         $this->resource = BookableResourceModel::create([
             'id' => (string) Str::uuid(),

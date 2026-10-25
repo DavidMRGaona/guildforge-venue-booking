@@ -35,18 +35,18 @@ final class BookingQueryServiceTest extends TestCase
     {
         parent::setUp();
 
-        $bookingRepository = new EloquentBookingRepository();
-        $scheduleRepository = new EloquentOperatingScheduleRepository();
+        $bookingRepository = new EloquentBookingRepository;
+        $scheduleRepository = new EloquentOperatingScheduleRepository;
         $slotAvailabilityService = new SlotAvailabilityService(
             $scheduleRepository,
             $bookingRepository,
-            new BookingRules($bookingRepository, new BookingSettingsReader()),
+            new BookingRules($bookingRepository, new BookingSettingsReader),
         );
 
         $this->service = new BookingQueryService(
             $bookingRepository,
             $slotAvailabilityService,
-            new BookingSettingsReader(),
+            new BookingSettingsReader,
         );
 
         $this->resource = BookableResourceModel::create([

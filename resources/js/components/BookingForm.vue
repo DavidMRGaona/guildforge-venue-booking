@@ -36,7 +36,6 @@ const { t, locale } = useI18n();
 
 const loading = ref(false);
 
-// eslint-disable-next-line no-undef
 const dialog = ref<HTMLDialogElement | null>(null);
 const titleId = useId();
 const { isBackdropClick } = useModalDialog(dialog);
@@ -45,9 +44,7 @@ const { isBackdropClick } = useModalDialog(dialog);
 // endpoint failed) must never leave the form open to them.
 const gate = useVerificationGate();
 const verificationBlockedId = useId();
-const verificationBlocked = computed(
-    () => gate.blocked.value || props.verificationRequired
-);
+const verificationBlocked = computed(() => gate.blocked.value || props.verificationRequired);
 
 // Build initial form data from field definitions
 function buildInitialData(): Record<string, string | number | boolean> {
@@ -159,17 +156,11 @@ function updateField(key: string, value: string | number | boolean): void {
             <!-- Booking summary -->
             <div class="mb-4 rounded-lg bg-muted p-3">
                 <div class="flex items-center gap-1.5 text-sm text-base-secondary">
-                    <Calendar
-                        class="h-4 w-4 flex-shrink-0 text-base-muted"
-                        aria-hidden="true"
-                    />
+                    <Calendar class="h-4 w-4 flex-shrink-0 text-base-muted" aria-hidden="true" />
                     <span>{{ formattedDate }}</span>
                 </div>
                 <div class="mt-1 flex items-center gap-1.5 text-sm text-base-secondary">
-                    <Clock
-                        class="h-4 w-4 flex-shrink-0 text-base-muted"
-                        aria-hidden="true"
-                    />
+                    <Clock class="h-4 w-4 flex-shrink-0 text-base-muted" aria-hidden="true" />
                     <span>{{ timeRange }}</span>
                 </div>
             </div>
@@ -218,15 +209,8 @@ function updateField(key: string, value: string | number | boolean): void {
             </div>
 
             <!-- Dynamic fields -->
-            <form
-                v-if="canBook"
-                class="space-y-4"
-                @submit.prevent="handleSubmit"
-            >
-                <div
-                    v-for="field in fieldDefinitions"
-                    :key="field.key"
-                >
+            <form v-if="canBook" class="space-y-4" @submit.prevent="handleSubmit">
+                <div v-for="field in fieldDefinitions" :key="field.key">
                     <label
                         :for="`field-${field.key}`"
                         class="mb-1 block text-sm font-medium text-base-secondary"
@@ -254,7 +238,9 @@ function updateField(key: string, value: string | number | boolean): void {
                         :value="form.field_values[field.key] as string"
                         rows="3"
                         class="w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-base-primary focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                        @input="updateField(field.key, ($event.target as HTMLTextAreaElement).value)"
+                        @input="
+                            updateField(field.key, ($event.target as HTMLTextAreaElement).value)
+                        "
                     ></textarea>
 
                     <!-- Number input -->
@@ -266,7 +252,12 @@ function updateField(key: string, value: string | number | boolean): void {
                         :value="form.field_values[field.key]"
                         min="0"
                         class="w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-base-primary focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                        @input="updateField(field.key, Number(($event.target as HTMLInputElement).value))"
+                        @input="
+                            updateField(
+                                field.key,
+                                Number(($event.target as HTMLInputElement).value)
+                            )
+                        "
                     />
 
                     <!-- Select -->
@@ -280,7 +271,7 @@ function updateField(key: string, value: string | number | boolean): void {
                     >
                         <option value="" disabled></option>
                         <option
-                            v-for="option in (field.options ?? [])"
+                            v-for="option in field.options ?? []"
                             :key="option.value"
                             :value="option.value"
                         >
@@ -289,16 +280,15 @@ function updateField(key: string, value: string | number | boolean): void {
                     </select>
 
                     <!-- Toggle -->
-                    <div
-                        v-else-if="field.type === 'toggle'"
-                        class="flex items-center gap-2"
-                    >
+                    <div v-else-if="field.type === 'toggle'" class="flex items-center gap-2">
                         <input
                             :id="`field-${field.key}`"
                             type="checkbox"
                             :checked="!!form.field_values[field.key]"
                             class="h-4 w-4 rounded border-default text-primary-600 focus:ring-primary-500"
-                            @change="updateField(field.key, ($event.target as HTMLInputElement).checked)"
+                            @change="
+                                updateField(field.key, ($event.target as HTMLInputElement).checked)
+                            "
                         />
                     </div>
                 </div>
@@ -321,11 +311,7 @@ function updateField(key: string, value: string | number | boolean): void {
                             v-if="loading || form.processing"
                             class="flex items-center justify-center"
                         >
-                            <LoadingSpinner
-                                class="mr-2"
-                                size="sm"
-                                color="text-current"
-                            />
+                            <LoadingSpinner class="mr-2" size="sm" color="text-current" />
                         </span>
                         <span v-else>{{ t('booking_calendar.book') }}</span>
                     </button>

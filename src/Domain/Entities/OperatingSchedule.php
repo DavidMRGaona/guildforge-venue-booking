@@ -34,7 +34,7 @@ final class OperatingSchedule
     {
         $daySchedule = $this->getDaySchedule($dayOfWeek);
 
-        return $daySchedule !== null && $daySchedule->isEnabled;
+        return $daySchedule instanceof DaySchedule && $daySchedule->isEnabled;
     }
 
     public function getDaySchedule(int $dayOfWeek): ?DaySchedule
@@ -59,7 +59,7 @@ final class OperatingSchedule
      */
     public function generateSlotsForDate(string $date): array
     {
-        $dayOfWeek = self::dayOfWeek($date);
+        $dayOfWeek = $this->dayOfWeek($date);
 
         if ($dayOfWeek === null) {
             return [];
@@ -71,12 +71,12 @@ final class OperatingSchedule
 
         $daySchedule = $this->getDaySchedule($dayOfWeek);
 
-        if ($daySchedule === null || ! $daySchedule->isEnabled || $this->slotDurationMinutes < 1) {
+        if (! $daySchedule instanceof DaySchedule || ! $daySchedule->isEnabled || $this->slotDurationMinutes < 1) {
             return [];
         }
 
-        $open = self::toMinutes($daySchedule->openTime);
-        $close = self::toMinutes($daySchedule->closeTime);
+        $open = $this->toMinutes($daySchedule->openTime);
+        $close = $this->toMinutes($daySchedule->closeTime);
 
         // Open until the next day (e.g. 22:00-02:00)
         if ($close < $open) {
@@ -87,8 +87,8 @@ final class OperatingSchedule
 
         for ($start = $open; $start < $close; $start += $this->slotDurationMinutes) {
             $slots[] = new BookingSlot(
-                startTime: self::formatMinutes($start),
-                endTime: self::formatMinutes($start + $this->slotDurationMinutes),
+                startTime: $this->formatMinutes($start),
+                endTime: $this->formatMinutes($start + $this->slotDurationMinutes),
                 isAvailable: true,
                 startsNextDay: $start >= self::MINUTES_PER_DAY,
             );
@@ -120,7 +120,7 @@ final class OperatingSchedule
             return $own['count'];
         }
 
-        $dayBefore = self::shiftDays($startDate, -1);
+        $dayBefore = $this->shiftDays($startDate, -1);
         $tail = $dayBefore === null ? null : $this->findRun($dayBefore, $range);
 
         return $tail !== null && $tail['startsNextDay'] ? $tail['count'] : null;
@@ -138,7 +138,7 @@ final class OperatingSchedule
             return $openingDate;
         }
 
-        return self::shiftDays($openingDate, 1) ?? $openingDate;
+        return $this->shiftDays($openingDate, 1) ?? $openingDate;
     }
 
     /**
@@ -150,12 +150,12 @@ final class OperatingSchedule
     private function findRun(string $date, TimeRange $range): ?array
     {
         $slots = $this->generateSlotsForDate($date);
-        $start = self::toMinutes($range->startTime);
-        $end = self::toMinutes($range->endTime);
+        $start = $this->toMinutes($range->startTime);
+        $end = $this->toMinutes($range->endTime);
 
         if ($this->schedulingMode === SchedulingMode::TimeBlocks) {
             foreach ($slots as $block) {
-                if (self::toMinutes($block->startTime) === $start && self::toMinutes($block->endTime) === $end) {
+                if ($this->toMinutes($block->startTime) === $start && $this->toMinutes($block->endTime) === $end) {
                     return ['count' => 1, 'startsNextDay' => false];
                 }
             }
@@ -169,7 +169,7 @@ final class OperatingSchedule
 
         foreach ($slots as $slot) {
             if ($count === null) {
-                if (self::toMinutes($slot->startTime) !== $start) {
+                if ($this->toMinutes($slot->startTime) !== $start) {
                     continue;
                 }
 
@@ -179,7 +179,7 @@ final class OperatingSchedule
 
             $count++;
 
-            if (self::toMinutes($slot->endTime) === $end) {
+            if ($this->toMinutes($slot->endTime) === $end) {
                 return ['count' => $count, 'startsNextDay' => $startsNextDay];
             }
         }
@@ -211,7 +211,7 @@ final class OperatingSchedule
     /**
      * Day of week (0 = Sunday) of a Y-m-d date, or null when it cannot be read.
      */
-    private static function dayOfWeek(string $date): ?int
+    private function dayOfWeek(string $date): ?int
     {
         $day = DateTimeImmutable::createFromFormat('!Y-m-d', $date, new DateTimeZone('UTC'));
 
@@ -221,7 +221,7 @@ final class OperatingSchedule
     /**
      * The Y-m-d date $days away from $date, or null when $date cannot be read.
      */
-    private static function shiftDays(string $date, int $days): ?string
+    private function shiftDays(string $date, int $days): ?string
     {
         $day = DateTimeImmutable::createFromFormat('!Y-m-d', $date, new DateTimeZone('UTC'));
 
@@ -231,7 +231,7 @@ final class OperatingSchedule
     /**
      * Minutes from midnight of "H:MM", "HH:MM" or "HH:MM:SS".
      */
-    private static function toMinutes(string $time): int
+    private function toMinutes(string $time): int
     {
         $parts = explode(':', $time);
 
@@ -241,7 +241,7 @@ final class OperatingSchedule
     /**
      * "HH:MM" of a minute count, wrapping past midnight.
      */
-    private static function formatMinutes(int $minutes): string
+    private function formatMinutes(int $minutes): string
     {
         $minutes %= self::MINUTES_PER_DAY;
 

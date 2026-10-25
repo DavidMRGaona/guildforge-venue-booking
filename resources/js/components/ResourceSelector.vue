@@ -49,21 +49,13 @@ function handleTabClick(id: string): void {
             <option value="" disabled>
                 {{ t('booking_calendar.select_resource') }}
             </option>
-            <option
-                v-for="resource in resources"
-                :key="resource.id"
-                :value="resource.id"
-            >
+            <option v-for="resource in resources" :key="resource.id" :value="resource.id">
                 {{ resource.name }}
             </option>
         </select>
 
         <!-- Tab buttons for 2-4 resources -->
-        <div
-            v-else
-            role="tablist"
-            class="flex gap-2"
-        >
+        <div v-else role="tablist" class="flex gap-2">
             <button
                 v-for="resource in resources"
                 :key="resource.id"

@@ -14,8 +14,7 @@ final readonly class BookingSlotResponseDTO
         public bool $isAvailable,
         public ?string $label = null,
         public bool $startsNextDay = false,
-    ) {
-    }
+    ) {}
 
     public static function fromVO(BookingSlot $slot): self
     {

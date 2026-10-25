@@ -14,7 +14,9 @@ use Modules\VenueBookings\Application\DTOs\Response\BookingResponseDTO;
 use Modules\VenueBookings\Application\Services\BookingLockInterface;
 use Modules\VenueBookings\Application\Services\BookingServiceInterface;
 use Modules\VenueBookings\Application\Services\SlotAvailabilityServiceInterface;
+use Modules\VenueBookings\Domain\Entities\BookableResource;
 use Modules\VenueBookings\Domain\Entities\Booking;
+use Modules\VenueBookings\Domain\Entities\OperatingSchedule;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
 use Modules\VenueBookings\Domain\Enums\SchedulingMode;
 use Modules\VenueBookings\Domain\Events\BookingCancelled;
@@ -84,11 +86,11 @@ final readonly class BookingService implements BookingServiceInterface
 
         $resource = $this->resourceRepository->find($resourceId);
 
-        if (! $resourceId->equals($booking->resourceId) && $resource !== null && ! $resource->isActive()) {
+        if (! $resourceId->equals($booking->resourceId) && $resource instanceof BookableResource && ! $resource->isActive()) {
             throw BookableResourceUnavailableException::withId($dto->resourceId);
         }
 
-        $lockedResourceId = strtolower($resource !== null ? $resource->id->value : $dto->resourceId);
+        $lockedResourceId = strtolower($resource?->id->value ?? $dto->resourceId);
 
         $this->lock->forBooking($booking->userId, $lockedResourceId, function () use ($booking, $moved, $dto, $resourceId, $timeRange): void {
             // A booking keeping its start may be lengthened or change room while under way
@@ -117,7 +119,7 @@ final readonly class BookingService implements BookingServiceInterface
         // where it has no schedule.
         $resource = $this->resourceRepository->find($resourceId);
 
-        if ($resource !== null && ! $resource->isActive()) {
+        if ($resource instanceof BookableResource && ! $resource->isActive()) {
             throw BookableResourceUnavailableException::withId($dto->resourceId);
         }
 
@@ -126,7 +128,7 @@ final readonly class BookingService implements BookingServiceInterface
             : BookingStatus::Confirmed;
 
         $fieldValues = array_map(
-            fn (array $data): BookingFieldValue => BookingFieldValue::fromArray($data),
+            BookingFieldValue::fromArray(...),
             $dto->fieldValues,
         );
 
@@ -150,7 +152,7 @@ final readonly class BookingService implements BookingServiceInterface
         // Checked and saved under the lock: two requests cannot both pass the active booking
         // limit or the overlap check. The events go out once the lock is released.
         // Locked by the stored id of the resource when it exists, not by the id as it was sent
-        $lockedResourceId = strtolower($resource !== null ? $resource->id->value : $dto->resourceId);
+        $lockedResourceId = strtolower($resource?->id->value ?? $dto->resourceId);
 
         $this->lock->forBooking($dto->userId, $lockedResourceId, function () use ($booking, $dto, $date, $resourceId, $timeRange, $applySettingsRules): void {
             // Whoever asks, a slot that has already started cannot be booked
@@ -302,7 +304,7 @@ final readonly class BookingService implements BookingServiceInterface
         $schedule = $this->scheduleRepository->findByResource($resourceId);
         $slotCount = $schedule?->slotsCoveredOn($date, $timeRange);
 
-        if ($schedule === null || $slotCount === null) {
+        if (! $schedule instanceof OperatingSchedule || $slotCount === null) {
             throw SlotOutsideScheduleException::forTimeRange($date, $timeRange->startTime, $timeRange->endTime);
         }
 

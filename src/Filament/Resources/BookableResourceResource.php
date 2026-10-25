@@ -4,26 +4,23 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Filament\Resources;
 
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Tabs;
-use Filament\Schemas\Components\Tabs\Tab;
-use Filament\Schemas\Components\Group;
-use Filament\Schemas\Components\Utilities\Get;
-use Filament\Actions\Action;
-use Filament\Schemas\Components\Utilities\Set;
-use Filament\Schemas\Components\Section;
-use Filament\Actions\EditAction;
-use Modules\VenueBookings\Filament\Resources\BookableResourceResource\Pages\ListBookableResources;
-use Modules\VenueBookings\Filament\Resources\BookableResourceResource\Pages\CreateBookableResource;
-use Modules\VenueBookings\Filament\Resources\BookableResourceResource\Pages\EditBookableResource;
-use Filament\Schemas\Components\Grid;
 use App\Filament\Resources\BaseResource;
+use Filament\Actions\Action;
+use Filament\Actions\EditAction;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
@@ -31,7 +28,9 @@ use Modules\VenueBookings\Domain\Enums\BookableResourceStatus;
 use Modules\VenueBookings\Domain\Enums\BookingFieldType;
 use Modules\VenueBookings\Domain\Enums\FieldVisibility;
 use Modules\VenueBookings\Domain\Enums\SchedulingMode;
-use Modules\VenueBookings\Filament\Resources\BookableResourceResource\Pages;
+use Modules\VenueBookings\Filament\Resources\BookableResourceResource\Pages\CreateBookableResource;
+use Modules\VenueBookings\Filament\Resources\BookableResourceResource\Pages\EditBookableResource;
+use Modules\VenueBookings\Filament\Resources\BookableResourceResource\Pages\ListBookableResources;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
 use Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader;
 
@@ -39,7 +38,7 @@ final class BookableResourceResource extends BaseResource
 {
     protected static ?string $model = BookableResourceModel::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-building-office';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-building-office';
 
     protected static ?int $navigationSort = 1;
 
@@ -145,15 +144,7 @@ final class BookableResourceResource extends BaseResource
                                             if ($state === null || $state === []) {
                                                 return;
                                             }
-
-                                            $needsRekey = false;
-                                            foreach (array_keys($state) as $key) {
-                                                if (is_int($key)) {
-                                                    $needsRekey = true;
-
-                                                    break;
-                                                }
-                                            }
+                                            $needsRekey = array_any(array_keys($state), fn ($key) => is_int($key));
 
                                             if ($needsRekey) {
                                                 $rekeyed = [];

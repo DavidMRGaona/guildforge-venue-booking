@@ -7,12 +7,13 @@ namespace Modules\VenueBookings\Database\Seeders;
 use App\Application\Authorization\Services\MemberRoleServiceInterface;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Modules\VenueBookings\Domain\Enums\BookingStatus;
-use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
 use Modules\VenueBookings\Domain\Enums\BookableResourceStatus;
+use Modules\VenueBookings\Domain\Enums\BookingStatus;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
+use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\OperatingScheduleModel;
 
 final class DevelopmentSeeder extends Seeder
@@ -189,7 +190,7 @@ final class DevelopmentSeeder extends Seeder
      */
     private function dayOpening(array $daySchedules, string $date): string
     {
-        $schedule = $this->scheduleOf($daySchedules, \Illuminate\Support\Carbon::parse($date)->dayOfWeek);
+        $schedule = $this->scheduleOf($daySchedules, Carbon::parse($date)->dayOfWeek);
 
         return (string) ($schedule['open_time'] ?? '10:00');
     }

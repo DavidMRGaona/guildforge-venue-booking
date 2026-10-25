@@ -12,8 +12,7 @@ final readonly class BookingEligibilityDTO
     public function __construct(
         public bool $canBook,
         public array $reasons = [],
-    ) {
-    }
+    ) {}
 
     public static function eligible(): self
     {

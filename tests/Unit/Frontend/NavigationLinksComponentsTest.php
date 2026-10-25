@@ -14,7 +14,7 @@ use PHPUnit\Framework\TestCase;
  */
 final class NavigationLinksComponentsTest extends TestCase
 {
-    private const string JS = __DIR__ . '/../../../resources/js/';
+    private const string JS = __DIR__.'/../../../resources/js/';
 
     public function test_the_profile_tab_links_the_personal_list_and_the_calendar_even_without_bookings(): void
     {
@@ -65,7 +65,7 @@ final class NavigationLinksComponentsTest extends TestCase
 
     private function source(string $file): string
     {
-        $source = file_get_contents(self::JS . $file);
+        $source = file_get_contents(self::JS.$file);
         $this->assertIsString($source);
 
         return $source;

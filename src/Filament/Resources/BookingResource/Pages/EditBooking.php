@@ -170,7 +170,7 @@ final class EditBooking extends EditRecord
 
                 unset($data['status'], $data['cancellation_reason']);
                 $record->refresh();
-            } catch (InvalidStatusTransitionException $e) {
+            } catch (InvalidStatusTransitionException) {
                 Notification::make()
                     ->title(__('venue-bookings::messages.notifications.invalid_transition'))
                     ->danger()

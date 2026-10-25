@@ -4,8 +4,20 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Infrastructure\Services;
 
+use Illuminate\Support\Facades\Log;
+use Modules\GameTables\Application\DTOs\CampaignResponseDTO;
+use Modules\GameTables\Application\DTOs\GameTableListDTO;
+use Modules\GameTables\Application\Services\CampaignQueryServiceInterface;
+use Modules\GameTables\Application\Services\GameTableQueryServiceInterface;
+use Modules\GameTables\Infrastructure\Persistence\Eloquent\Models\CampaignModel;
+use Modules\GameTables\Infrastructure\Persistence\Eloquent\Models\GameTableModel;
 use Modules\VenueBookings\Application\Services\ModuleIntegrationServiceInterface;
 
+/**
+ * Optional integration with game-tables: every call checks the module is enabled first.
+ * Its classes are absent when this module is analysed on its own (the CI's quality job),
+ * hence the class.notFound ignores on the lines that use them.
+ */
 final readonly class ModuleIntegrationService implements ModuleIntegrationServiceInterface
 {
     public function isGameTablesModuleAvailable(): bool
@@ -28,18 +40,19 @@ final readonly class ModuleIntegrationService implements ModuleIntegrationServic
         }
 
         try {
-            /** @var \Modules\GameTables\Application\Services\GameTableQueryServiceInterface $queryService */
-            $queryService = app(\Modules\GameTables\Application\Services\GameTableQueryServiceInterface::class);
-            $tables = $queryService->getUpcomingTables(
+            $queryService = app(GameTableQueryServiceInterface::class); // @phpstan-ignore class.notFound (game-tables is optional)
+            $tables = $queryService->getUpcomingTables( // @phpstan-ignore class.notFound (game-tables is optional)
                 new \DateTimeImmutable,
                 new \DateTimeImmutable('+30 days'),
             );
 
-            return array_map(fn (\Modules\GameTables\Application\DTOs\GameTableListDTO $table): array => [
-                'id' => $table->id,
-                'label' => $table->title,
+            return array_map(fn (GameTableListDTO $table): array => [ // @phpstan-ignore class.notFound (game-tables is optional)
+                'id' => $table->id, // @phpstan-ignore class.notFound (game-tables is optional)
+                'label' => $table->title, // @phpstan-ignore class.notFound (game-tables is optional)
             ], $tables);
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            $this->logFailure(__FUNCTION__, $e);
+
             return [];
         }
     }
@@ -67,15 +80,16 @@ final readonly class ModuleIntegrationService implements ModuleIntegrationServic
         }
 
         try {
-            /** @var \Modules\GameTables\Application\Services\CampaignQueryServiceInterface $queryService */
-            $queryService = app(\Modules\GameTables\Application\Services\CampaignQueryServiceInterface::class);
-            $campaigns = $queryService->getPublishedCampaignsPaginated(1, 100);
+            $queryService = app(CampaignQueryServiceInterface::class); // @phpstan-ignore class.notFound (game-tables is optional)
+            $campaigns = $queryService->getPublishedCampaignsPaginated(1, 100); // @phpstan-ignore class.notFound (game-tables is optional)
 
-            return array_map(fn (\Modules\GameTables\Application\DTOs\CampaignResponseDTO $c): array => [
-                'id' => $c->id,
-                'label' => $c->title,
+            return array_map(fn (CampaignResponseDTO $c): array => [ // @phpstan-ignore class.notFound (game-tables is optional)
+                'id' => $c->id, // @phpstan-ignore class.notFound (game-tables is optional)
+                'label' => $c->title, // @phpstan-ignore class.notFound (game-tables is optional)
             ], $campaigns);
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            $this->logFailure(__FUNCTION__, $e);
+
             return [];
         }
     }
@@ -90,10 +104,9 @@ final readonly class ModuleIntegrationService implements ModuleIntegrationServic
         }
 
         try {
-            /** @var \Modules\GameTables\Infrastructure\Persistence\Eloquent\Models\GameTableModel $model */
-            $model = app(\Modules\GameTables\Infrastructure\Persistence\Eloquent\Models\GameTableModel::class);
+            $model = app(GameTableModel::class); // @phpstan-ignore class.notFound (game-tables is optional)
 
-            return $model->newQuery()
+            return $model->newQuery() // @phpstan-ignore class.notFound (game-tables is optional)
                 ->where('created_by', $userId)
                 ->where('is_published', true)
                 ->orderByDesc('created_at')
@@ -101,7 +114,9 @@ final readonly class ModuleIntegrationService implements ModuleIntegrationServic
                 ->get()
                 ->map(fn ($t): array => ['id' => $t->id, 'label' => $t->title])
                 ->all();
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            $this->logFailure(__FUNCTION__, $e);
+
             return [];
         }
     }
@@ -116,10 +131,9 @@ final readonly class ModuleIntegrationService implements ModuleIntegrationServic
         }
 
         try {
-            /** @var \Modules\GameTables\Infrastructure\Persistence\Eloquent\Models\CampaignModel $model */
-            $model = app(\Modules\GameTables\Infrastructure\Persistence\Eloquent\Models\CampaignModel::class);
+            $model = app(CampaignModel::class); // @phpstan-ignore class.notFound (game-tables is optional)
 
-            return $model->newQuery()
+            return $model->newQuery() // @phpstan-ignore class.notFound (game-tables is optional)
                 ->where('created_by', $userId)
                 ->where('is_published', true)
                 ->orderByDesc('created_at')
@@ -127,7 +141,9 @@ final readonly class ModuleIntegrationService implements ModuleIntegrationServic
                 ->get()
                 ->map(fn ($c): array => ['id' => $c->id, 'label' => $c->title])
                 ->all();
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            $this->logFailure(__FUNCTION__, $e);
+
             return [];
         }
     }
@@ -139,12 +155,13 @@ final readonly class ModuleIntegrationService implements ModuleIntegrationServic
         }
 
         try {
-            /** @var \Modules\GameTables\Infrastructure\Persistence\Eloquent\Models\GameTableModel $model */
-            $model = app(\Modules\GameTables\Infrastructure\Persistence\Eloquent\Models\GameTableModel::class);
-            $table = $model->newQuery()->find($id);
+            $model = app(GameTableModel::class); // @phpstan-ignore class.notFound (game-tables is optional)
+            $table = $model->newQuery()->find($id); // @phpstan-ignore class.notFound (game-tables is optional)
 
             return $table?->title;
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            $this->logFailure(__FUNCTION__, $e);
+
             return null;
         }
     }
@@ -156,13 +173,26 @@ final readonly class ModuleIntegrationService implements ModuleIntegrationServic
         }
 
         try {
-            /** @var \Modules\GameTables\Infrastructure\Persistence\Eloquent\Models\CampaignModel $model */
-            $model = app(\Modules\GameTables\Infrastructure\Persistence\Eloquent\Models\CampaignModel::class);
-            $campaign = $model->newQuery()->find($id);
+            $model = app(CampaignModel::class); // @phpstan-ignore class.notFound (game-tables is optional)
+            $campaign = $model->newQuery()->find($id); // @phpstan-ignore class.notFound (game-tables is optional)
 
             return $campaign?->title;
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            $this->logFailure(__FUNCTION__, $e);
+
             return null;
         }
+    }
+
+    /**
+     * A failure leaves the selector empty, so it is logged: a change in game-tables would
+     * otherwise go unnoticed.
+     */
+    private function logFailure(string $method, \Throwable $e): void
+    {
+        Log::warning("[venue-bookings] game-tables integration failed in {$method}", [
+            'exception' => $e::class,
+            'message' => $e->getMessage(),
+        ]);
     }
 }

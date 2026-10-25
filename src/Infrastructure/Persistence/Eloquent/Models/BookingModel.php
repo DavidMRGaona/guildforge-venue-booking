@@ -83,7 +83,7 @@ final class BookingModel extends Model
     {
         // A reminder belongs to a date and start time: once a booking is moved,
         // it is due for a new one.
-        static::updating(function (BookingModel $booking): void {
+        self::updating(function (BookingModel $booking): void {
             if ($booking->isDirty('reminder_sent_at')) {
                 return;
             }

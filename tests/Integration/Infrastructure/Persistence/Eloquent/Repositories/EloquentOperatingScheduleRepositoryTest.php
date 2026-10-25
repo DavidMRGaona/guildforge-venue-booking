@@ -28,7 +28,7 @@ final class EloquentOperatingScheduleRepositoryTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->repository = new EloquentOperatingScheduleRepository();
+        $this->repository = new EloquentOperatingScheduleRepository;
 
         $this->resource = BookableResourceModel::create([
             'id' => (string) Str::uuid(),

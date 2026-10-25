@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use Modules\VenueBookings\Application\DTOs\Response\BookingListDTO;
 use Modules\VenueBookings\Application\Services\BookingQueryServiceInterface;
 use Modules\VenueBookings\Application\Services\BookingServiceInterface;
+use Modules\VenueBookings\Domain\Entities\BookableResource;
 use Modules\VenueBookings\Domain\Repositories\BookableResourceRepositoryInterface;
 use Modules\VenueBookings\Domain\ValueObjects\BookableResourceId;
 
@@ -84,7 +85,7 @@ final readonly class ProfileBookingsDataProvider
         $names = [];
         foreach ($resourceIds as $resourceId) {
             $resource = $this->resourceRepository->find(BookableResourceId::fromString($resourceId));
-            if ($resource !== null) {
+            if ($resource instanceof BookableResource) {
                 $names[$resourceId] = $resource->name;
             }
         }

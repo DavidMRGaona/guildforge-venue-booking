@@ -9,6 +9,7 @@ use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Modules\VenueBookings\Application\DTOs\Response\BookingResponseDTO;
 use Modules\VenueBookings\Application\Services\BookingEligibilityServiceInterface;
 use Modules\VenueBookings\Application\Services\BookingFieldConfigServiceInterface;
 use Modules\VenueBookings\Application\Services\BookingQueryServiceInterface;
@@ -90,7 +91,7 @@ final class BookingApiController extends Controller
 
         $dto = $this->queryService->getBookingById($booking);
 
-        if ($dto === null) {
+        if (! $dto instanceof BookingResponseDTO) {
             return response()->json(['message' => 'Not found'], 404);
         }
 
@@ -101,7 +102,7 @@ final class BookingApiController extends Controller
         $resource = $this->resourceRepository->find(
             BookableResourceId::fromString($dto->resourceId),
         );
-        $resourceName = $resource !== null ? $resource->name : '';
+        $resourceName = $resource->name ?? '';
 
         $visibleFieldKeys = array_column(
             $this->fieldConfigService->getVisibleFields($dto->resourceId, $user),
@@ -139,7 +140,7 @@ final class BookingApiController extends Controller
 
         if ($isAdmin) {
             $bookingUser = UserModel::find($dto->userId);
-            $data['user_name'] = $bookingUser !== null ? $bookingUser->name : '';
+            $data['user_name'] = $bookingUser->name ?? '';
             $data['admin_notes'] = $dto->adminNotes;
         }
 

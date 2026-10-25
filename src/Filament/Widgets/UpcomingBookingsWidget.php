@@ -77,7 +77,7 @@ final class UpcomingBookingsWidget extends BaseWidget
     private function getConfiguredLimit(): int
     {
         return app(DashboardWidgetConfigServiceInterface::class)
-            ->getLimit(static::class, 5);
+            ->getLimit(self::class, 5);
     }
 
     /**

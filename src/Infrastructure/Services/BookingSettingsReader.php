@@ -23,7 +23,7 @@ final readonly class BookingSettingsReader
      */
     public function get(string $key): mixed
     {
-        $defaults = self::defaults();
+        $defaults = $this->defaults();
 
         if (! Arr::has($defaults, $key)) {
             throw new LogicException("The venue-bookings setting \"{$key}\" is not declared in config/settings.php.");
@@ -106,7 +106,6 @@ final readonly class BookingSettingsReader
      */
     public function getTimeBlockPresets(): array
     {
-        /** @var array<array{label: string, open_time: string, close_time: string}> */
         return (array) $this->get('time_block_presets');
     }
 
@@ -135,7 +134,7 @@ final readonly class BookingSettingsReader
      *
      * @return array<string, mixed>
      */
-    private static function defaults(): array
+    private function defaults(): array
     {
         static $defaults = null;
 
