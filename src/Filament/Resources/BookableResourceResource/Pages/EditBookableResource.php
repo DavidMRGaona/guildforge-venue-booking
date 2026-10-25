@@ -6,14 +6,13 @@ namespace Modules\VenueBookings\Filament\Resources\BookableResourceResource\Page
 
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
-use Illuminate\Contracts\Support\Htmlable;
 use Modules\VenueBookings\Filament\Resources\BookableResourceResource;
 
 final class EditBookableResource extends EditRecord
 {
     protected static string $resource = BookableResourceResource::class;
 
-    public function getTitle(): string|Htmlable
+    public function getTitle(): string
     {
         return __('venue-bookings::messages.pages.edit_resource');
     }

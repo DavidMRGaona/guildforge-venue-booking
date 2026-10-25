@@ -94,7 +94,6 @@ final class OperatingScheduleTest extends TestCase
 
         // 8 hours / 60min = 8 slots
         $this->assertCount(8, $slots);
-        $this->assertContainsOnlyInstancesOf(BookingSlot::class, $slots);
 
         // First slot: 09:00-10:00
         $this->assertEquals('09:00', $slots[0]->startTime);
@@ -187,7 +186,6 @@ final class OperatingScheduleTest extends TestCase
         $slots = $schedule->generateSlotsForDate('2026-03-02');
 
         $this->assertCount(2, $slots);
-        $this->assertContainsOnlyInstancesOf(BookingSlot::class, $slots);
 
         // First block: Mañana 10:00-14:00
         $this->assertEquals('10:00', $slots[0]->startTime);

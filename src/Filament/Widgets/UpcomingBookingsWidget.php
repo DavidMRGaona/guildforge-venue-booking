@@ -74,7 +74,7 @@ final class UpcomingBookingsWidget extends BaseWidget
             ->getLimit(static::class, 5);
     }
 
-    public function getTableRecordUrl(BookingModel $record): ?string
+    public function getTableRecordUrl(BookingModel $record): string
     {
         return BookingResource::getUrl('edit', ['record' => $record->id]);
     }

@@ -27,7 +27,6 @@ final class ApprovalModeTest extends TestCase
     public function test_it_returns_label_for_each_case(): void
     {
         foreach (ApprovalMode::cases() as $case) {
-            $this->assertIsString($case->label());
             $this->assertNotEmpty($case->label());
         }
     }
@@ -36,7 +35,7 @@ final class ApprovalModeTest extends TestCase
     {
         $options = ApprovalMode::options();
 
-        $this->assertIsArray($options);
+        $this->assertSame(array_map(fn (ApprovalMode $case): string => $case->label(), ApprovalMode::cases()), array_values($options));
         $this->assertCount(2, $options);
         $this->assertArrayHasKey('auto_confirm', $options);
         $this->assertArrayHasKey('require_approval', $options);

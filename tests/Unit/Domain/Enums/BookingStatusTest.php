@@ -35,7 +35,6 @@ final class BookingStatusTest extends TestCase
     public function test_it_returns_label_for_each_case(): void
     {
         foreach (BookingStatus::cases() as $case) {
-            $this->assertIsString($case->label());
             $this->assertNotEmpty($case->label());
         }
     }
@@ -43,8 +42,7 @@ final class BookingStatusTest extends TestCase
     public function test_it_returns_color_for_each_case(): void
     {
         foreach (BookingStatus::cases() as $case) {
-            $this->assertIsString($case->color());
-            $this->assertNotEmpty($case->color());
+            $this->assertContains($case->color(), ['primary', 'success', 'warning', 'danger', 'gray', 'info']);
         }
     }
 
@@ -52,7 +50,7 @@ final class BookingStatusTest extends TestCase
     {
         $options = BookingStatus::options();
 
-        $this->assertIsArray($options);
+        $this->assertSame(array_map(fn (BookingStatus $case): string => $case->label(), BookingStatus::cases()), array_values($options));
         $this->assertCount(6, $options);
         $this->assertArrayHasKey('pending', $options);
         $this->assertArrayHasKey('confirmed', $options);
@@ -66,7 +64,6 @@ final class BookingStatusTest extends TestCase
     {
         $values = BookingStatus::values();
 
-        $this->assertIsArray($values);
         $this->assertCount(6, $values);
         $this->assertContains('pending', $values);
         $this->assertContains('confirmed', $values);

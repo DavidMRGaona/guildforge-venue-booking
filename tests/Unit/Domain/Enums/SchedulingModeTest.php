@@ -27,7 +27,6 @@ final class SchedulingModeTest extends TestCase
     public function test_it_returns_label_for_each_case(): void
     {
         foreach (SchedulingMode::cases() as $case) {
-            $this->assertIsString($case->label());
             $this->assertNotEmpty($case->label());
         }
     }
@@ -36,7 +35,7 @@ final class SchedulingModeTest extends TestCase
     {
         $options = SchedulingMode::options();
 
-        $this->assertIsArray($options);
+        $this->assertSame(array_map(fn (SchedulingMode $case): string => $case->label(), SchedulingMode::cases()), array_values($options));
         $this->assertCount(2, $options);
         $this->assertArrayHasKey('time_slots', $options);
         $this->assertArrayHasKey('time_blocks', $options);

@@ -31,7 +31,6 @@ final class FieldVisibilityTest extends TestCase
     public function test_it_returns_label_for_each_case(): void
     {
         foreach (FieldVisibility::cases() as $case) {
-            $this->assertIsString($case->label());
             $this->assertNotEmpty($case->label());
         }
     }
@@ -40,7 +39,7 @@ final class FieldVisibilityTest extends TestCase
     {
         $options = FieldVisibility::options();
 
-        $this->assertIsArray($options);
+        $this->assertSame(array_map(fn (FieldVisibility $case): string => $case->label(), FieldVisibility::cases()), array_values($options));
         $this->assertCount(4, $options);
         $this->assertArrayHasKey('public', $options);
         $this->assertArrayHasKey('authenticated', $options);
@@ -54,11 +53,6 @@ final class FieldVisibilityTest extends TestCase
         $authenticatedLevel = FieldVisibility::Authenticated->level();
         $permissionLevel = FieldVisibility::Permission->level();
         $adminOnlyLevel = FieldVisibility::AdminOnly->level();
-
-        $this->assertIsInt($publicLevel);
-        $this->assertIsInt($authenticatedLevel);
-        $this->assertIsInt($permissionLevel);
-        $this->assertIsInt($adminOnlyLevel);
 
         $this->assertLessThan($authenticatedLevel, $publicLevel);
         $this->assertLessThan($permissionLevel, $authenticatedLevel);

@@ -8,10 +8,7 @@ use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
-use Modules\VenueBookings\Application\DTOs\Response\BookingCalendarEventDTO;
-use Modules\VenueBookings\Application\DTOs\Response\BookingListDTO;
 use Modules\VenueBookings\Application\DTOs\Response\BookingResponseDTO;
-use Modules\VenueBookings\Application\DTOs\Response\BookingSlotResponseDTO;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
@@ -135,7 +132,6 @@ final class BookingQueryServiceTest extends TestCase
         $result = $this->service->getBookingsForDate($this->resource->id, '2026-03-16');
 
         $this->assertCount(2, $result);
-        $this->assertContainsOnlyInstancesOf(BookingListDTO::class, $result);
         $this->assertEquals('10:00', $result[0]->startTime);
         $this->assertEquals('14:00', $result[1]->startTime);
     }
@@ -201,7 +197,6 @@ final class BookingQueryServiceTest extends TestCase
         $result = $this->service->getUserBookings($this->user->id);
 
         $this->assertCount(2, $result);
-        $this->assertContainsOnlyInstancesOf(BookingListDTO::class, $result);
 
         // Ordered by date descending
         $this->assertEquals('2026-03-18', $result[0]->date);
@@ -244,7 +239,6 @@ final class BookingQueryServiceTest extends TestCase
         $result = $this->service->getCalendarEvents($this->resource->id, '2026-03-15', '2026-03-25');
 
         $this->assertCount(2, $result);
-        $this->assertContainsOnlyInstancesOf(BookingCalendarEventDTO::class, $result);
         $this->assertStringContainsString('2026-03-16', $result[0]->start);
         $this->assertStringContainsString('2026-03-20', $result[1]->start);
     }
@@ -274,7 +268,6 @@ final class BookingQueryServiceTest extends TestCase
         $result = $this->service->getAvailableSlots($this->resource->id, '2026-03-16');
 
         $this->assertCount(3, $result);
-        $this->assertContainsOnlyInstancesOf(BookingSlotResponseDTO::class, $result);
         $this->assertEquals('10:00', $result[0]->startTime);
         $this->assertEquals('11:00', $result[0]->endTime);
         $this->assertTrue($result[0]->isAvailable);

@@ -35,10 +35,10 @@ final readonly class ModuleIntegrationService implements ModuleIntegrationServic
                 new \DateTimeImmutable('+30 days'),
             );
 
-            return array_map(fn (object $table): array => [
+            return array_map(fn (\Modules\GameTables\Application\DTOs\GameTableListDTO $table): array => [
                 'id' => $table->id,
                 'label' => $table->title,
-            ], $tables->all());
+            ], $tables);
         } catch (\Throwable) {
             return [];
         }
@@ -71,7 +71,7 @@ final readonly class ModuleIntegrationService implements ModuleIntegrationServic
             $queryService = app(\Modules\GameTables\Application\Services\CampaignQueryServiceInterface::class);
             $campaigns = $queryService->getPublishedCampaignsPaginated(1, 100);
 
-            return array_map(fn (object $c): array => [
+            return array_map(fn (\Modules\GameTables\Application\DTOs\CampaignResponseDTO $c): array => [
                 'id' => $c->id,
                 'label' => $c->title,
             ], $campaigns);

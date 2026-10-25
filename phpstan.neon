@@ -1,0 +1,20 @@
+# Inherits the core's configuration (Larastan, level 8); paths are relative to this file, so it
+# works with the module inside the core (src/modules/X locally, modules/X in the Docker image).
+includes:
+    - ../../phpstan.neon
+
+parameters:
+    paths!:
+        - src
+        - tests
+    # Larastan reads the columns of the module's models from both sets of migrations; it resolves
+    # these paths from the core's base path, not from this file
+    databaseMigrationsPath:
+        - database/migrations
+        - modules/venue-bookings/database/migrations
+    # The module autoloader only maps src/; the core loads seeders by file (require_once), so
+    # PHPStan must scan them to know the classes the tests instantiate
+    scanDirectories:
+        - database/seeders
+    # The core's ignore patterns only apply to app/
+    reportUnmatchedIgnoredErrors: false

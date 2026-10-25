@@ -33,7 +33,6 @@ final class BookingFieldTypeTest extends TestCase
     public function test_it_returns_label_for_each_case(): void
     {
         foreach (BookingFieldType::cases() as $case) {
-            $this->assertIsString($case->label());
             $this->assertNotEmpty($case->label());
         }
     }
@@ -42,7 +41,7 @@ final class BookingFieldTypeTest extends TestCase
     {
         $options = BookingFieldType::options();
 
-        $this->assertIsArray($options);
+        $this->assertSame(array_map(fn (BookingFieldType $case): string => $case->label(), BookingFieldType::cases()), array_values($options));
         $this->assertCount(5, $options);
         $this->assertArrayHasKey('text', $options);
         $this->assertArrayHasKey('textarea', $options);

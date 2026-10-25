@@ -203,7 +203,7 @@ final readonly class EloquentBookingRepository implements BookingRepositoryInter
             ->map(fn (BookingModel $model): Booking => $this->toEntity($model))
             ->all();
 
-        $timezone = $endedBy->getTimezone() ?: new DateTimeZone('UTC');
+        $timezone = $endedBy->getTimezone();
 
         return array_values(array_filter(
             $bookings,

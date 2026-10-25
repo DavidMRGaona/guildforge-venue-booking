@@ -47,7 +47,7 @@ final class BookingResource extends BaseResource
 
     protected static ?int $navigationSort = 2;
 
-    public static function getNavigationGroup(): ?string
+    public static function getNavigationGroup(): string
     {
         return __('venue-bookings::messages.navigation.group');
     }
