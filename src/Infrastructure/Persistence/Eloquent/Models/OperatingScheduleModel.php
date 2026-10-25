@@ -7,7 +7,20 @@ namespace Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property string $id
+ * @property string $resource_id
+ * @property string $scheduling_mode
+ * @property int $slot_duration_minutes
+ * @property int $min_consecutive_slots
+ * @property int $max_consecutive_slots
+ * @property array<int, array{day_of_week: int, open_time: string, close_time: string, is_enabled: bool, label?: string|null}> $day_schedules
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read BookableResourceModel $resource
+ */
 final class OperatingScheduleModel extends Model
 {
     use HasUuids;
@@ -42,6 +55,9 @@ final class OperatingScheduleModel extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<BookableResourceModel, $this>
+     */
     public function resource(): BelongsTo
     {
         return $this->belongsTo(BookableResourceModel::class, 'resource_id');

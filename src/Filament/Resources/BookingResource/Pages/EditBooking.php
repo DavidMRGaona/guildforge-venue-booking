@@ -8,7 +8,6 @@ use DomainException;
 use Filament\Actions\DeleteAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
-use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -33,7 +32,7 @@ final class EditBooking extends EditRecord
     // the lock is released, and another request could miss the move in its overlap check
     protected ?bool $hasDatabaseTransactions = false;
 
-    public function getTitle(): string|Htmlable
+    public function getTitle(): string
     {
         return __('venue-bookings::messages.pages.edit_booking');
     }

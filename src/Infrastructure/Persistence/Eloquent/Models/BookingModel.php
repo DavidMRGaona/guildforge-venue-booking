@@ -8,8 +8,32 @@ use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
 
+/**
+ * @property string $id
+ * @property string $resource_id
+ * @property string $user_id
+ * @property Carbon $date
+ * @property string $start_time
+ * @property string $end_time
+ * @property BookingStatus $status
+ * @property string|null $event_id
+ * @property string|null $game_table_id
+ * @property string|null $tournament_id
+ * @property string|null $campaign_id
+ * @property array<int, array{field_key: string, field_label: string, value: mixed, visibility: string}>|null $field_values
+ * @property string|null $cancellation_reason
+ * @property string|null $admin_notes
+ * @property Carbon|null $confirmed_at
+ * @property Carbon|null $cancelled_at
+ * @property Carbon|null $reminder_sent_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read BookableResourceModel $resource
+ * @property-read UserModel $user
+ */
 final class BookingModel extends Model
 {
     use HasUuids;
@@ -73,11 +97,17 @@ final class BookingModel extends Model
         });
     }
 
+    /**
+     * @return BelongsTo<BookableResourceModel, $this>
+     */
     public function resource(): BelongsTo
     {
         return $this->belongsTo(BookableResourceModel::class, 'resource_id');
     }
 
+    /**
+     * @return BelongsTo<UserModel, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(UserModel::class, 'user_id');

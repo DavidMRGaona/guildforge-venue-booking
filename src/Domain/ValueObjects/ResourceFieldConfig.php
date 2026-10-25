@@ -7,7 +7,10 @@ namespace Modules\VenueBookings\Domain\ValueObjects;
 final readonly class ResourceFieldConfig
 {
     /**
-     * @param  array<string, array{enabled: bool, required: bool, visibility: string}>  $predefinedFields
+     * Predefined field keys may be missing: the admin form does not save required and
+     * visibility while the field is disabled.
+     *
+     * @param  array<string, array{enabled?: bool, required?: bool, visibility?: string}>  $predefinedFields
      * @param  array<int, array{key: string, label: string, type: string, required: bool, visibility: string, options?: string|null}>  $customFields
      */
     public function __construct(
@@ -27,7 +30,7 @@ final readonly class ResourceFieldConfig
     }
 
     /**
-     * @param  array<string, array{enabled: bool, required: bool, visibility: string}>  $predefinedFields
+     * @param  array<string, array{enabled?: bool, required?: bool, visibility?: string}>  $predefinedFields
      * @param  array<int, array{key: string, label: string, type: string, required: bool, visibility: string, options?: string|null}>  $customFields
      */
     public static function fromGlobalConfig(array $predefinedFields, array $customFields): self
@@ -39,7 +42,7 @@ final readonly class ResourceFieldConfig
     }
 
     /**
-     * @return array{predefined_fields: array<string, array{enabled: bool, required: bool, visibility: string}>, custom_fields: array<int, array{key: string, label: string, type: string, required: bool, visibility: string, options?: string|null}>}
+     * @return array{predefined_fields: array<string, array{enabled?: bool, required?: bool, visibility?: string}>, custom_fields: array<int, array{key: string, label: string, type: string, required: bool, visibility: string, options?: string|null}>}
      */
     public function toArray(): array
     {
@@ -50,7 +53,7 @@ final readonly class ResourceFieldConfig
     }
 
     /**
-     * @return array<string, array{enabled: bool, required: bool, visibility: string}>
+     * @return array<string, array{enabled?: bool, required?: bool, visibility?: string}>
      */
     public function getEnabledPredefinedFields(): array
     {

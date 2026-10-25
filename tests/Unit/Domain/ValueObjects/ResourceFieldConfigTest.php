@@ -46,8 +46,7 @@ final class ResourceFieldConfigTest extends TestCase
 
         $this->assertArrayHasKey('predefined_fields', $array);
         $this->assertArrayHasKey('custom_fields', $array);
-        $this->assertSame(true, $array['predefined_fields']['activity_name']['enabled']);
-        $this->assertSame(false, $array['predefined_fields']['notes']['enabled']);
+        $this->assertSame($data['predefined_fields'], $array['predefined_fields']);
         $this->assertSame('game-system', $array['custom_fields'][0]['key']);
     }
 
@@ -102,7 +101,7 @@ final class ResourceFieldConfigTest extends TestCase
 
         $this->assertCount(2, $config->predefinedFields);
         $this->assertCount(1, $config->customFields);
-        $this->assertTrue($config->predefinedFields['activity_name']['enabled']);
+        $this->assertSame($predefinedFields, $config->predefinedFields);
     }
 
     public function test_empty_config_returns_empty_arrays(): void

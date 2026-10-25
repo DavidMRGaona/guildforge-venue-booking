@@ -309,6 +309,14 @@ vendor/bin/phpunit -c modules/venue-bookings/phpunit.xml --testsuite=Unit
 
 `php artisan test` no ejecuta los tests de los módulos.
 
+Análisis estático, también desde `src/`. `phpstan.neon` incluye la configuración del core (Larastan, nivel 8) y solo añade las rutas, las migraciones y los seeders del módulo:
+
+```bash
+vendor/bin/phpstan analyse -c modules/venue-bookings/phpstan.neon
+```
+
+Necesita el módulo game-tables instalado al lado, porque `ModuleIntegrationService` usa sus clases.
+
 Los componentes Vue tienen sus propios tests en `tests/js` (Vitest, Vue Test Utils y happy-dom). Se ejecutan con el módulo dentro del core, porque los componentes importan sus fuentes con `@/`, y con las dependencias de npm del core y del módulo instaladas:
 
 ```bash

@@ -9,11 +9,15 @@ use DateTimeZone;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
 use Modules\VenueBookings\Domain\Exceptions\InvalidStatusTransitionException;
 use Modules\VenueBookings\Domain\ValueObjects\BookableResourceId;
+use Modules\VenueBookings\Domain\ValueObjects\BookingFieldValue;
 use Modules\VenueBookings\Domain\ValueObjects\BookingId;
 use Modules\VenueBookings\Domain\ValueObjects\TimeRange;
 
 final class Booking
 {
+    /**
+     * @param  array<BookingFieldValue>  $fieldValues
+     */
     public function __construct(
         public readonly BookingId $id,
         public readonly BookableResourceId $resourceId,

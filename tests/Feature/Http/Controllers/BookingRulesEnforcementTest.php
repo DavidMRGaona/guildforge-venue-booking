@@ -16,6 +16,7 @@ use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableRes
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\OperatingScheduleModel;
 use Modules\VenueBookings\Tests\Support\OpensResourceEveryDay;
+use Symfony\Component\HttpFoundation\Response;
 use Tests\Support\Modules\ModuleTestCase;
 
 /**
@@ -259,6 +260,9 @@ final class BookingRulesEnforcementTest extends ModuleTestCase
         $this->assertSame(1, BookingModel::query()->count());
     }
 
+    /**
+     * @return TestResponse<Response>
+     */
     private function book(UserModel $user, string $date, string $startTime, string $endTime): TestResponse
     {
         return $this->actingAs($user)

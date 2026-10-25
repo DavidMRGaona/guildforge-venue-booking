@@ -6,14 +6,13 @@ namespace Modules\VenueBookings\Filament\Resources\BookableResourceResource\Page
 
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
-use Illuminate\Contracts\Support\Htmlable;
 use Modules\VenueBookings\Filament\Resources\BookableResourceResource;
 
 final class ListBookableResources extends ListRecords
 {
     protected static string $resource = BookableResourceResource::class;
 
-    public function getTitle(): string|Htmlable
+    public function getTitle(): string
     {
         return __('venue-bookings::messages.model.bookable_resource.plural');
     }

@@ -170,6 +170,26 @@ final class BookingFieldConfigServiceTest extends TestCase
         $this->assertSame('num-socios', $fields[1]->key);
     }
 
+    public function test_custom_select_field_options_are_read_one_per_line(): void
+    {
+        // The admin form stores the options of a select field as text, one per line
+        $this->mockResourceWithFieldConfig([
+            'predefined_fields' => [],
+            'custom_fields' => [
+                ['key' => 'game-system', 'label' => 'Sistema de juego', 'type' => 'select', 'required' => true, 'visibility' => 'public', 'options' => "Warhammer\r\n D&D \n\nPathfinder\n"],
+                ['key' => 'extra', 'label' => 'Extra', 'type' => 'text', 'required' => false, 'visibility' => 'public', 'options' => null],
+                ['key' => 'other', 'label' => 'Otro', 'type' => 'text', 'required' => false, 'visibility' => 'public'],
+            ],
+        ]);
+
+        $fields = $this->service->getEnabledFields($this->resourceId);
+
+        $this->assertCount(3, $fields);
+        $this->assertSame(['Warhammer', 'D&D', 'Pathfinder'], $fields[0]->options);
+        $this->assertNull($fields[1]->options);
+        $this->assertNull($fields[2]->options);
+    }
+
     public function test_get_default_field_config_reads_from_global_config(): void
     {
         config()->set('modules.settings.venue-bookings.predefined_fields', [

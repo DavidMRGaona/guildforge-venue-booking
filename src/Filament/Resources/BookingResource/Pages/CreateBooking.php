@@ -6,7 +6,6 @@ namespace Modules\VenueBookings\Filament\Resources\BookingResource\Pages;
 
 use DomainException;
 use Filament\Resources\Pages\CreateRecord;
-use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
 use Modules\VenueBookings\Application\DTOs\CreateBookingDTO;
@@ -26,7 +25,7 @@ final class CreateBooking extends CreateRecord
     // is released, and another request could miss the booking in its overlap check
     protected ?bool $hasDatabaseTransactions = false;
 
-    public function getTitle(): string|Htmlable
+    public function getTitle(): string
     {
         return __('venue-bookings::messages.pages.create_booking');
     }

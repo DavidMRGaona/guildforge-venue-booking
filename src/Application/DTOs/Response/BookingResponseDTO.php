@@ -7,6 +7,7 @@ namespace Modules\VenueBookings\Application\DTOs\Response;
 use DateTimeInterface;
 use Modules\VenueBookings\Domain\Entities\Booking;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
+use Modules\VenueBookings\Domain\ValueObjects\BookingFieldValue;
 
 final readonly class BookingResponseDTO
 {
@@ -48,7 +49,7 @@ final readonly class BookingResponseDTO
             endTime: $booking->timeRange->endTime,
             status: $booking->status,
             fieldValues: array_map(
-                fn ($fv): array => $fv->toArray(),
+                fn (BookingFieldValue $fv): array => $fv->toArray(),
                 $booking->fieldValues,
             ),
             eventId: $booking->eventId,

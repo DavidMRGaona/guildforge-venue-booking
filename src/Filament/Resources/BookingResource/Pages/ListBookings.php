@@ -7,7 +7,6 @@ namespace Modules\VenueBookings\Filament\Resources\BookingResource\Pages;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
-use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
 use Modules\VenueBookings\Filament\Resources\BookingResource;
@@ -17,7 +16,7 @@ final class ListBookings extends ListRecords
 {
     protected static string $resource = BookingResource::class;
 
-    public function getTitle(): string|Htmlable
+    public function getTitle(): string
     {
         return __('venue-bookings::messages.model.booking.plural');
     }

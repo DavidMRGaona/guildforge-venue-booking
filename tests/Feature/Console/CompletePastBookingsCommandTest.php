@@ -156,7 +156,7 @@ final class CompletePastBookingsCommandTest extends ModuleTestCase
 
     public function test_a_failing_booking_is_logged_and_does_not_stop_the_others(): void
     {
-        Log::spy();
+        $log = Log::spy();
         $broken = $this->booking('2026-11-01', '10:00', '12:00');
         $fine = $this->booking('2026-11-02', '10:00', '12:00');
         $real = $this->app->make(BookingServiceInterface::class);
@@ -178,7 +178,7 @@ final class CompletePastBookingsCommandTest extends ModuleTestCase
         $this->assertSame('confirmed', $broken->fresh()?->status->value);
         $this->assertSame('completed', $fine->fresh()?->status->value);
         // The exception itself goes in the context, so the log keeps its class and stack trace
-        Log::shouldHaveReceived('error')
+        $log->shouldHaveReceived('error')
             ->withArgs(fn (string $message, array $context = []): bool => ($context['booking_id'] ?? null) === $broken->id
                 && ($context['exception'] ?? null) instanceof RuntimeException
                 && $context['exception']->getMessage() === 'Simulated failure')

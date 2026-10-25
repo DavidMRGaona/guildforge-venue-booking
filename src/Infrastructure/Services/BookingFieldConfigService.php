@@ -238,9 +238,29 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
     private function getCustomFieldsForConfig(ResourceFieldConfig $config): array
     {
         return array_map(
-            fn (array $field): BookingFieldConfig => BookingFieldConfig::fromArray($field),
+            fn (array $field): BookingFieldConfig => BookingFieldConfig::fromArray([
+                ...$field,
+                'options' => $this->parseOptions($field['options'] ?? null),
+            ]),
             $config->customFields,
         );
+    }
+
+    /**
+     * The admin form stores the options of a select field as text, one per line.
+     *
+     * @return array<string>|null
+     */
+    private function parseOptions(?string $options): ?array
+    {
+        if ($options === null) {
+            return null;
+        }
+
+        return array_values(array_filter(
+            array_map(trim(...), preg_split('/\R/', $options) ?: []),
+            fn (string $option): bool => $option !== '',
+        ));
     }
 
     private function isVisibleToUser(BookingFieldConfig $field, ?UserModel $user): bool

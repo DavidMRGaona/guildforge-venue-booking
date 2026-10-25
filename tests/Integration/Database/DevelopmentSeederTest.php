@@ -70,10 +70,13 @@ final class DevelopmentSeederTest extends ModuleTestCase
         $today = now()->toDateString();
         $this->assertTrue(BookingModel::where('status', BookingStatus::Completed->value)->get()->every(fn (BookingModel $b): bool => $b->date->toDateString() < $today));
         $this->assertTrue(BookingModel::whereIn('status', [BookingStatus::Pending->value, BookingStatus::Confirmed->value])->get()->every(fn (BookingModel $b): bool => $b->date->toDateString() >= $today));
-        $this->assertNotNull(BookingModel::where('status', BookingStatus::Cancelled->value)->first()->cancelled_at);
+        $this->assertNotNull(BookingModel::where('status', BookingStatus::Cancelled->value)->firstOrFail()->cancelled_at);
 
         foreach (BookingModel::with('resource.operatingSchedule')->get() as $booking) {
-            $day = collect($booking->resource->operatingSchedule->day_schedules)->firstWhere('day_of_week', $booking->date->dayOfWeek);
+            $schedule = $booking->resource->operatingSchedule;
+            $this->assertNotNull($schedule);
+            $day = collect($schedule->day_schedules)->firstWhere('day_of_week', $booking->date->dayOfWeek);
+            $this->assertNotNull($day);
             $this->assertTrue($day['is_enabled']);
             $this->assertGreaterThanOrEqual($day['open_time'], substr($booking->start_time, 0, 5));
             $this->assertLessThanOrEqual($day['close_time'], substr($booking->end_time, 0, 5));
