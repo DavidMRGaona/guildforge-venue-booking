@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Calendar, Clock } from '@lucide/vue';
 import { computed, useId } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Link } from '@inertiajs/vue3';
@@ -77,39 +78,19 @@ function handleCancel(): void {
                     <div class="flex flex-wrap items-center gap-4 text-sm text-base-secondary">
                         <!-- Date -->
                         <div class="flex items-center gap-1.5">
-                            <svg
+                            <Calendar
                                 class="h-4 w-4 flex-shrink-0 text-base-muted"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
                                 aria-hidden="true"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                />
-                            </svg>
+                            />
                             <span>{{ formattedDate }}</span>
                         </div>
 
                         <!-- Time -->
                         <div class="flex items-center gap-1.5">
-                            <svg
+                            <Clock
                                 class="h-4 w-4 flex-shrink-0 text-base-muted"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
                                 aria-hidden="true"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                                />
-                            </svg>
+                            />
                             <span>{{ timeRange }}</span>
                         </div>
                     </div>

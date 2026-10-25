@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BookOpen, Box, Building, Calendar, CircleCheck, Clock, User, X } from '@lucide/vue';
 import { computed, Teleport, Transition } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { BookingDetail } from '../types/bookings';
@@ -69,20 +70,7 @@ const timeRange = computed(() =>
                                 class="rounded-lg p-1.5 text-base-muted transition-colors hover:bg-muted hover:text-base-secondary"
                                 @click="emit('close')"
                             >
-                                <svg
-                                    class="h-5 w-5"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                    aria-hidden="true"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M6 18L18 6M6 6l12 12"
-                                    />
-                                </svg>
+                                <X class="h-5 w-5" aria-hidden="true" />
                                 <span class="sr-only">{{ t('booking_detail.close') }}</span>
                             </button>
                         </div>
@@ -92,77 +80,37 @@ const timeRange = computed(() =>
                             <div class="space-y-2.5 rounded-lg bg-muted p-4">
                                 <!-- Resource -->
                                 <div class="flex items-center gap-2 text-sm text-base-secondary">
-                                    <svg
+                                    <Building
                                         class="h-4 w-4 flex-shrink-0 text-base-muted"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
                                         aria-hidden="true"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="2"
-                                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                                        />
-                                    </svg>
+                                    />
                                     <span class="font-medium">{{ booking.resource_name }}</span>
                                 </div>
 
                                 <!-- Date -->
                                 <div class="flex items-center gap-2 text-sm text-base-secondary">
-                                    <svg
+                                    <Calendar
                                         class="h-4 w-4 flex-shrink-0 text-base-muted"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
                                         aria-hidden="true"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="2"
-                                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                        />
-                                    </svg>
+                                    />
                                     <span>{{ formattedDate }}</span>
                                 </div>
 
                                 <!-- Time -->
                                 <div class="flex items-center gap-2 text-sm text-base-secondary">
-                                    <svg
+                                    <Clock
                                         class="h-4 w-4 flex-shrink-0 text-base-muted"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
                                         aria-hidden="true"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="2"
-                                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                                        />
-                                    </svg>
+                                    />
                                     <span>{{ timeRange }}</span>
                                 </div>
 
                                 <!-- Status -->
                                 <div class="flex items-center gap-2 text-sm">
-                                    <svg
+                                    <CircleCheck
                                         class="h-4 w-4 flex-shrink-0 text-base-muted"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
                                         aria-hidden="true"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="2"
-                                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                        />
-                                    </svg>
+                                    />
                                     <BookingStatusBadge
                                         :status="booking.status"
                                         :label="booking.status_label"
@@ -175,20 +123,10 @@ const timeRange = computed(() =>
                                     v-if="booking.user_name"
                                     class="flex items-center gap-2 text-sm text-base-secondary"
                                 >
-                                    <svg
+                                    <User
                                         class="h-4 w-4 flex-shrink-0 text-base-muted"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
                                         aria-hidden="true"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="2"
-                                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                                        />
-                                    </svg>
+                                    />
                                     <span>{{ booking.user_name }}</span>
                                 </div>
 
@@ -197,20 +135,10 @@ const timeRange = computed(() =>
                                     v-if="booking.game_table_name"
                                     class="flex items-center gap-2 text-sm text-base-secondary"
                                 >
-                                    <svg
+                                    <Box
                                         class="h-4 w-4 flex-shrink-0 text-base-muted"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
                                         aria-hidden="true"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="2"
-                                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                                        />
-                                    </svg>
+                                    />
                                     <span>{{ t('booking_detail.game_table') }}: {{ booking.game_table_name }}</span>
                                 </div>
 
@@ -219,20 +147,10 @@ const timeRange = computed(() =>
                                     v-if="booking.campaign_name"
                                     class="flex items-center gap-2 text-sm text-base-secondary"
                                 >
-                                    <svg
+                                    <BookOpen
                                         class="h-4 w-4 flex-shrink-0 text-base-muted"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
                                         aria-hidden="true"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="2"
-                                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                                        />
-                                    </svg>
+                                    />
                                     <span>{{ t('booking_detail.campaign') }}: {{ booking.campaign_name }}</span>
                                 </div>
                             </div>
