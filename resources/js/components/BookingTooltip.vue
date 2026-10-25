@@ -73,7 +73,9 @@ const tooltipStyle = computed(() => ({
                 </p>
 
                 <!-- Arrow -->
-                <div class="absolute -left-1 top-3 h-2 w-2 rotate-45 bg-tooltip ring-1 ring-tooltip"></div>
+                <div
+                    class="absolute -left-1 top-3 h-2 w-2 rotate-45 bg-tooltip ring-1 ring-tooltip"
+                ></div>
             </div>
         </Transition>
     </Teleport>

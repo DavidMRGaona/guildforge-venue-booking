@@ -19,7 +19,7 @@ import BookingForm from '../../components/BookingForm.vue';
 import BookingDetailModal from '../../components/BookingDetailModal.vue';
 
 interface Props {
-    resources: BookableResource[];
+    resources?: BookableResource[];
     selectedResourceId: string | null;
     /** The venue's current day (YYYY-MM-DD): the calendar offers nothing before it. */
     today: string;
@@ -53,24 +53,22 @@ const selectedBooking = ref<BookingDetail | null>(null);
 const verificationRequired = ref(false);
 
 // Computed
-const currentResource = computed(() =>
-    props.resources.find((r) => r.id === currentResourceId.value) ?? null
+const currentResource = computed(
+    () => props.resources.find((r) => r.id === currentResourceId.value) ?? null
 );
 
-const currentSchedulingMode = computed(() =>
-    currentResource.value?.scheduling_mode ?? 'time_slots'
+const currentSchedulingMode = computed(
+    () => currentResource.value?.scheduling_mode ?? 'time_slots'
 );
 
-const currentFieldDefinitions = computed(() =>
-    currentResource.value?.field_definitions ?? []
+const currentFieldDefinitions = computed(() => currentResource.value?.field_definitions ?? []);
+
+const currentMinConsecutiveSlots = computed(
+    () => currentResource.value?.min_consecutive_slots ?? 1
 );
 
-const currentMinConsecutiveSlots = computed(() =>
-    currentResource.value?.min_consecutive_slots ?? 1
-);
-
-const currentMaxConsecutiveSlots = computed(() =>
-    currentResource.value?.max_consecutive_slots ?? 4
+const currentMaxConsecutiveSlots = computed(
+    () => currentResource.value?.max_consecutive_slots ?? 4
 );
 
 const bookingBlocked = computed(() => gate.blocked.value || verificationRequired.value);
@@ -81,9 +79,7 @@ const belowMinConsecutiveSlots = computed(
         currentSchedulingMode.value === 'time_slots'
 );
 
-const bookButtonDisabled = computed(
-    () => bookingBlocked.value || belowMinConsecutiveSlots.value
-);
+const bookButtonDisabled = computed(() => bookingBlocked.value || belowMinConsecutiveSlots.value);
 
 const bookingStartTime = computed(() => {
     if (selectedSlots.value.length === 0) return '';
@@ -91,18 +87,14 @@ const bookingStartTime = computed(() => {
         const slot = selectedSlots.value[0];
         return slot ? slot.start_time : '';
     }
-    const sorted = [...selectedSlots.value].sort((a, b) =>
-        getSlotIndex(a) - getSlotIndex(b)
-    );
+    const sorted = [...selectedSlots.value].sort((a, b) => getSlotIndex(a) - getSlotIndex(b));
     const first = sorted[0];
     return first ? first.start_time : '';
 });
 
 const bookingStartsNextDay = computed(() => {
     if (selectedSlots.value.length === 0) return false;
-    const sorted = [...selectedSlots.value].sort((a, b) =>
-        getSlotIndex(a) - getSlotIndex(b)
-    );
+    const sorted = [...selectedSlots.value].sort((a, b) => getSlotIndex(a) - getSlotIndex(b));
     return sorted[0]?.starts_next_day === true;
 });
 
@@ -112,9 +104,7 @@ const bookingEndTime = computed(() => {
         const slot = selectedSlots.value[0];
         return slot ? slot.end_time : '';
     }
-    const sorted = [...selectedSlots.value].sort((a, b) =>
-        getSlotIndex(a) - getSlotIndex(b)
-    );
+    const sorted = [...selectedSlots.value].sort((a, b) => getSlotIndex(a) - getSlotIndex(b));
     const last = sorted[sorted.length - 1];
     return last ? last.end_time : '';
 });
@@ -158,16 +148,14 @@ async function onDateSelect(date: string): Promise<void> {
         const [slotsResponse, eligibilityResult] = await Promise.all([
             fetch(`/reservas/api/slots?${params}`, jsonHeaders),
             isAuthenticated.value && !bookingBlocked.value
-                ? fetch(`/reservas/api/eligibility?${params}`, jsonHeaders).then(
-                      (r) => {
-                          if (gate.isVerificationRequired(r)) {
-                              verificationRequired.value = true;
-                              gate.goToNotice();
-                              return null;
-                          }
-                          return r.ok ? r.json() : null;
+                ? fetch(`/reservas/api/eligibility?${params}`, jsonHeaders).then((r) => {
+                      if (gate.isVerificationRequired(r)) {
+                          verificationRequired.value = true;
+                          gate.goToNotice();
+                          return null;
                       }
-                  )
+                      return r.ok ? r.json() : null;
+                  })
                 : Promise.resolve(null),
         ]);
 
@@ -292,10 +280,7 @@ async function onEventSelect(bookingId: string): Promise<void> {
             </p>
 
             <!-- Slots loading -->
-            <div
-                v-if="slotsLoading"
-                class="mt-6 flex items-center justify-center"
-            >
+            <div v-if="slotsLoading" class="mt-6 flex items-center justify-center">
                 <div
                     class="inline-block h-6 w-6 animate-spin rounded-full border-4 border-primary-500 border-t-transparent"
                 ></div>
@@ -326,18 +311,23 @@ async function onEventSelect(bookingId: string): Promise<void> {
 
             <!-- Min consecutive warning -->
             <div
-                v-if="selectedSlots.length > 0 && selectedSlots.length < currentMinConsecutiveSlots && currentSchedulingMode === 'time_slots'"
+                v-if="
+                    selectedSlots.length > 0 &&
+                    selectedSlots.length < currentMinConsecutiveSlots &&
+                    currentSchedulingMode === 'time_slots'
+                "
                 class="mt-4 rounded-lg bg-warning-light p-3 text-center text-sm text-warning"
                 role="alert"
             >
-                {{ t('booking_calendar.min_consecutive_required', { min: currentMinConsecutiveSlots }) }}
+                {{
+                    t('booking_calendar.min_consecutive_required', {
+                        min: currentMinConsecutiveSlots,
+                    })
+                }}
             </div>
 
             <!-- Book button -->
-            <div
-                v-if="selectedSlots.length > 0"
-                class="mt-6 flex flex-col items-center gap-3"
-            >
+            <div v-if="selectedSlots.length > 0" class="mt-6 flex flex-col items-center gap-3">
                 <button
                     type="button"
                     :disabled="bookButtonDisabled"

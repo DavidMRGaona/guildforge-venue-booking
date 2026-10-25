@@ -34,20 +34,19 @@ final class Booking
         public ?string $adminNotes = null,
         public ?DateTimeImmutable $confirmedAt = null,
         public ?DateTimeImmutable $cancelledAt = null,
-    ) {
-    }
+    ) {}
 
     public function confirm(): void
     {
         $this->transitionTo(BookingStatus::Confirmed);
-        $this->confirmedAt = new DateTimeImmutable();
+        $this->confirmedAt = new DateTimeImmutable;
     }
 
     public function cancel(?string $reason = null): void
     {
         $this->transitionTo(BookingStatus::Cancelled);
         $this->cancellationReason = $reason;
-        $this->cancelledAt = new DateTimeImmutable();
+        $this->cancelledAt = new DateTimeImmutable;
     }
 
     public function reject(?string $reason = null): void

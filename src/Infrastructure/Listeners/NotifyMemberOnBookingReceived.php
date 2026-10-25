@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Modules\VenueBookings\Infrastructure\Listeners;
 
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
+use Modules\VenueBookings\Domain\Entities\BookableResource;
+use Modules\VenueBookings\Domain\Entities\Booking;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
 use Modules\VenueBookings\Domain\Events\BookingCreated;
 use Modules\VenueBookings\Domain\Repositories\BookableResourceRepositoryInterface;
@@ -34,14 +36,14 @@ final readonly class NotifyMemberOnBookingReceived
 
         $booking = $this->bookingRepository->find(BookingId::fromString($event->bookingId));
 
-        if ($booking === null || $booking->status !== BookingStatus::Pending) {
+        if (! $booking instanceof Booking || $booking->status !== BookingStatus::Pending) {
             return;
         }
 
         $resource = $this->resourceRepository->find(BookableResourceId::fromString($event->resourceId));
         $user = UserModel::find($event->userId);
 
-        if ($resource === null || $user === null) {
+        if (! $resource instanceof BookableResource || $user === null) {
             return;
         }
 

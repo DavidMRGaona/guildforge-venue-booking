@@ -8,15 +8,9 @@ use DomainException;
 
 final class InvalidStatusTransitionException extends DomainException
 {
-    public readonly string $from;
-
-    public readonly string $to;
-
-    private function __construct(string $message, string $from, string $to)
+    private function __construct(string $message, public readonly string $from, public readonly string $to)
     {
         parent::__construct($message);
-        $this->from = $from;
-        $this->to = $to;
     }
 
     public static function fromTo(string $from, string $to): self

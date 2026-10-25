@@ -40,9 +40,7 @@ const selectedTimeRange = computed(() => {
         };
     }
 
-    const sorted = [...props.selectedSlots].sort((a, b) =>
-        getSlotIndex(a) - getSlotIndex(b)
-    );
+    const sorted = [...props.selectedSlots].sort((a, b) => getSlotIndex(a) - getSlotIndex(b));
 
     const first = sorted[0];
     const last = sorted[sorted.length - 1];
@@ -71,9 +69,7 @@ function getSlotIndex(slot: BookingSlot): number {
 function areConsecutive(slots: BookingSlot[]): boolean {
     if (slots.length <= 1) return true;
 
-    const indices = slots
-        .map((slot) => getSlotIndex(slot))
-        .sort((a, b) => a - b);
+    const indices = slots.map((slot) => getSlotIndex(slot)).sort((a, b) => a - b);
 
     for (let i = 1; i < indices.length; i++) {
         const current = indices[i];
@@ -93,9 +89,7 @@ function isDisabledByConsecutive(slot: BookingSlot): boolean {
     if (props.selectedSlots.length >= props.maxConsecutiveSlots) return true;
 
     // Only allow slots adjacent to the current contiguous block
-    const indices = props.selectedSlots
-        .map((s) => getSlotIndex(s))
-        .sort((a, b) => a - b);
+    const indices = props.selectedSlots.map((s) => getSlotIndex(s)).sort((a, b) => a - b);
 
     const minIndex = indices[0];
     const maxIndex = indices[indices.length - 1];
@@ -157,7 +151,11 @@ function formatBlockTime(slot: BookingSlot): string {
 <template>
     <div class="mt-6">
         <h3 class="mb-3 text-lg font-semibold text-base-primary">
-            {{ isBlockMode ? t('booking_calendar.select_block') : t('booking_calendar.select_slots') }}
+            {{
+                isBlockMode
+                    ? t('booking_calendar.select_block')
+                    : t('booking_calendar.select_slots')
+            }}
         </h3>
 
         <!-- Min consecutive hint (only in time_slots mode when min > 1) -->
@@ -179,10 +177,7 @@ function formatBlockTime(slot: BookingSlot): string {
 
         <!-- Time blocks mode -->
         <template v-if="isBlockMode">
-            <div
-                v-if="slots.length > 0"
-                class="flex flex-col gap-3"
-            >
+            <div v-if="slots.length > 0" class="flex flex-col gap-3">
                 <button
                     v-for="slot in slots"
                     :key="slot.start_time + '-' + slot.end_time"
@@ -194,36 +189,30 @@ function formatBlockTime(slot: BookingSlot): string {
                         isSelected(slot)
                             ? 'border-primary-600 bg-primary text-white'
                             : isDisabled(slot)
-                                ? 'cursor-not-allowed border-default bg-muted text-base-muted'
-                                : 'border-default bg-surface text-base-primary hover:border-primary-400 hover:bg-primary-light',
+                              ? 'cursor-not-allowed border-default bg-muted text-base-muted'
+                              : 'border-default bg-surface text-base-primary hover:border-primary-400 hover:bg-primary-light',
                     ]"
                     @click="toggleSlot(slot)"
                 >
                     <div>
-                        <span
-                            v-if="slot.label"
-                            class="text-sm font-semibold"
-                        >
+                        <span v-if="slot.label" class="text-sm font-semibold">
                             {{ slot.label }}
                         </span>
-                        <span class="text-sm" :class="slot.label ? 'ml-2 opacity-75' : 'font-medium'">
+                        <span
+                            class="text-sm"
+                            :class="slot.label ? 'ml-2 opacity-75' : 'font-medium'"
+                        >
                             {{ formatBlockTime(slot) }}
                         </span>
                     </div>
-                    <span
-                        v-if="!slot.is_available"
-                        class="text-xs"
-                    >
+                    <span v-if="!slot.is_available" class="text-xs">
                         {{ t('booking_calendar.slot_unavailable') }}
                     </span>
                 </button>
             </div>
 
             <!-- No blocks -->
-            <p
-                v-else
-                class="text-sm text-base-secondary"
-            >
+            <p v-else class="text-sm text-base-secondary">
                 {{ t('booking_calendar.no_blocks') }}
             </p>
         </template>
@@ -245,13 +234,23 @@ function formatBlockTime(slot: BookingSlot): string {
                         isSelected(slot)
                             ? 'border-primary-600 bg-primary text-white'
                             : !slot.is_available
-                                ? 'cursor-not-allowed border-default bg-muted text-base-muted line-through'
-                                : isDisabledByConsecutive(slot)
-                                    ? 'cursor-not-allowed border-default bg-muted text-base-muted opacity-50'
-                                    : 'border-default bg-surface text-base-primary hover:border-primary-400 hover:bg-primary-light',
+                              ? 'cursor-not-allowed border-default bg-muted text-base-muted line-through'
+                              : isDisabledByConsecutive(slot)
+                                ? 'cursor-not-allowed border-default bg-muted text-base-muted opacity-50'
+                                : 'border-default bg-surface text-base-primary hover:border-primary-400 hover:bg-primary-light',
                     ]"
-                    :title="isDisabledByConsecutive(slot) ? t('booking_calendar.max_consecutive_reached') : undefined"
-                    :aria-label="slot.starts_next_day ? t('booking_calendar.next_day_slot', { time: slot.start_time.slice(0, 5) }) : undefined"
+                    :title="
+                        isDisabledByConsecutive(slot)
+                            ? t('booking_calendar.max_consecutive_reached')
+                            : undefined
+                    "
+                    :aria-label="
+                        slot.starts_next_day
+                            ? t('booking_calendar.next_day_slot', {
+                                  time: slot.start_time.slice(0, 5),
+                              })
+                            : undefined
+                    "
                     @click="toggleSlot(slot)"
                 >
                     {{ slot.start_time.slice(0, 5) }}
@@ -266,27 +265,30 @@ function formatBlockTime(slot: BookingSlot): string {
             </div>
 
             <!-- No slots -->
-            <p
-                v-else
-                class="text-sm text-base-secondary"
-            >
+            <p v-else class="text-sm text-base-secondary">
                 {{ t('booking_calendar.no_slots') }}
             </p>
         </template>
 
         <!-- Selected time range summary -->
-        <div
-            v-if="selectedTimeRange"
-            class="mt-4 rounded-lg bg-primary-light p-3"
-        >
+        <div v-if="selectedTimeRange" class="mt-4 rounded-lg bg-primary-light p-3">
             <p class="text-sm font-medium text-primary">
                 <template v-if="selectedTimeRange.label">
-                    {{ t('booking_calendar.selected_block') }}: {{ selectedTimeRange.label }}
-                    ({{ t('booking_calendar.time_range', { start: selectedTimeRange.start, end: selectedTimeRange.end }) }})
+                    {{ t('booking_calendar.selected_block') }}: {{ selectedTimeRange.label }} ({{
+                        t('booking_calendar.time_range', {
+                            start: selectedTimeRange.start,
+                            end: selectedTimeRange.end,
+                        })
+                    }})
                 </template>
                 <template v-else>
                     {{ t('booking_calendar.selected_time') }}:
-                    {{ t('booking_calendar.time_range', { start: selectedTimeRange.start, end: selectedTimeRange.end }) }}
+                    {{
+                        t('booking_calendar.time_range', {
+                            start: selectedTimeRange.start,
+                            end: selectedTimeRange.end,
+                        })
+                    }}
                 </template>
             </p>
         </div>

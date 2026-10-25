@@ -5,7 +5,6 @@ const FOCUSABLE =
 
 export interface ModalDialog {
     /** True when a click on the dialog landed on its backdrop rather than on its content. */
-    // eslint-disable-next-line no-undef
     isBackdropClick: (event: MouseEvent) => boolean;
 }
 
@@ -15,13 +14,10 @@ export interface ModalDialog {
  * unmount. Esc fires the dialog's `cancel` event; the component prevents it and decides whether
  * to close, so its parent's state stays the only source of truth.
  */
-// eslint-disable-next-line no-undef
 export function useModalDialog(dialog: Ref<HTMLDialogElement | null>): ModalDialog {
-    // eslint-disable-next-line no-undef
     let opener: HTMLElement | null = null;
 
     onMounted(() => {
-        // eslint-disable-next-line no-undef
         opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
         const element = dialog.value;
@@ -31,7 +27,6 @@ export function useModalDialog(dialog: Ref<HTMLDialogElement | null>): ModalDial
             element.showModal();
         }
         if (!element.contains(document.activeElement)) {
-            // eslint-disable-next-line no-undef
             element.querySelector<HTMLElement>(FOCUSABLE)?.focus();
         }
     });

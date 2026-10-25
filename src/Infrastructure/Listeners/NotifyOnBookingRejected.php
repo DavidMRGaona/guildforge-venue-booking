@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Modules\VenueBookings\Infrastructure\Listeners;
 
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
+use Modules\VenueBookings\Domain\Entities\BookableResource;
+use Modules\VenueBookings\Domain\Entities\Booking;
 use Modules\VenueBookings\Domain\Events\BookingRejected;
 use Modules\VenueBookings\Domain\Repositories\BookableResourceRepositoryInterface;
 use Modules\VenueBookings\Domain\Repositories\BookingRepositoryInterface;
@@ -28,13 +30,13 @@ final readonly class NotifyOnBookingRejected
 
         $booking = $this->bookingRepository->find(BookingId::fromString($event->bookingId));
 
-        if ($booking === null) {
+        if (! $booking instanceof Booking) {
             return;
         }
 
         $resource = $this->resourceRepository->find($booking->resourceId);
 
-        if ($resource === null) {
+        if (! $resource instanceof BookableResource) {
             return;
         }
 

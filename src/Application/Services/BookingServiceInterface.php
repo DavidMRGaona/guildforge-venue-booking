@@ -8,6 +8,17 @@ use Modules\VenueBookings\Application\DTOs\CancelBookingDTO;
 use Modules\VenueBookings\Application\DTOs\CreateBookingDTO;
 use Modules\VenueBookings\Application\DTOs\MoveBookingDTO;
 use Modules\VenueBookings\Application\DTOs\Response\BookingResponseDTO;
+use Modules\VenueBookings\Domain\Exceptions\BookableResourceUnavailableException;
+use Modules\VenueBookings\Domain\Exceptions\BookingAlreadyStartedException;
+use Modules\VenueBookings\Domain\Exceptions\BookingCancellationNotAllowedException;
+use Modules\VenueBookings\Domain\Exceptions\BookingLimitExceededException;
+use Modules\VenueBookings\Domain\Exceptions\BookingNotFoundException;
+use Modules\VenueBookings\Domain\Exceptions\MaximumSlotsExceededException;
+use Modules\VenueBookings\Domain\Exceptions\MinimumSlotsNotMetException;
+use Modules\VenueBookings\Domain\Exceptions\SlotOutsideScheduleException;
+use Modules\VenueBookings\Domain\Exceptions\SlotUnavailableException;
+use Modules\VenueBookings\Domain\Exceptions\TooFarToBookException;
+use Modules\VenueBookings\Domain\Exceptions\TooSoonToBookException;
 
 interface BookingServiceInterface
 {
@@ -20,14 +31,14 @@ interface BookingServiceInterface
      * that day or spans fewer or more consecutive slots than allowed, or when it overlaps
      * an active booking.
      *
-     * @throws \Modules\VenueBookings\Domain\Exceptions\BookingAlreadyStartedException
-     * @throws \Modules\VenueBookings\Domain\Exceptions\BookingLimitExceededException
-     * @throws \Modules\VenueBookings\Domain\Exceptions\TooSoonToBookException
-     * @throws \Modules\VenueBookings\Domain\Exceptions\TooFarToBookException
-     * @throws \Modules\VenueBookings\Domain\Exceptions\SlotOutsideScheduleException
-     * @throws \Modules\VenueBookings\Domain\Exceptions\MinimumSlotsNotMetException
-     * @throws \Modules\VenueBookings\Domain\Exceptions\MaximumSlotsExceededException
-     * @throws \Modules\VenueBookings\Domain\Exceptions\SlotUnavailableException
+     * @throws BookingAlreadyStartedException
+     * @throws BookingLimitExceededException
+     * @throws TooSoonToBookException
+     * @throws TooFarToBookException
+     * @throws SlotOutsideScheduleException
+     * @throws MinimumSlotsNotMetException
+     * @throws MaximumSlotsExceededException
+     * @throws SlotUnavailableException
      */
     public function createBooking(CreateBookingDTO $dto): BookingResponseDTO;
 
@@ -37,12 +48,12 @@ interface BookingServiceInterface
      * createBooking() except the settings rules (active bookings per user, minimum advance,
      * days ahead): the staff make the exception on purpose.
      *
-     * @throws \Modules\VenueBookings\Domain\Exceptions\BookableResourceUnavailableException
-     * @throws \Modules\VenueBookings\Domain\Exceptions\BookingAlreadyStartedException
-     * @throws \Modules\VenueBookings\Domain\Exceptions\SlotOutsideScheduleException
-     * @throws \Modules\VenueBookings\Domain\Exceptions\MinimumSlotsNotMetException
-     * @throws \Modules\VenueBookings\Domain\Exceptions\MaximumSlotsExceededException
-     * @throws \Modules\VenueBookings\Domain\Exceptions\SlotUnavailableException
+     * @throws BookableResourceUnavailableException
+     * @throws BookingAlreadyStartedException
+     * @throws SlotOutsideScheduleException
+     * @throws MinimumSlotsNotMetException
+     * @throws MaximumSlotsExceededException
+     * @throws SlotUnavailableException
      */
     public function createBookingAsStaff(CreateBookingDTO $dto): BookingResponseDTO;
 
@@ -53,13 +64,13 @@ interface BookingServiceInterface
      * when the range does not fit the resource's slots, or when it overlaps another active
      * booking; the settings rules do not apply.
      *
-     * @throws \Modules\VenueBookings\Domain\Exceptions\BookingNotFoundException
-     * @throws \Modules\VenueBookings\Domain\Exceptions\BookableResourceUnavailableException
-     * @throws \Modules\VenueBookings\Domain\Exceptions\BookingAlreadyStartedException
-     * @throws \Modules\VenueBookings\Domain\Exceptions\SlotOutsideScheduleException
-     * @throws \Modules\VenueBookings\Domain\Exceptions\MinimumSlotsNotMetException
-     * @throws \Modules\VenueBookings\Domain\Exceptions\MaximumSlotsExceededException
-     * @throws \Modules\VenueBookings\Domain\Exceptions\SlotUnavailableException
+     * @throws BookingNotFoundException
+     * @throws BookableResourceUnavailableException
+     * @throws BookingAlreadyStartedException
+     * @throws SlotOutsideScheduleException
+     * @throws MinimumSlotsNotMetException
+     * @throws MaximumSlotsExceededException
+     * @throws SlotUnavailableException
      */
     public function moveBookingAsStaff(MoveBookingDTO $dto): BookingResponseDTO;
 
@@ -69,7 +80,7 @@ interface BookingServiceInterface
      * Cancel a booking on behalf of the user in the DTO, when canCancel() allows it and the
      * booking has not started yet (venue timezone). Staff use cancelBookingAsStaff(), which has no cutoff.
      *
-     * @throws \Modules\VenueBookings\Domain\Exceptions\BookingCancellationNotAllowedException
+     * @throws BookingCancellationNotAllowedException
      */
     public function cancelBooking(CancelBookingDTO $dto): BookingResponseDTO;
 

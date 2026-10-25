@@ -36,7 +36,7 @@ function togglePastSection(): void {
 function loadMore(): void {
     visiblePastCount.value = Math.min(
         visiblePastCount.value + LOAD_MORE_COUNT,
-        pastBookings.value.length,
+        pastBookings.value.length
     );
 }
 
@@ -79,7 +79,9 @@ function confirmCancel(): void {
             <!-- Upcoming section -->
             <section>
                 <h2 class="mb-6 flex items-center gap-2 text-lg font-semibold text-base-primary">
-                    <span class="flex h-6 w-6 items-center justify-center rounded-full bg-primary-light text-xs font-bold text-primary">
+                    <span
+                        class="flex h-6 w-6 items-center justify-center rounded-full bg-primary-light text-xs font-bold text-primary"
+                    >
                         {{ upcomingBookings.length }}
                     </span>
                     {{ t('venueBookings.profile.upcoming') }}
@@ -112,13 +114,18 @@ function confirmCancel(): void {
                     @click="togglePastSection"
                 >
                     <span class="flex items-center gap-2 text-lg font-semibold text-base-primary">
-                        <span class="flex h-6 w-6 items-center justify-center rounded-full bg-base-secondary/20 text-xs font-bold text-base-secondary">
+                        <span
+                            class="flex h-6 w-6 items-center justify-center rounded-full bg-base-secondary/20 text-xs font-bold text-base-secondary"
+                        >
                             {{ pastBookings.length }}
                         </span>
                         {{ t('venueBookings.profile.past') }}
                     </span>
                     <ChevronDown
-                        :class="['h-5 w-5 text-base-muted transition-transform', showPastSection ? 'rotate-180' : '']"
+                        :class="[
+                            'h-5 w-5 text-base-muted transition-transform',
+                            showPastSection ? 'rotate-180' : '',
+                        ]"
                         aria-hidden="true"
                     />
                 </button>

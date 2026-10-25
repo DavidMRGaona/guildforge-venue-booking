@@ -8,8 +8,8 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use Modules\VenueBookings\Notifications\Concerns\FormatsBookingDate;
 use Modules\VenueBookings\Filament\Resources\BookingResource;
+use Modules\VenueBookings\Notifications\Concerns\FormatsBookingDate;
 
 final class BookingCreatedNotification extends Notification implements ShouldQueue
 {

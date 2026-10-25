@@ -6,6 +6,7 @@ namespace Modules\VenueBookings\Infrastructure\Services;
 
 use Carbon\CarbonImmutable;
 use Modules\VenueBookings\Application\Services\SlotAvailabilityServiceInterface;
+use Modules\VenueBookings\Domain\Entities\OperatingSchedule;
 use Modules\VenueBookings\Domain\Repositories\BookingRepositoryInterface;
 use Modules\VenueBookings\Domain\Repositories\OperatingScheduleRepositoryInterface;
 use Modules\VenueBookings\Domain\ValueObjects\BookableResourceId;
@@ -28,7 +29,7 @@ final readonly class SlotAvailabilityService implements SlotAvailabilityServiceI
         $resourceIdVO = BookableResourceId::fromString($resourceId);
         $schedule = $this->scheduleRepository->findByResource($resourceIdVO);
 
-        if ($schedule === null) {
+        if (! $schedule instanceof OperatingSchedule) {
             return [];
         }
 

@@ -10,7 +10,7 @@ import BookingCard from '../../components/BookingCard.vue';
 import { venueDayKey } from '@/utils/datetime';
 
 interface Props {
-    bookings: BookingListItem[];
+    bookings?: BookingListItem[];
     canCancel?: boolean;
 }
 
@@ -31,13 +31,9 @@ const pendingCancelId = ref<string | null>(null);
 // and misclassify bookings during the small hours.
 const today = venueDayKey(new Date());
 
-const upcomingBookings = computed(() =>
-    props.bookings.filter((b) => b.date >= today)
-);
+const upcomingBookings = computed(() => props.bookings.filter((b) => b.date >= today));
 
-const pastBookings = computed(() =>
-    props.bookings.filter((b) => b.date < today)
-);
+const pastBookings = computed(() => props.bookings.filter((b) => b.date < today));
 
 // Methods
 function handleCancel(id: string): void {
@@ -59,7 +55,9 @@ function confirmCancel(): void {
 
 <template>
     <div class="bg-surface shadow">
-        <div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-4 py-8 sm:px-6 lg:px-8">
+        <div
+            class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-4 py-8 sm:px-6 lg:px-8"
+        >
             <h1 class="text-3xl font-bold tracking-tight text-base-primary">
                 {{ t('booking_calendar.my_bookings') }}
             </h1>
@@ -97,10 +95,7 @@ function confirmCancel(): void {
                 {{ t('booking_calendar.upcoming') }}
             </h2>
 
-            <div
-                v-if="upcomingBookings.length > 0"
-                class="space-y-3"
-            >
+            <div v-if="upcomingBookings.length > 0" class="space-y-3">
                 <BookingCard
                     v-for="booking in upcomingBookings"
                     :key="booking.id"
@@ -110,10 +105,7 @@ function confirmCancel(): void {
                 />
             </div>
 
-            <div
-                v-else
-                class="rounded-lg border border-dashed border-default p-8 text-center"
-            >
+            <div v-else class="rounded-lg border border-dashed border-default p-8 text-center">
                 <Calendar class="mx-auto h-12 w-12 text-base-muted" aria-hidden="true" />
                 <p class="mt-3 text-sm text-base-secondary">
                     {{ t('booking_calendar.no_upcoming') }}
@@ -127,10 +119,7 @@ function confirmCancel(): void {
                 {{ t('booking_calendar.past') }}
             </h2>
 
-            <div
-                v-if="pastBookings.length > 0"
-                class="space-y-3"
-            >
+            <div v-if="pastBookings.length > 0" class="space-y-3">
                 <BookingCard
                     v-for="booking in pastBookings"
                     :key="booking.id"
@@ -140,10 +129,7 @@ function confirmCancel(): void {
                 />
             </div>
 
-            <div
-                v-else
-                class="rounded-lg border border-dashed border-default p-8 text-center"
-            >
+            <div v-else class="rounded-lg border border-dashed border-default p-8 text-center">
                 <Clock class="mx-auto h-12 w-12 text-base-muted" aria-hidden="true" />
                 <p class="mt-3 text-sm text-base-secondary">
                     {{ t('booking_calendar.no_past') }}

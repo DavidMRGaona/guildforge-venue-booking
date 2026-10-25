@@ -15,8 +15,7 @@ final readonly class UpdateBookableResourceDTO
         public ?int $capacity = null,
         public BookableResourceStatus $status = BookableResourceStatus::Active,
         public int $sortOrder = 0,
-    ) {
-    }
+    ) {}
 
     /**
      * @param  array<string, mixed>  $data

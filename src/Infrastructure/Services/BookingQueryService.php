@@ -22,14 +22,13 @@ final readonly class BookingQueryService implements BookingQueryServiceInterface
         private BookingRepositoryInterface $bookingRepository,
         private SlotAvailabilityServiceInterface $slotAvailabilityService,
         private BookingSettingsReader $settingsReader,
-    ) {
-    }
+    ) {}
 
     public function getBookingById(string $bookingId): ?BookingResponseDTO
     {
         $booking = $this->bookingRepository->find(BookingId::fromString($bookingId));
 
-        return $booking !== null ? BookingResponseDTO::fromEntity($booking) : null;
+        return $booking instanceof Booking ? BookingResponseDTO::fromEntity($booking) : null;
     }
 
     /**
@@ -97,7 +96,7 @@ final readonly class BookingQueryService implements BookingQueryServiceInterface
         $slots = $this->slotAvailabilityService->getAvailableSlotsForDate($resourceId, $date);
 
         return array_map(
-            fn ($slot): BookingSlotResponseDTO => BookingSlotResponseDTO::fromVO($slot),
+            BookingSlotResponseDTO::fromVO(...),
             $slots,
         );
     }

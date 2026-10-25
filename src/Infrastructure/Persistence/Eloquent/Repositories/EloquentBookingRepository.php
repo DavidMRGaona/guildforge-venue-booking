@@ -38,7 +38,7 @@ final readonly class EloquentBookingRepository implements BookingRepositoryInter
     {
         $entity = $this->find($id);
 
-        if ($entity === null) {
+        if (! $entity instanceof Booking) {
             throw BookingNotFoundException::withId($id->value);
         }
 
@@ -111,10 +111,10 @@ final readonly class EloquentBookingRepository implements BookingRepositoryInter
     ): bool {
         // A booking can only meet the day before (one crossing midnight into $date) and the day
         // after ($timeRange crossing midnight): narrow to those days in SQL, compare in PHP
-        $bookings = $this->getByResourceInDateRange($resourceId, ...self::neighbourDays($date));
+        $bookings = $this->getByResourceInDateRange($resourceId, ...$this->neighbourDays($date));
 
         foreach ($bookings as $booking) {
-            if ($excludeBookingId !== null && $booking->id->equals($excludeBookingId)) {
+            if ($excludeBookingId instanceof BookingId && $booking->id->equals($excludeBookingId)) {
                 continue;
             }
 
@@ -131,7 +131,7 @@ final readonly class EloquentBookingRepository implements BookingRepositoryInter
      *
      * @return array{string, string}
      */
-    private static function neighbourDays(string $date): array
+    private function neighbourDays(string $date): array
     {
         $day = DateTimeImmutable::createFromFormat('!Y-m-d', $date, new DateTimeZone('UTC'));
 
@@ -237,7 +237,7 @@ final readonly class EloquentBookingRepository implements BookingRepositoryInter
     {
         $fieldValues = $model->field_values !== null
             ? array_map(
-                fn (array $data): BookingFieldValue => BookingFieldValue::fromArray($data),
+                BookingFieldValue::fromArray(...),
                 $model->field_values,
             )
             : [];
@@ -285,7 +285,7 @@ final readonly class EloquentBookingRepository implements BookingRepositoryInter
             'game_table_id' => $booking->gameTableId,
             'tournament_id' => $booking->tournamentId,
             'campaign_id' => $booking->campaignId,
-            'field_values' => ! empty($booking->fieldValues)
+            'field_values' => $booking->fieldValues !== []
                 ? array_map(
                     fn (BookingFieldValue $fv): array => $fv->toArray(),
                     $booking->fieldValues,

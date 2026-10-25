@@ -4,23 +4,20 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Filament\Resources;
 
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Utilities\Get;
-use Filament\Actions\Action;
-use Filament\Actions\EditAction;
-use Modules\VenueBookings\Filament\Resources\BookingResource\Pages\ListBookings;
-use Modules\VenueBookings\Filament\Resources\BookingResource\Pages\CreateBooking;
-use Modules\VenueBookings\Filament\Resources\BookingResource\Pages\EditBooking;
 use App\Filament\Resources\BaseResource;
 use App\Infrastructure\Persistence\Eloquent\Models\EventModel;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
+use Filament\Actions\Action;
+use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -35,7 +32,9 @@ use Modules\VenueBookings\Application\Services\ModuleIntegrationServiceInterface
 use Modules\VenueBookings\Domain\Enums\BookingFieldType;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
 use Modules\VenueBookings\Domain\ValueObjects\BookingFieldConfig;
-use Modules\VenueBookings\Filament\Resources\BookingResource\Pages;
+use Modules\VenueBookings\Filament\Resources\BookingResource\Pages\CreateBooking;
+use Modules\VenueBookings\Filament\Resources\BookingResource\Pages\EditBooking;
+use Modules\VenueBookings\Filament\Resources\BookingResource\Pages\ListBookings;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
 
@@ -43,7 +42,7 @@ final class BookingResource extends BaseResource
 {
     protected static ?string $model = BookingModel::class;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-calendar-days';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-calendar-days';
 
     protected static ?int $navigationSort = 2;
 
@@ -105,7 +104,7 @@ final class BookingResource extends BaseResource
                 Select::make('status')
                     ->label(__('venue-bookings::messages.fields.status'))
                     ->options(function (?BookingModel $record): array {
-                        if ($record === null) {
+                        if (! $record instanceof BookingModel) {
                             return BookingStatus::options();
                         }
 
@@ -302,17 +301,15 @@ final class BookingResource extends BaseResource
                             ->label(__('venue-bookings::messages.filters.date_until'))
                             ->native(false),
                     ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query
-                            ->when(
-                                $data['date_from'],
-                                fn (Builder $query, string $date): Builder => $query->where('date', '>=', $date),
-                            )
-                            ->when(
-                                $data['date_until'],
-                                fn (Builder $query, string $date): Builder => $query->where('date', '<=', $date),
-                            );
-                    }),
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when(
+                            $data['date_from'],
+                            fn (Builder $query, string $date): Builder => $query->where('date', '>=', $date),
+                        )
+                        ->when(
+                            $data['date_until'],
+                            fn (Builder $query, string $date): Builder => $query->where('date', '<=', $date),
+                        )),
             ])
             ->recordActions([
                 Action::make('confirm')

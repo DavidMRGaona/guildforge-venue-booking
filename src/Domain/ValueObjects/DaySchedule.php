@@ -19,8 +19,8 @@ final readonly class DaySchedule
         public bool $isEnabled,
         public ?string $label = null,
     ) {
-        $this->openTime = self::normaliseTime($openTime);
-        $this->closeTime = self::normaliseTime($closeTime);
+        $this->openTime = $this->normaliseTime($openTime);
+        $this->closeTime = $this->normaliseTime($closeTime);
 
         if ($dayOfWeek < 0 || $dayOfWeek > 6) {
             throw new InvalidArgumentException("Day of week must be between 0 (Sunday) and 6 (Saturday), got {$dayOfWeek}.");
@@ -67,7 +67,7 @@ final readonly class DaySchedule
     /**
      * "HH:MM" of "H:MM", "HH:MM" or "HH:MM:SS"; anything else is kept as it is.
      */
-    private static function normaliseTime(string $time): string
+    private function normaliseTime(string $time): string
     {
         if (preg_match('/^(\d{1,2}):(\d{2})(?::\d{2})?$/', $time, $parts) !== 1) {
             return $time;

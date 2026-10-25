@@ -31,8 +31,8 @@ const showCancel = computed(() => props.canCancel && props.booking.is_cancellabl
 
 const visibleFields = computed(() =>
     props.booking.field_values.filter(
-        (f) => f.value !== null && f.value !== '' && f.value !== false,
-    ),
+        (f) => f.value !== null && f.value !== '' && f.value !== false
+    )
 );
 
 const formattedDate = computed(() => {
@@ -60,7 +60,9 @@ function handleCancel(): void {
 </script>
 
 <template>
-    <div class="overflow-hidden rounded-lg border border-default bg-surface shadow-sm transition-shadow hover:shadow-md">
+    <div
+        class="overflow-hidden rounded-lg border border-default bg-surface shadow-sm transition-shadow hover:shadow-md"
+    >
         <div class="p-4">
             <div class="flex items-start justify-between gap-4">
                 <div class="min-w-0 flex-1">
@@ -96,9 +98,14 @@ function handleCancel(): void {
                     </div>
 
                     <!-- Field values -->
-                    <div v-if="visibleFields.length > 0" class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-base-secondary">
+                    <div
+                        v-if="visibleFields.length > 0"
+                        class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-base-secondary"
+                    >
                         <span v-for="field in visibleFields" :key="field.field_key">
-                            <span class="font-medium text-base-primary">{{ field.field_label }}:</span>
+                            <span class="font-medium text-base-primary"
+                                >{{ field.field_label }}:</span
+                            >
                             {{ field.value }}
                         </span>
                     </div>

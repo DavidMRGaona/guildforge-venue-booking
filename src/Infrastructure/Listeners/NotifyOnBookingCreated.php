@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\VenueBookings\Infrastructure\Listeners;
 
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
+use Modules\VenueBookings\Domain\Entities\BookableResource;
 use Modules\VenueBookings\Domain\Events\BookingCreated;
 use Modules\VenueBookings\Domain\Repositories\BookableResourceRepositoryInterface;
 use Modules\VenueBookings\Domain\ValueObjects\BookableResourceId;
@@ -30,13 +31,13 @@ final readonly class NotifyOnBookingCreated
             BookableResourceId::fromString($event->resourceId),
         );
 
-        if ($resource === null) {
+        if (! $resource instanceof BookableResource) {
             return;
         }
 
         /** @var UserModel|null $user */
         $user = UserModel::find($event->userId);
-        $userName = $user !== null ? $user->name : '';
+        $userName = $user->name ?? '';
 
         $notification = new BookingCreatedNotification(
             bookingId: $event->bookingId,

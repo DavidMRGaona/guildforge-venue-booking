@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Tests\Unit\Notifications;
 
-use stdClass;
 use Illuminate\Support\Str;
 use Modules\VenueBookings\Filament\Resources\BookingResource;
 use Modules\VenueBookings\Notifications\BookingCreatedNotification;
+use stdClass;
 use Tests\Support\Modules\InteractsWithModulePanel;
 use Tests\Support\Modules\ModuleTestCase;
 

@@ -4,31 +4,23 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings;
 
-use Modules\VenueBookings\Filament\Resources\BookableResourceResource;
-use Modules\VenueBookings\Filament\Resources\BookingResource;
-use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
-use Modules\VenueBookings\Policies\BookableResourcePolicy;
-use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
-use Modules\VenueBookings\Policies\BookingPolicy;
-use Modules\VenueBookings\Filament\Pages\VenueBookingsSettings;
-use Modules\VenueBookings\Filament\Widgets\TodayBookingsWidget;
-use Modules\VenueBookings\Filament\Widgets\UpcomingBookingsWidget;
-use Filament\Resources\Resource;
-use Filament\Pages\Page;
-use Filament\Widgets\Widget;
 use App\Application\Modules\DTOs\ModuleRouteDTO;
 use App\Application\Modules\DTOs\NavigationItemDTO;
 use App\Application\Modules\DTOs\PagePrefixDTO;
 use App\Application\Modules\DTOs\PermissionDTO;
 use App\Application\Modules\DTOs\SlotRegistrationDTO;
 use App\Modules\ModuleServiceProvider;
+use Filament\Pages\Page;
+use Filament\Resources\Resource as FilamentResource;
+use Filament\Schemas\Components\Component;
+use Filament\Widgets\Widget;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Event;
 use Inertia\Inertia;
 use Modules\VenueBookings\Application\Services\BookingEligibilityServiceInterface;
 use Modules\VenueBookings\Application\Services\BookingFieldConfigServiceInterface;
-use Modules\VenueBookings\Application\Services\BookingQueryServiceInterface;
 use Modules\VenueBookings\Application\Services\BookingLockInterface;
+use Modules\VenueBookings\Application\Services\BookingQueryServiceInterface;
 use Modules\VenueBookings\Application\Services\BookingServiceInterface;
 use Modules\VenueBookings\Application\Services\ModuleIntegrationServiceInterface;
 use Modules\VenueBookings\Application\Services\SlotAvailabilityServiceInterface;
@@ -42,11 +34,18 @@ use Modules\VenueBookings\Domain\Events\BookingRejected;
 use Modules\VenueBookings\Domain\Repositories\BookableResourceRepositoryInterface;
 use Modules\VenueBookings\Domain\Repositories\BookingRepositoryInterface;
 use Modules\VenueBookings\Domain\Repositories\OperatingScheduleRepositoryInterface;
+use Modules\VenueBookings\Filament\Pages\VenueBookingsSettings;
+use Modules\VenueBookings\Filament\Resources\BookableResourceResource;
+use Modules\VenueBookings\Filament\Resources\BookingResource;
+use Modules\VenueBookings\Filament\Widgets\TodayBookingsWidget;
+use Modules\VenueBookings\Filament\Widgets\UpcomingBookingsWidget;
+use Modules\VenueBookings\Infrastructure\Listeners\NotifyMemberOnBookingReceived;
 use Modules\VenueBookings\Infrastructure\Listeners\NotifyOnBookingCancelled;
 use Modules\VenueBookings\Infrastructure\Listeners\NotifyOnBookingConfirmed;
-use Modules\VenueBookings\Infrastructure\Listeners\NotifyMemberOnBookingReceived;
 use Modules\VenueBookings\Infrastructure\Listeners\NotifyOnBookingCreated;
 use Modules\VenueBookings\Infrastructure\Listeners\NotifyOnBookingRejected;
+use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
+use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories\EloquentBookableResourceRepository;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories\EloquentBookingRepository;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories\EloquentOperatingScheduleRepository;
@@ -59,6 +58,8 @@ use Modules\VenueBookings\Infrastructure\Services\CacheBookingLock;
 use Modules\VenueBookings\Infrastructure\Services\ModuleIntegrationService;
 use Modules\VenueBookings\Infrastructure\Services\ProfileBookingsDataProvider;
 use Modules\VenueBookings\Infrastructure\Services\SlotAvailabilityService;
+use Modules\VenueBookings\Policies\BookableResourcePolicy;
+use Modules\VenueBookings\Policies\BookingPolicy;
 
 final class VenueBookingsServiceProvider extends ModuleServiceProvider
 {
@@ -82,13 +83,11 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
         $this->app->bind(BookingLockInterface::class, CacheBookingLock::class);
         $this->app->bind(BookingQueryServiceInterface::class, BookingQueryService::class);
         $this->app->bind(BookingEligibilityServiceInterface::class, BookingEligibilityService::class);
-        $this->app->bind(SlotAvailabilityServiceInterface::class, function ($app) {
-            return new SlotAvailabilityService(
-                $app->make(OperatingScheduleRepositoryInterface::class),
-                $app->make(BookingRepositoryInterface::class),
-                $app->make(BookingRules::class),
-            );
-        });
+        $this->app->bind(SlotAvailabilityServiceInterface::class, fn ($app) => new SlotAvailabilityService(
+            $app->make(OperatingScheduleRepositoryInterface::class),
+            $app->make(BookingRepositoryInterface::class),
+            $app->make(BookingRules::class),
+        ));
         $this->app->bind(BookingFieldConfigServiceInterface::class, BookingFieldConfigService::class);
         $this->app->bind(ModuleIntegrationServiceInterface::class, ModuleIntegrationService::class);
     }
@@ -234,7 +233,7 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
     }
 
     /**
-     * @return array<class-string<Resource>>
+     * @return array<class-string<FilamentResource>>
      */
     public function registerFilamentResources(): array
     {
@@ -383,7 +382,7 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
     }
 
     /**
-     * @return array<\Filament\Schemas\Components\Component>
+     * @return array<Component>
      */
     public function getSettingsSchema(): array
     {

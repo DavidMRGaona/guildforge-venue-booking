@@ -11,8 +11,7 @@ final readonly class BookingFieldValue
         public string $fieldLabel,
         public mixed $value,
         public string $visibility,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array{field_key: string, field_label: string, value: mixed, visibility: string}

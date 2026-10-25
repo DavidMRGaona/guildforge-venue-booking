@@ -6,6 +6,4 @@ namespace Modules\VenueBookings\Domain\ValueObjects;
 
 use App\Domain\ValueObjects\EntityId;
 
-final readonly class OperatingScheduleId extends EntityId
-{
-}
+final readonly class OperatingScheduleId extends EntityId {}

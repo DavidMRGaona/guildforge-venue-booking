@@ -19,7 +19,6 @@ const emit = defineEmits<{
 
 const { t, locale } = useI18n();
 
-// eslint-disable-next-line no-undef
 const dialog = ref<HTMLDialogElement | null>(null);
 const titleId = useId();
 const { isBackdropClick } = useModalDialog(dialog);
@@ -97,10 +96,7 @@ const timeRange = computed(() =>
 
                     <!-- Time -->
                     <div class="flex items-center gap-2 text-sm text-base-secondary">
-                        <Clock
-                            class="h-4 w-4 flex-shrink-0 text-base-muted"
-                            aria-hidden="true"
-                        />
+                        <Clock class="h-4 w-4 flex-shrink-0 text-base-muted" aria-hidden="true" />
                         <span>{{ timeRange }}</span>
                     </div>
 
@@ -122,10 +118,7 @@ const timeRange = computed(() =>
                         v-if="booking.user_name"
                         class="flex items-center gap-2 text-sm text-base-secondary"
                     >
-                        <User
-                            class="h-4 w-4 flex-shrink-0 text-base-muted"
-                            aria-hidden="true"
-                        />
+                        <User class="h-4 w-4 flex-shrink-0 text-base-muted" aria-hidden="true" />
                         <span>{{ booking.user_name }}</span>
                     </div>
 
@@ -134,11 +127,11 @@ const timeRange = computed(() =>
                         v-if="booking.game_table_name"
                         class="flex items-center gap-2 text-sm text-base-secondary"
                     >
-                        <Box
-                            class="h-4 w-4 flex-shrink-0 text-base-muted"
-                            aria-hidden="true"
-                        />
-                        <span>{{ t('booking_detail.game_table') }}: {{ booking.game_table_name }}</span>
+                        <Box class="h-4 w-4 flex-shrink-0 text-base-muted" aria-hidden="true" />
+                        <span
+                            >{{ t('booking_detail.game_table') }}:
+                            {{ booking.game_table_name }}</span
+                        >
                     </div>
 
                     <!-- Campaign -->
@@ -157,10 +150,7 @@ const timeRange = computed(() =>
                 <!-- Dynamic field values -->
                 <div v-if="booking.field_values.length > 0" class="mt-5">
                     <dl class="grid grid-cols-2 gap-x-6 gap-y-4">
-                        <div
-                            v-for="field in booking.field_values"
-                            :key="field.field_key"
-                        >
+                        <div v-for="field in booking.field_values" :key="field.field_key">
                             <dt class="text-xs font-medium uppercase tracking-wide text-base-muted">
                                 {{ field.field_label }}
                             </dt>
@@ -172,10 +162,7 @@ const timeRange = computed(() =>
                 </div>
 
                 <!-- Cancellation reason -->
-                <div
-                    v-if="booking.cancellation_reason"
-                    class="mt-4 rounded-lg bg-error-light p-3"
-                >
+                <div v-if="booking.cancellation_reason" class="mt-4 rounded-lg bg-error-light p-3">
                     <p class="text-xs font-medium text-error">
                         {{ t('booking_detail.cancellation_reason') }}
                     </p>
@@ -185,10 +172,7 @@ const timeRange = computed(() =>
                 </div>
 
                 <!-- Admin notes -->
-                <div
-                    v-if="booking.admin_notes"
-                    class="mt-4 rounded-lg bg-warning-light p-3"
-                >
+                <div v-if="booking.admin_notes" class="mt-4 rounded-lg bg-warning-light p-3">
                     <p class="text-xs font-medium text-warning">
                         {{ t('booking_detail.admin_notes') }}
                     </p>

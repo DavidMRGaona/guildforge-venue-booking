@@ -4,10 +4,6 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Filament\Pages;
 
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Utilities\Get;
-use Filament\Schemas\Schema;
-use Filament\Schemas\Components\Grid;
 use App\Application\Modules\Services\ModuleContextServiceInterface;
 use App\Application\Modules\Services\ModuleSettingsStoreInterface;
 use App\Application\Services\SettingsServiceInterface;
@@ -23,13 +19,18 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Component;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Schema;
 use Modules\VenueBookings\Application\Services\ModuleIntegrationServiceInterface;
 use Modules\VenueBookings\Domain\Enums\ApprovalMode;
 use Modules\VenueBookings\Domain\Enums\BookingFieldType;
 use Modules\VenueBookings\Domain\Enums\FieldVisibility;
 
 /**
- * @property \Filament\Schemas\Schema $form
+ * @property Schema $form
  */
 final class VenueBookingsSettings extends Page implements HasForms
 {
@@ -37,7 +38,7 @@ final class VenueBookingsSettings extends Page implements HasForms
     use InteractsWithForms;
     use SafeModuleNavigation;
 
-    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-cog-6-tooth';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-cog-6-tooth';
 
     protected static ?int $navigationSort = 99;
 
@@ -79,7 +80,7 @@ final class VenueBookingsSettings extends Page implements HasForms
     /**
      * Get the form schema components for settings.
      *
-     * @return array<\Filament\Schemas\Components\Component>
+     * @return array<Component>
      */
     public static function getFormSchemaComponents(): array
     {

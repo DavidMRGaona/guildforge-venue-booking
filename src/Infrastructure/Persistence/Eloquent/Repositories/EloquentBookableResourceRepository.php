@@ -33,7 +33,7 @@ final readonly class EloquentBookableResourceRepository implements BookableResou
     {
         $entity = $this->find($id);
 
-        if ($entity === null) {
+        if (! $entity instanceof BookableResource) {
             throw BookableResourceNotFoundException::withId($id->value);
         }
 

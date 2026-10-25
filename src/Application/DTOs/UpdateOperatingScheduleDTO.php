@@ -15,6 +15,5 @@ final readonly class UpdateOperatingScheduleDTO
         public int $minConsecutiveSlots = 1,
         public int $maxConsecutiveSlots = 4,
         public array $daySchedules = [],
-    ) {
-    }
+    ) {}
 }

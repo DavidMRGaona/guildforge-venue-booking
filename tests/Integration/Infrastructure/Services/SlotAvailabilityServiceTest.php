@@ -321,7 +321,6 @@ final class SlotAvailabilityServiceTest extends TestCase
     /**
      * Creates an operating schedule with Monday open 10:00-14:00 by default, 60-minute slots.
      */
-
     public function test_the_minimum_advance_also_hides_early_slots_of_a_later_day(): void
     {
         // 23:30 on the 15th plus 12 hours reaches 11:30 on the 16th

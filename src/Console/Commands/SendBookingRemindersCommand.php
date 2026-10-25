@@ -7,6 +7,7 @@ namespace Modules\VenueBookings\Console\Commands;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
+use Modules\VenueBookings\Domain\Entities\BookableResource;
 use Modules\VenueBookings\Domain\Repositories\BookableResourceRepositoryInterface;
 use Modules\VenueBookings\Domain\Repositories\BookingRepositoryInterface;
 use Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader;
@@ -49,7 +50,7 @@ final class SendBookingRemindersCommand extends Command
         foreach ($bookings as $booking) {
             $resource = $resourceRepository->find($booking->resourceId);
 
-            if ($resource === null) {
+            if (! $resource instanceof BookableResource) {
                 continue;
             }
 

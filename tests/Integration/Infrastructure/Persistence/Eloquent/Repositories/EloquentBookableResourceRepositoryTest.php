@@ -24,7 +24,7 @@ final class EloquentBookableResourceRepositoryTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->repository = new EloquentBookableResourceRepository();
+        $this->repository = new EloquentBookableResourceRepository;
     }
 
     public function test_it_implements_repository_interface(): void

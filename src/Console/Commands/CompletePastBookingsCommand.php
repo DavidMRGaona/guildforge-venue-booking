@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Modules\VenueBookings\Application\Services\BookingServiceInterface;
+use Modules\VenueBookings\Domain\Entities\Booking;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
 use Modules\VenueBookings\Domain\Repositories\BookingRepositoryInterface;
 use Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader;
@@ -41,7 +42,7 @@ final class CompletePastBookingsCommand extends Command
                 // Read it again: staff may have changed it since the query
                 $current = $bookingRepository->find($candidate->id);
 
-                if ($current === null || $current->status !== BookingStatus::Confirmed) {
+                if (! $current instanceof Booking || $current->status !== BookingStatus::Confirmed) {
                     Log::info('venue-bookings:complete-past skipped a booking that changed meanwhile', [
                         'booking_id' => $candidate->id->value,
                     ]);

@@ -6,7 +6,7 @@ export default {
             upcoming: 'Upcoming bookings',
             past: 'Past bookings',
             noBookings: 'No bookings',
-            noBookingsDescription: 'You don\'t have any venue bookings yet.',
+            noBookingsDescription: "You don't have any venue bookings yet.",
             noUpcoming: 'You have no upcoming bookings.',
             loadMore: 'Show {count} more',
             cancelConfirmTitle: 'Cancel booking?',
