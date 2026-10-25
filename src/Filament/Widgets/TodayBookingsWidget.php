@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Filament\Widgets;
 
+use Carbon\CarbonImmutable;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Carbon;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
+use Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader;
 
 final class TodayBookingsWidget extends StatsOverviewWidget
 {
@@ -29,10 +30,11 @@ final class TodayBookingsWidget extends StatsOverviewWidget
      */
     protected function getStats(): array
     {
-        $today = Carbon::today();
+        // The venue's day, as every booking date is
+        $today = CarbonImmutable::now(app(BookingSettingsReader::class)->getDateTimeZone())->toDateString();
 
         $todayBookingsCount = BookingModel::query()
-            ->where('date', $today->toDateString())
+            ->whereDate('date', $today)
             ->whereIn('status', [BookingStatus::Confirmed->value, BookingStatus::Pending->value])
             ->count();
 
