@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Tests\Feature\Notifications;
 
+use App\Infrastructure\Persistence\Eloquent\Models\RoleModel;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Notification;
@@ -68,6 +69,17 @@ final class BookingEmailsTest extends ModuleTestCase
         Notification::assertSentTo($manager, BookingCreatedNotification::class);
         Notification::assertNotSentTo($other, BookingCreatedNotification::class);
         Notification::assertNotSentTo($this->member, BookingCreatedNotification::class);
+    }
+
+    public function test_a_paused_booking_manager_is_not_told_about_a_new_booking(): void
+    {
+        $manager = $this->editorWithPermissions(['venuebookings:bookings.manage']);
+        // The role is for association members only and this person is not one, so it is paused
+        RoleModel::query()->where('name', 'like', 'tester-%')->update(['requires_association_member' => true]);
+
+        $this->book();
+
+        Notification::assertNotSentTo($manager, BookingCreatedNotification::class);
     }
 
     public function test_a_booking_waiting_for_approval_tells_the_member_it_was_received(): void

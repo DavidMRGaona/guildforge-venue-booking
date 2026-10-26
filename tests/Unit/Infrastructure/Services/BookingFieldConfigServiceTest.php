@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Tests\Unit\Infrastructure\Services;
 
+use App\Application\Authorization\Services\AuthorizationServiceInterface;
 use Modules\VenueBookings\Application\Services\ModuleIntegrationServiceInterface;
 use Modules\VenueBookings\Domain\Entities\BookableResource;
 use Modules\VenueBookings\Domain\Enums\BookableResourceStatus;
@@ -36,7 +37,7 @@ final class BookingFieldConfigServiceTest extends TestCase
 
         $this->resourceRepository = $this->createStub(BookableResourceRepositoryInterface::class);
 
-        $this->service = new BookingFieldConfigService($this->moduleIntegration, $this->resourceRepository);
+        $this->service = new BookingFieldConfigService($this->moduleIntegration, $this->resourceRepository, app(AuthorizationServiceInterface::class));
 
         $this->resourceId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
     }
@@ -207,7 +208,7 @@ final class BookingFieldConfigServiceTest extends TestCase
         $integration->method('getAvailableGameTables')->willReturn([['id' => 'table-1', 'label' => 'Kill Team, liga']]);
         $integration->method('getAvailableCampaigns')->willReturn([['id' => 'campaign-1', 'label' => 'La maldición de Strahd']]);
         $this->resourceRepository->method('find')->willReturn(null);
-        $service = new BookingFieldConfigService($integration, $this->resourceRepository);
+        $service = new BookingFieldConfigService($integration, $this->resourceRepository, app(AuthorizationServiceInterface::class));
 
         $fields = $service->getEnabledFields($this->resourceId);
 
