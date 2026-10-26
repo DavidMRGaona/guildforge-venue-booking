@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Application\DTOs\Response;
 
+use App\Application\Services\TimezoneServiceInterface;
 use DateTimeInterface;
 use Modules\VenueBookings\Domain\Entities\Booking;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
@@ -70,6 +71,8 @@ final readonly class BookingResponseDTO
      */
     public function toArray(): array
     {
+        $timezone = app(TimezoneServiceInterface::class);
+
         return [
             'id' => $this->id,
             'resource_id' => $this->resourceId,
@@ -90,8 +93,8 @@ final readonly class BookingResponseDTO
             'campaign_id' => $this->campaignId,
             'cancellation_reason' => $this->cancellationReason,
             'admin_notes' => $this->adminNotes,
-            'confirmed_at' => $this->confirmedAt?->format('c'),
-            'cancelled_at' => $this->cancelledAt?->format('c'),
+            'confirmed_at' => $timezone->iso($this->confirmedAt),
+            'cancelled_at' => $timezone->iso($this->cancelledAt),
         ];
     }
 }

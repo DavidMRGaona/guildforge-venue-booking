@@ -113,7 +113,7 @@ final readonly class BookingSettingsReader
     {
         $tz = $this->get('timezone');
 
-        return is_string($tz) && $tz !== '' ? $tz : config('app.timezone', 'UTC');
+        return is_string($tz) && $tz !== '' ? $tz : config('app.display_timezone', 'UTC');
     }
 
     /**

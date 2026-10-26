@@ -89,10 +89,10 @@ final class BookingSettingsReaderTest extends TestCase
         $this->assertSame('Atlantic/Canary', $this->reader->getDateTimeZone()->getName());
     }
 
-    public function test_the_venue_timezone_falls_back_to_the_app_timezone(): void
+    public function test_the_venue_timezone_falls_back_to_the_display_timezone(): void
     {
         config()->offsetUnset('modules.settings.venue-bookings');
-        config()->set('app.timezone', 'America/Bogota');
+        config()->set('app.display_timezone', 'America/Bogota');
 
         $this->assertSame('America/Bogota', $this->reader->getDateTimeZone()->getName());
     }

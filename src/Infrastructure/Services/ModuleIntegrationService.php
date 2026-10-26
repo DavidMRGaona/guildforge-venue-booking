@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Infrastructure\Services;
 
+use App\Application\Services\TimezoneServiceInterface;
 use Illuminate\Support\Facades\Log;
 use Modules\GameTables\Application\DTOs\CampaignResponseDTO;
 use Modules\GameTables\Application\DTOs\GameTableListDTO;
@@ -40,10 +41,11 @@ final readonly class ModuleIntegrationService implements ModuleIntegrationServic
         }
 
         try {
+            $timezone = app(TimezoneServiceInterface::class);
             $queryService = app(GameTableQueryServiceInterface::class); // @phpstan-ignore class.notFound (game-tables is optional)
             $tables = $queryService->getUpcomingTables( // @phpstan-ignore class.notFound (game-tables is optional)
                 new \DateTimeImmutable,
-                new \DateTimeImmutable('+30 days'),
+                $timezone->toDisplay(new \DateTimeImmutable)->modify('+30 days'),
             );
 
             return array_map(fn (GameTableListDTO $table): array => [ // @phpstan-ignore class.notFound (game-tables is optional)
