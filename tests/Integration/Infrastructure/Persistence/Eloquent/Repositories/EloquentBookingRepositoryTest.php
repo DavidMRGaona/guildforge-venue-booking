@@ -8,6 +8,7 @@ use App\Infrastructure\Persistence\Eloquent\Models\EventModel;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use DateTimeImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Modules\VenueBookings\Domain\Entities\Booking;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
@@ -149,6 +150,30 @@ final class EloquentBookingRepositoryTest extends TestCase
         $this->assertEquals('10:00', $booking->timeRange->startTime);
         $this->assertEquals('12:00', $booking->timeRange->endTime);
         $this->assertEquals(BookingStatus::Pending, $booking->status);
+    }
+
+    public function test_it_reads_times_with_seconds_as_hours_and_minutes(): void
+    {
+        // PostgreSQL returns time columns with seconds; SQLite keeps what was written
+        $bookingId = BookingId::generate();
+        DB::table('venuebookings_bookings')->insert([
+            'id' => $bookingId->value,
+            'resource_id' => $this->resource->id,
+            'user_id' => $this->user->id,
+            'date' => '2026-03-15',
+            'start_time' => '22:00:00',
+            'end_time' => '02:00:00',
+            'status' => 'confirmed',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $booking = $this->repository->find($bookingId);
+
+        $this->assertNotNull($booking);
+        $this->assertSame('22:00', $booking->timeRange->startTime);
+        $this->assertSame('02:00', $booking->timeRange->endTime);
+        $this->assertTrue($booking->timeRange->crossesMidnight());
     }
 
     public function test_it_returns_null_when_booking_not_found(): void

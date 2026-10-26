@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
+use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Casts\TimeOfDay;
 
 /**
  * @property string $id
@@ -73,6 +74,8 @@ final class BookingModel extends Model
     {
         return [
             'date' => 'date:Y-m-d',
+            'start_time' => TimeOfDay::class,
+            'end_time' => TimeOfDay::class,
             'status' => BookingStatus::class,
             'field_values' => 'array',
             'confirmed_at' => 'datetime',
@@ -90,10 +93,7 @@ final class BookingModel extends Model
                 return;
             }
 
-            $startTimeChanged = substr((string) $booking->getOriginal('start_time'), 0, 5)
-                !== substr((string) $booking->getAttribute('start_time'), 0, 5);
-
-            if ($booking->isDirty('date') || $startTimeChanged) {
+            if ($booking->isDirty('date') || $booking->getOriginal('start_time') !== $booking->getAttribute('start_time')) {
                 $booking->setAttribute('reminder_sent_at', null);
             }
         });
