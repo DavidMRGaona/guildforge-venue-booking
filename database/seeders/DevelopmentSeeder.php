@@ -6,6 +6,7 @@ namespace Modules\VenueBookings\Database\Seeders;
 
 use App\Application\Authorization\Services\MemberRoleServiceInterface;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
@@ -15,6 +16,7 @@ use Modules\VenueBookings\Domain\Enums\BookingStatus;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\OperatingScheduleModel;
+use Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader;
 
 final class DevelopmentSeeder extends Seeder
 {
@@ -170,7 +172,7 @@ final class DevelopmentSeeder extends Seeder
      */
     private function nearestOpenDate(array $daySchedules, int $offset): string
     {
-        $date = now()->addDays($offset);
+        $date = CarbonImmutable::now(app(BookingSettingsReader::class)->getDateTimeZone())->addDays($offset);
 
         for ($tries = 0; $tries < 7; $tries++) {
             $schedule = $this->scheduleOf($daySchedules, $date->dayOfWeek);

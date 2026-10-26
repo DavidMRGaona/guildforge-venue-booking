@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models;
 
 use App\Infrastructure\Persistence\Eloquent\Concerns\HasSlug;
+use App\Infrastructure\Persistence\Eloquent\Concerns\StoresInstantsInStorageTimezone;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -31,6 +32,7 @@ final class BookableResourceModel extends Model
 {
     use HasSlug;
     use HasUuids;
+    use StoresInstantsInStorageTimezone;
 
     protected $table = 'venuebookings_resources';
 

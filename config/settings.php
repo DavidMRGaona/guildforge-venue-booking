@@ -43,6 +43,7 @@ return [
         'tournaments_visibility' => 'authenticated',
         'tournaments_required' => false,
     ],
-    // Venue timezone for booking dates and times; null uses the application's
+    // Venue timezone for booking dates and times; null uses the site's display
+    // timezone
     'timezone' => null,
 ];

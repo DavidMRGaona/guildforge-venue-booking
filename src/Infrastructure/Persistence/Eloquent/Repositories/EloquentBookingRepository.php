@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories;
 
+use App\Application\Services\TimezoneServiceInterface;
 use DateTimeImmutable;
 use DateTimeInterface;
 use DateTimeZone;
@@ -16,6 +17,7 @@ use Modules\VenueBookings\Domain\ValueObjects\BookingFieldValue;
 use Modules\VenueBookings\Domain\ValueObjects\BookingId;
 use Modules\VenueBookings\Domain\ValueObjects\TimeRange;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
+use Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader;
 
 final readonly class EloquentBookingRepository implements BookingRepositoryInterface
 {
@@ -149,6 +151,11 @@ final readonly class EloquentBookingRepository implements BookingRepositoryInter
         DateTimeInterface $from,
         DateTimeInterface $to,
     ): array {
+        // Date and time live in the venue zone: read the window there, whatever zone it came in
+        $timezone = app(BookingSettingsReader::class)->getDateTimeZone();
+        $from = DateTimeImmutable::createFromInterface($from)->setTimezone($timezone);
+        $to = DateTimeImmutable::createFromInterface($to)->setTimezone($timezone);
+
         // Narrow by calendar day in SQL, then compare the exact start in PHP
         // (date and time live in separate columns; this stays portable).
         $bookings = BookingModel::query()
@@ -163,8 +170,6 @@ final readonly class EloquentBookingRepository implements BookingRepositoryInter
             ->get()
             ->map(fn (BookingModel $model): Booking => $this->toEntity($model))
             ->all();
-
-        $timezone = $from->getTimezone();
 
         return array_values(array_filter(
             $bookings,
@@ -182,9 +187,11 @@ final readonly class EloquentBookingRepository implements BookingRepositoryInter
 
     public function markReminderSent(BookingId $id, DateTimeInterface $sentAt): void
     {
+        $stored = app(TimezoneServiceInterface::class)->toStorage($sentAt);
+
         BookingModel::query()
             ->where('id', $id->value)
-            ->update(['reminder_sent_at' => $sentAt->format('Y-m-d H:i:s')]);
+            ->update(['reminder_sent_at' => $stored->format('Y-m-d H:i:s')]);
     }
 
     /**
@@ -192,6 +199,9 @@ final readonly class EloquentBookingRepository implements BookingRepositoryInter
      */
     public function getConfirmedEndedBy(DateTimeInterface $endedBy): array
     {
+        $timezone = app(BookingSettingsReader::class)->getDateTimeZone();
+        $endedBy = DateTimeImmutable::createFromInterface($endedBy)->setTimezone($timezone);
+
         // Narrow by status and calendar day in SQL (a booking ends on its day or the next),
         // then compare the exact end in PHP, as getConfirmedBookingsForReminder() does
         $bookings = BookingModel::query()
@@ -202,8 +212,6 @@ final readonly class EloquentBookingRepository implements BookingRepositoryInter
             ->get()
             ->map(fn (BookingModel $model): Booking => $this->toEntity($model))
             ->all();
-
-        $timezone = $endedBy->getTimezone();
 
         return array_values(array_filter(
             $bookings,
@@ -260,10 +268,10 @@ final readonly class EloquentBookingRepository implements BookingRepositoryInter
             cancellationReason: $model->cancellation_reason,
             adminNotes: $model->admin_notes,
             confirmedAt: $model->confirmed_at !== null
-                ? new DateTimeImmutable($model->confirmed_at->toDateTimeString())
+                ? $model->confirmed_at->toDateTimeImmutable()
                 : null,
             cancelledAt: $model->cancelled_at !== null
-                ? new DateTimeImmutable($model->cancelled_at->toDateTimeString())
+                ? $model->cancelled_at->toDateTimeImmutable()
                 : null,
         );
     }
@@ -293,8 +301,8 @@ final readonly class EloquentBookingRepository implements BookingRepositoryInter
                 : null,
             'cancellation_reason' => $booking->cancellationReason,
             'admin_notes' => $booking->adminNotes,
-            'confirmed_at' => $booking->confirmedAt?->format('Y-m-d H:i:s'),
-            'cancelled_at' => $booking->cancelledAt?->format('Y-m-d H:i:s'),
+            'confirmed_at' => $booking->confirmedAt,
+            'cancelled_at' => $booking->cancelledAt,
         ];
     }
 }
