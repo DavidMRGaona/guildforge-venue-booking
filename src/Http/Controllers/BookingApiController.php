@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Http\Controllers;
 
+use App\Application\Authorization\Services\AuthorizationServiceInterface;
 use App\Http\Controllers\Controller;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Illuminate\Http\JsonResponse;
@@ -19,12 +20,15 @@ use Modules\VenueBookings\Domain\ValueObjects\BookableResourceId;
 
 final class BookingApiController extends Controller
 {
+    private const string MANAGE_PERMISSION = 'venuebookings:bookings.manage';
+
     public function __construct(
         private readonly BookingQueryServiceInterface $queryService,
         private readonly BookingEligibilityServiceInterface $eligibilityService,
         private readonly BookingFieldConfigServiceInterface $fieldConfigService,
         private readonly BookableResourceRepositoryInterface $resourceRepository,
         private readonly ModuleIntegrationServiceInterface $moduleIntegration,
+        private readonly AuthorizationServiceInterface $authorization,
     ) {}
 
     public function slots(Request $request): JsonResponse
@@ -97,7 +101,8 @@ final class BookingApiController extends Controller
 
         /** @var UserModel|null $user */
         $user = $request->user();
-        $isAdmin = $user !== null && $user->isAdmin();
+        // Who manages bookings sees who booked and the internal notes, whatever role grants it
+        $canManage = $user !== null && $this->authorization->can($user, self::MANAGE_PERMISSION);
 
         $resource = $this->resourceRepository->find(
             BookableResourceId::fromString($dto->resourceId),
@@ -138,7 +143,7 @@ final class BookingApiController extends Controller
             $data['campaign_name'] = $this->moduleIntegration->getCampaignName($dto->campaignId);
         }
 
-        if ($isAdmin) {
+        if ($canManage) {
             $bookingUser = UserModel::find($dto->userId);
             $data['user_name'] = $bookingUser->name ?? '';
             $data['admin_notes'] = $dto->adminNotes;

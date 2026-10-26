@@ -277,21 +277,18 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
                 label: __('venue-bookings::messages.permissions.view_any'),
                 group: __('venue-bookings::messages.navigation.bookings'),
                 module: 'venuebookings',
-                roles: ['editor'],
             ),
             new PermissionDTO(
                 name: 'bookings.view',
                 label: __('venue-bookings::messages.permissions.view'),
                 group: __('venue-bookings::messages.navigation.bookings'),
                 module: 'venuebookings',
-                roles: ['editor'],
             ),
             new PermissionDTO(
                 name: 'bookings.create',
                 label: __('venue-bookings::messages.permissions.create'),
                 group: __('venue-bookings::messages.navigation.bookings'),
                 module: 'venuebookings',
-                roles: ['editor'],
             ),
             new PermissionDTO(
                 name: 'bookings.cancel_own',

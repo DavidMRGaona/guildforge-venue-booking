@@ -20,7 +20,7 @@ Sistema de reservas del local para gestionar espacios y horarios, con calendario
 
 ## Requisitos
 
-- GuildForge core `^3.22` (almacenamiento de fechas en UTC y zona horaria de visualización)
+- GuildForge core `^3.26` (almacenamiento de fechas en UTC y zona horaria de visualización; avisos solo a cargos activos)
 - PHP >= 8.5, Laravel >= 13, Filament 5
 
 El core rechaza el módulo si no se cumplen (`module.json` → `requires`).
@@ -209,19 +209,19 @@ Los dos widgets solo se muestran a quien puede ver el listado de reservas (`book
 
 ## Permisos
 
-Los administradores tienen todos los permisos. La columna **Rol sugerido** indica a quién suele tener sentido dárselos en el editor de roles; el único que el módulo concede por su cuenta es `bookings.cancel_own` al rol `member` (ver abajo).
+Los administradores tienen todos los permisos. La columna **Rol sugerido** indica a quién propone el módulo cada permiso; ninguno va a `editor`, que es el rol de contenido: se dan a los roles de función que cree la asociación (por ejemplo, gestión del local). El único que el módulo concede por su cuenta es `bookings.cancel_own` al rol `member` (ver abajo).
 
 | Permiso | Rol sugerido | Uso |
 |---------|--------------|-----|
-| `bookings.view_any` | editor | Ver el listado de reservas en el panel y los widgets del escritorio |
-| `bookings.view` | editor | Ver el detalle de una reserva en el panel |
-| `bookings.create` | editor | Crear reservas desde el panel |
-| `bookings.manage` | editor que gestione reservas | Confirmar, rechazar y marcar como no presentado desde el listado; editar (incluido el cambio de estado) y borrar reservas; gestionar espacios |
-| `bookings.cancel_any` | editor que gestione reservas | Cancelar cualquier reserva: desde el listado del panel, pasando una reserva a «Cancelada» al editarla (también exige `bookings.manage`) y desde la web (`DELETE /reservas/{booking}`) |
+| `bookings.view_any` | — | Ver el listado de reservas en el panel y los widgets del escritorio |
+| `bookings.view` | — | Ver el detalle de una reserva en el panel |
+| `bookings.create` | — | Crear reservas desde el panel |
+| `bookings.manage` | — | Confirmar, rechazar y marcar como no presentado desde el listado; editar (incluido el cambio de estado) y borrar reservas; gestionar espacios. En la web, ver quién reservó, las notas internas y los campos con visibilidad «Con permiso»; recibir el aviso de reserva nueva (si el rol está en pausa, no) |
+| `bookings.cancel_any` | — | Cancelar cualquier reserva: desde el listado del panel, pasando una reserva a «Cancelada» al editarla (también exige `bookings.manage`) y desde la web (`DELETE /reservas/{booking}`) |
 | `bookings.cancel_own` | member (concedido al actualizar) | Cancelar las propias reservas desde la web |
 | `bookings.settings` | — | Abrir y guardar la configuración del módulo |
 
-Las acciones del panel se comprueban también en el servidor: si se fuerzan sin el permiso, la reserva no cambia. Para que un editor siga gestionando reservas hay que darle `bookings.manage` y `bookings.cancel_any`; `bookings.view_any` solo deja verlas.
+Las acciones del panel se comprueban también en el servidor: si se fuerzan sin el permiso, la reserva no cambia. Para que un rol gestione reservas hay que darle `bookings.manage` y `bookings.cancel_any`; `bookings.view_any` solo deja verlas.
 
 En la web pública, cualquier usuario identificado puede reservar dentro de los límites configurados (no se exige `bookings.create`). Para cancelar una reserva hay que ser su dueño y tener `bookings.cancel_own`, o tener `bookings.cancel_any`. Las páginas solo muestran el botón **Cancelar reserva** cuando el servidor lo permitiría. Si no se cumple, la cancelación responde 403, igual que una reserva que no existe o un identificador mal formado. Una reserva solo se puede cancelar desde la web hasta su hora de inicio, también con `bookings.cancel_any`: después, la cancelación vuelve con «La reserva ya ha empezado y no se puede cancelar.» y las páginas dejan de mostrar el botón (`is_cancellable` es falso). Quien no puede cancelarla sigue recibiendo el 403. Desde el panel se cancela a cualquier hora.
 

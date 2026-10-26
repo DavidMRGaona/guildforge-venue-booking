@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Infrastructure\Services;
 
+use App\Application\Authorization\Services\AuthorizationServiceInterface;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Illuminate\Validation\Rule;
 use Modules\VenueBookings\Application\Services\BookingFieldConfigServiceInterface;
@@ -18,9 +19,12 @@ use Modules\VenueBookings\Domain\ValueObjects\ResourceFieldConfig;
 
 final readonly class BookingFieldConfigService implements BookingFieldConfigServiceInterface
 {
+    private const string MANAGE_PERMISSION = 'venuebookings:bookings.manage';
+
     public function __construct(
         private ModuleIntegrationServiceInterface $moduleIntegration,
         private BookableResourceRepositoryInterface $resourceRepository,
+        private AuthorizationServiceInterface $authorization,
         private BookingSettingsReader $settings = new BookingSettingsReader,
     ) {}
 
@@ -274,7 +278,7 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
         return match (FieldVisibility::from($field->visibility)) {
             FieldVisibility::Public => true,
             FieldVisibility::Authenticated => $user instanceof UserModel,
-            FieldVisibility::Permission => $user instanceof UserModel && $user->isAdmin(),
+            FieldVisibility::Permission => $user instanceof UserModel && $this->authorization->can($user, self::MANAGE_PERMISSION),
             FieldVisibility::AdminOnly => $user instanceof UserModel && $user->isAdmin(),
         };
     }

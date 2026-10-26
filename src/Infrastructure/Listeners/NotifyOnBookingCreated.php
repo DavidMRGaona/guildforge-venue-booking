@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Infrastructure\Listeners;
 
+use App\Infrastructure\Authorization\Services\PermissionHolderFinder;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Modules\VenueBookings\Domain\Entities\BookableResource;
 use Modules\VenueBookings\Domain\Events\BookingCreated;
@@ -19,6 +20,7 @@ final readonly class NotifyOnBookingCreated
     public function __construct(
         private BookingSettingsReader $settingsReader,
         private BookableResourceRepositoryInterface $resourceRepository,
+        private PermissionHolderFinder $permissionHolders,
     ) {}
 
     public function handle(BookingCreated $event): void
@@ -48,14 +50,8 @@ final readonly class NotifyOnBookingCreated
             endTime: $event->endTime,
         );
 
-        // Whoever can confirm or reject it: the admin role, or a role granted bookings.manage
-        $managers = UserModel::query()
-            ->whereHas('roles', fn ($roles) => $roles
-                ->where('name', 'admin')
-                ->orWhereHas('permissions', fn ($permissions) => $permissions->where('key', self::MANAGE_PERMISSION)))
-            ->get();
-
-        foreach ($managers as $manager) {
+        // Whoever can confirm or reject it, as authorization sees them: a paused role does not count
+        foreach ($this->permissionHolders->usersWhoCan(self::MANAGE_PERMISSION) as $manager) {
             $manager->notify($notification);
         }
     }
