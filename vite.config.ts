@@ -1,3 +1,3 @@
-import { defineModuleConfig } from '../../vite.module.config';
+import { defineModuleConfig } from '../../vite.module.config.ts';
 
-export default defineModuleConfig({ name: 'venue-bookings', root: __dirname });
+export default defineModuleConfig({ name: 'venue-bookings', root: import.meta.dirname });
