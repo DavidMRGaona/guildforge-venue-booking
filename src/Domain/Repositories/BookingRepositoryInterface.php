@@ -53,7 +53,7 @@ interface BookingRepositoryInterface
 
     /**
      * Get confirmed bookings not reminded yet whose start (date and start time,
-     * read in the timezone of $from) falls between $from and $to.
+     * read in the venue timezone) falls between $from and $to, instants in any zone.
      *
      * @return array<Booking>
      */
@@ -65,7 +65,7 @@ interface BookingRepositoryInterface
     public function markReminderSent(BookingId $id, \DateTimeInterface $sentAt): void;
 
     /**
-     * Confirmed bookings whose end (date and end time read in the timezone of $endedBy,
+     * Confirmed bookings whose end (date and end time read in the venue timezone,
      * on the next day when the range crosses midnight) is at or before $endedBy,
      * ordered by date and start time.
      *

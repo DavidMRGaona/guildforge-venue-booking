@@ -9,6 +9,7 @@ use App\Infrastructure\Persistence\Eloquent\Concerns\StoresInstantsInStorageTime
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Carbon\CarbonImmutable;
 use DateTimeImmutable;
+use DateTimeZone;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -27,10 +28,13 @@ use Modules\VenueBookings\Domain\ValueObjects\BookingId;
 use Modules\VenueBookings\Domain\ValueObjects\TimeRange;
 use Modules\VenueBookings\Filament\Resources\BookingResource;
 use Modules\VenueBookings\Filament\Resources\BookingResource\Pages\ListBookings;
+use Modules\VenueBookings\Filament\Widgets\TodayBookingsWidget;
+use Modules\VenueBookings\Filament\Widgets\UpcomingBookingsWidget;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
 use Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader;
 use Modules\VenueBookings\Notifications\BookingReminderNotification;
+use ReflectionMethod;
 use Tests\Support\Modules\InteractsWithModulePanel;
 use Tests\Support\Modules\ModuleTestCase;
 use Tests\Support\Time\UsesUtcStorage;
@@ -193,6 +197,66 @@ final class UtcStorageTest extends ModuleTestCase
         $this->assertSame(BookingStatus::Completed, $this->statusOf($booking));
     }
 
+    public function test_the_skipped_hour_resolves_to_the_following_one_for_the_start_and_the_reminder_window(): void
+    {
+        // 02:30 does not exist on 2027-03-28 in Madrid: the clocks jump to 03:30 CEST, that is 01:30Z
+        $booking = $this->entity('2027-03-28', new TimeRange('02:30', '04:00'));
+
+        $this->assertSame(
+            '2027-03-28T01:30:00+00:00',
+            $booking->startsAt(new DateTimeZone('Europe/Madrid'))->setTimezone(new DateTimeZone('UTC'))->format('c'),
+        );
+
+        $this->confirmedBooking('2027-03-28', '02:30', '04:00');
+        $repository = app(BookingRepositoryInterface::class);
+
+        $this->assertCount(1, $repository->getConfirmedBookingsForReminder(
+            new DateTimeImmutable('2027-03-28T01:00:00Z'),
+            new DateTimeImmutable('2027-03-28T01:45:00Z'),
+        ));
+        $this->assertCount(0, $repository->getConfirmedBookingsForReminder(
+            new DateTimeImmutable('2027-03-28T01:31:00Z'),
+            new DateTimeImmutable('2027-03-28T02:30:00Z'),
+        ));
+    }
+
+    public function test_the_repository_reads_utc_instants_in_the_venue_zone(): void
+    {
+        $repository = app(BookingRepositoryInterface::class);
+        // 10:00 to 12:00 CET on 2026-10-25 is 09:00Z to 11:00Z
+        $this->confirmedBooking('2026-10-25', '10:00', '12:00');
+
+        $this->assertCount(1, $repository->getConfirmedBookingsForReminder(
+            new DateTimeImmutable('2026-10-25T08:30:00Z'),
+            new DateTimeImmutable('2026-10-25T09:30:00Z'),
+        ));
+        $this->assertCount(0, $repository->getConfirmedBookingsForReminder(
+            new DateTimeImmutable('2026-10-25T07:00:00Z'),
+            new DateTimeImmutable('2026-10-25T08:30:00Z'),
+        ));
+        $this->assertCount(0, $repository->getConfirmedEndedBy(new DateTimeImmutable('2026-10-25T10:30:00Z')));
+        $this->assertCount(1, $repository->getConfirmedEndedBy(new DateTimeImmutable('2026-10-25T11:30:00Z')));
+    }
+
+    public function test_the_widgets_use_the_venue_day_when_it_is_already_tomorrow_in_utc(): void
+    {
+        // 2026-07-01T23:30Z is 01:30 on 2 July in Madrid
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-07-01T23:30:00Z'));
+        $this->travelTo(CarbonImmutable::parse('2026-07-01T23:30:00Z'));
+        $booking = $this->confirmedBooking('2026-07-02', '18:00', '20:00');
+        $this->registerOnAdminPanel([BookingResource::class]);
+        $this->actingAs(UserModel::factory()->admin()->create());
+
+        $widget = Livewire::test(TodayBookingsWidget::class)->instance();
+        $stats = (new ReflectionMethod($widget, 'getStats'))->invoke($widget);
+        $this->assertIsArray($stats);
+        $this->assertSame('1', $stats[0]->getValue());
+
+        Livewire::test(UpcomingBookingsWidget::class)
+            ->call('loadTable')
+            ->assertCanSeeTableRecords([$booking]);
+    }
+
     private function statusOf(BookingModel $booking): BookingStatus
     {
         return BookingModel::query()->findOrFail($booking->id)->status;
@@ -223,14 +287,14 @@ final class UtcStorageTest extends ModuleTestCase
         ]);
     }
 
-    private function entity(string $date): Booking
+    private function entity(string $date, ?TimeRange $range = null): Booking
     {
         return new Booking(
             id: BookingId::generate(),
             resourceId: BookableResourceId::fromString($this->room->id),
             userId: $this->user()->id,
             date: $date,
-            timeRange: new TimeRange('18:00', '20:00'),
+            timeRange: $range ?? new TimeRange('18:00', '20:00'),
             status: BookingStatus::Confirmed,
         );
     }
