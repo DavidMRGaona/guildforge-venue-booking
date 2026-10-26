@@ -9,19 +9,6 @@ use Tests\TestCase;
 
 final class BookingStatusTest extends TestCase
 {
-    public function test_it_has_expected_cases(): void
-    {
-        $cases = BookingStatus::cases();
-
-        $this->assertCount(6, $cases);
-        $this->assertContains(BookingStatus::Pending, $cases);
-        $this->assertContains(BookingStatus::Confirmed, $cases);
-        $this->assertContains(BookingStatus::Completed, $cases);
-        $this->assertContains(BookingStatus::Cancelled, $cases);
-        $this->assertContains(BookingStatus::NoShow, $cases);
-        $this->assertContains(BookingStatus::Rejected, $cases);
-    }
-
     public function test_it_has_correct_values(): void
     {
         $this->assertEquals('pending', BookingStatus::Pending->value);

@@ -15,6 +15,7 @@ use Modules\VenueBookings\Domain\ValueObjects\OperatingScheduleId;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\OperatingScheduleModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories\EloquentOperatingScheduleRepository;
+use Modules\VenueBookings\VenueBookingsServiceProvider;
 use Tests\TestCase;
 
 final class EloquentOperatingScheduleRepositoryTest extends TestCase
@@ -39,9 +40,12 @@ final class EloquentOperatingScheduleRepositoryTest extends TestCase
         ]);
     }
 
-    public function test_it_implements_repository_interface(): void
+    public function test_the_container_resolves_the_interface_to_this_repository(): void
     {
-        $this->assertInstanceOf(OperatingScheduleRepositoryInterface::class, $this->repository);
+        // The module may not auto-boot in the test environment
+        $this->app->register(VenueBookingsServiceProvider::class);
+
+        $this->assertInstanceOf(EloquentOperatingScheduleRepository::class, app(OperatingScheduleRepositoryInterface::class));
     }
 
     public function test_it_saves_new_schedule(): void

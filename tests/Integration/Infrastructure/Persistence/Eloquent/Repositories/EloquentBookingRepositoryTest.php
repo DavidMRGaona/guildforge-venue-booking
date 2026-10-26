@@ -21,6 +21,7 @@ use Modules\VenueBookings\Domain\ValueObjects\TimeRange;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories\EloquentBookingRepository;
+use Modules\VenueBookings\VenueBookingsServiceProvider;
 use Tests\TestCase;
 
 final class EloquentBookingRepositoryTest extends TestCase
@@ -49,9 +50,12 @@ final class EloquentBookingRepositoryTest extends TestCase
         $this->user = UserModel::factory()->create();
     }
 
-    public function test_it_implements_repository_interface(): void
+    public function test_the_container_resolves_the_interface_to_this_repository(): void
     {
-        $this->assertInstanceOf(BookingRepositoryInterface::class, $this->repository);
+        // The module may not auto-boot in the test environment
+        $this->app->register(VenueBookingsServiceProvider::class);
+
+        $this->assertInstanceOf(EloquentBookingRepository::class, app(BookingRepositoryInterface::class));
     }
 
     public function test_it_saves_new_booking(): void

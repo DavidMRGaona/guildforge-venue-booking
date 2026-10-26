@@ -9,17 +9,6 @@ use Tests\TestCase;
 
 final class FieldVisibilityTest extends TestCase
 {
-    public function test_it_has_expected_cases(): void
-    {
-        $cases = FieldVisibility::cases();
-
-        $this->assertCount(4, $cases);
-        $this->assertContains(FieldVisibility::Public, $cases);
-        $this->assertContains(FieldVisibility::Authenticated, $cases);
-        $this->assertContains(FieldVisibility::Permission, $cases);
-        $this->assertContains(FieldVisibility::AdminOnly, $cases);
-    }
-
     public function test_it_has_correct_values(): void
     {
         $this->assertEquals('public', FieldVisibility::Public->value);

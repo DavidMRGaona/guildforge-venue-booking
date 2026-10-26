@@ -15,7 +15,6 @@ final class OperatingScheduleIdTest extends TestCase
     {
         $id = OperatingScheduleId::generate();
 
-        $this->assertInstanceOf(OperatingScheduleId::class, $id);
         $this->assertTrue(Uuid::isValid($id->value()));
     }
 
@@ -25,7 +24,6 @@ final class OperatingScheduleIdTest extends TestCase
 
         $id = OperatingScheduleId::fromString($uuid);
 
-        $this->assertInstanceOf(OperatingScheduleId::class, $id);
         $this->assertEquals($uuid, $id->value());
     }
 

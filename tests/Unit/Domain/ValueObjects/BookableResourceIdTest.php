@@ -15,7 +15,6 @@ final class BookableResourceIdTest extends TestCase
     {
         $id = BookableResourceId::generate();
 
-        $this->assertInstanceOf(BookableResourceId::class, $id);
         $this->assertTrue(Uuid::isValid($id->value()));
     }
 
@@ -25,7 +24,6 @@ final class BookableResourceIdTest extends TestCase
 
         $id = BookableResourceId::fromString($uuid);
 
-        $this->assertInstanceOf(BookableResourceId::class, $id);
         $this->assertEquals($uuid, $id->value());
     }
 

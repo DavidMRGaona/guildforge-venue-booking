@@ -44,8 +44,6 @@ final class ResourceFieldConfigTest extends TestCase
         $config = ResourceFieldConfig::fromArray($data);
         $array = $config->toArray();
 
-        $this->assertArrayHasKey('predefined_fields', $array);
-        $this->assertArrayHasKey('custom_fields', $array);
         $this->assertSame($data['predefined_fields'], $array['predefined_fields']);
         $this->assertSame('game-system', $array['custom_fields'][0]['key']);
     }

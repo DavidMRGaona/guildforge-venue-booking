@@ -13,6 +13,7 @@ use Modules\VenueBookings\Domain\Repositories\BookableResourceRepositoryInterfac
 use Modules\VenueBookings\Domain\ValueObjects\BookableResourceId;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories\EloquentBookableResourceRepository;
+use Modules\VenueBookings\VenueBookingsServiceProvider;
 use Tests\TestCase;
 
 final class EloquentBookableResourceRepositoryTest extends TestCase
@@ -27,9 +28,12 @@ final class EloquentBookableResourceRepositoryTest extends TestCase
         $this->repository = new EloquentBookableResourceRepository;
     }
 
-    public function test_it_implements_repository_interface(): void
+    public function test_the_container_resolves_the_interface_to_this_repository(): void
     {
-        $this->assertInstanceOf(BookableResourceRepositoryInterface::class, $this->repository);
+        // The module may not auto-boot in the test environment
+        $this->app->register(VenueBookingsServiceProvider::class);
+
+        $this->assertInstanceOf(EloquentBookableResourceRepository::class, app(BookableResourceRepositoryInterface::class));
     }
 
     public function test_it_saves_new_resource(): void

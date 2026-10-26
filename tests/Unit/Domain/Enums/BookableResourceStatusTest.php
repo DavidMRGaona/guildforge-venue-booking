@@ -9,16 +9,6 @@ use Tests\TestCase;
 
 final class BookableResourceStatusTest extends TestCase
 {
-    public function test_it_has_expected_cases(): void
-    {
-        $cases = BookableResourceStatus::cases();
-
-        $this->assertCount(3, $cases);
-        $this->assertContains(BookableResourceStatus::Active, $cases);
-        $this->assertContains(BookableResourceStatus::Inactive, $cases);
-        $this->assertContains(BookableResourceStatus::Maintenance, $cases);
-    }
-
     public function test_it_has_correct_values(): void
     {
         $this->assertEquals('active', BookableResourceStatus::Active->value);
