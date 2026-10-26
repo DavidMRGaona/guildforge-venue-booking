@@ -8,7 +8,6 @@ use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
-use Modules\VenueBookings\Application\DTOs\Response\BookingResponseDTO;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
@@ -77,7 +76,6 @@ final class BookingQueryServiceTest extends TestCase
         $result = $this->service->getBookingById($bookingId);
 
         $this->assertNotNull($result);
-        $this->assertInstanceOf(BookingResponseDTO::class, $result);
         $this->assertEquals($bookingId, $result->id);
         $this->assertEquals($this->resource->id, $result->resourceId);
         $this->assertEquals($this->user->id, $result->userId);

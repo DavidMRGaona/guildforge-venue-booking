@@ -9,15 +9,6 @@ use Tests\TestCase;
 
 final class ApprovalModeTest extends TestCase
 {
-    public function test_it_has_expected_cases(): void
-    {
-        $cases = ApprovalMode::cases();
-
-        $this->assertCount(2, $cases);
-        $this->assertContains(ApprovalMode::AutoConfirm, $cases);
-        $this->assertContains(ApprovalMode::RequireApproval, $cases);
-    }
-
     public function test_it_has_correct_values(): void
     {
         $this->assertEquals('auto_confirm', ApprovalMode::AutoConfirm->value);

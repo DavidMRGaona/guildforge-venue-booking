@@ -7,6 +7,7 @@ namespace Modules\VenueBookings\Tests\Integration\Infrastructure\Services;
 use Modules\VenueBookings\Domain\Exceptions\BookingBusyException;
 use Modules\VenueBookings\Infrastructure\Services\CacheBookingLock;
 use RuntimeException;
+use stdClass;
 use Tests\TestCase;
 
 /**
@@ -33,7 +34,9 @@ final class CacheBookingLockTest extends TestCase
 
     public function test_it_runs_the_callback_and_returns_its_value(): void
     {
-        $this->assertSame('booked', $this->lock->forBooking(self::USER, self::RESOURCE, fn (): string => 'booked'));
+        $booking = new stdClass;
+
+        $this->assertSame($booking, $this->lock->forBooking(self::USER, self::RESOURCE, fn (): stdClass => $booking));
     }
 
     public function test_the_same_resource_waits_for_the_first_booking(): void
@@ -66,11 +69,13 @@ final class CacheBookingLockTest extends TestCase
 
     public function test_other_users_book_other_resources_meanwhile(): void
     {
-        $result = $this->lock->forBooking(self::USER, self::RESOURCE, fn (): string => $this->lock->forBooking(
-            'user-2', 'resource-2', fn (): string => 'other resource',
+        $otherBooking = new stdClass;
+
+        $result = $this->lock->forBooking(self::USER, self::RESOURCE, fn (): stdClass => $this->lock->forBooking(
+            'user-2', 'resource-2', fn (): stdClass => $otherBooking,
         ));
 
-        $this->assertSame('other resource', $result);
+        $this->assertSame($otherBooking, $result);
     }
 
     public function test_an_upper_case_resource_id_shares_the_lock_of_the_lower_case_one(): void
@@ -107,7 +112,9 @@ final class CacheBookingLockTest extends TestCase
             RuntimeException::class,
         );
 
-        $this->assertSame('booked again', $this->lock->forBooking(self::USER, self::RESOURCE, fn (): string => 'booked again'));
+        $bookingAgain = new stdClass;
+
+        $this->assertSame($bookingAgain, $this->lock->forBooking(self::USER, self::RESOURCE, fn (): stdClass => $bookingAgain));
     }
 
     public function test_the_user_lock_is_released_when_the_resource_is_busy(): void
@@ -119,6 +126,8 @@ final class CacheBookingLockTest extends TestCase
             BookingBusyException::class,
         );
 
-        $this->assertSame('booked', $this->lock->forBooking(self::USER, 'resource-2', fn (): string => 'booked'));
+        $booking = new stdClass;
+
+        $this->assertSame($booking, $this->lock->forBooking(self::USER, 'resource-2', fn (): stdClass => $booking));
     }
 }

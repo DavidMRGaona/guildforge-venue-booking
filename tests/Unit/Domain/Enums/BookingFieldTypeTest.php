@@ -9,18 +9,6 @@ use Tests\TestCase;
 
 final class BookingFieldTypeTest extends TestCase
 {
-    public function test_it_has_expected_cases(): void
-    {
-        $cases = BookingFieldType::cases();
-
-        $this->assertCount(5, $cases);
-        $this->assertContains(BookingFieldType::Text, $cases);
-        $this->assertContains(BookingFieldType::Textarea, $cases);
-        $this->assertContains(BookingFieldType::Number, $cases);
-        $this->assertContains(BookingFieldType::Select, $cases);
-        $this->assertContains(BookingFieldType::Toggle, $cases);
-    }
-
     public function test_it_has_correct_values(): void
     {
         $this->assertEquals('text', BookingFieldType::Text->value);

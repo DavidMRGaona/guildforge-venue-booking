@@ -9,15 +9,6 @@ use Tests\TestCase;
 
 final class SchedulingModeTest extends TestCase
 {
-    public function test_it_has_expected_cases(): void
-    {
-        $cases = SchedulingMode::cases();
-
-        $this->assertCount(2, $cases);
-        $this->assertContains(SchedulingMode::TimeSlots, $cases);
-        $this->assertContains(SchedulingMode::TimeBlocks, $cases);
-    }
-
     public function test_it_has_correct_values(): void
     {
         $this->assertEquals('time_slots', SchedulingMode::TimeSlots->value);

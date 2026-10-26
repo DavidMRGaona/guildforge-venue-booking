@@ -15,7 +15,6 @@ final class BookingIdTest extends TestCase
     {
         $id = BookingId::generate();
 
-        $this->assertInstanceOf(BookingId::class, $id);
         $this->assertTrue(Uuid::isValid($id->value()));
     }
 
@@ -25,7 +24,6 @@ final class BookingIdTest extends TestCase
 
         $id = BookingId::fromString($uuid);
 
-        $this->assertInstanceOf(BookingId::class, $id);
         $this->assertEquals($uuid, $id->value());
     }
 

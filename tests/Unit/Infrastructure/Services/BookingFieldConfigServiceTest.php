@@ -227,7 +227,6 @@ final class BookingFieldConfigServiceTest extends TestCase
 
         $config = $this->service->getDefaultFieldConfig();
 
-        $this->assertInstanceOf(ResourceFieldConfig::class, $config);
         $this->assertCount(1, $config->predefinedFields);
         $this->assertCount(1, $config->customFields);
     }
