@@ -181,13 +181,11 @@ final class BookingServiceTest extends TestCase
 
         $this->service->createBooking($dto);
 
-        Event::assertDispatched(BookingCreated::class, function (BookingCreated $event): bool {
-            return $event->resourceId === $this->resource->id
-                && $event->userId === $this->user->id
-                && $event->date === '2026-03-16'
-                && $event->startTime === '10:00'
-                && $event->endTime === '12:00';
-        });
+        Event::assertDispatched(BookingCreated::class, fn (BookingCreated $event): bool => $event->resourceId === $this->resource->id
+            && $event->userId === $this->user->id
+            && $event->date === '2026-03-16'
+            && $event->startTime === '10:00'
+            && $event->endTime === '12:00');
     }
 
     public function test_it_dispatches_booking_confirmed_event_when_auto_confirm(): void
@@ -206,9 +204,7 @@ final class BookingServiceTest extends TestCase
         $this->service->createBooking($dto);
 
         Event::assertDispatched(BookingCreated::class);
-        Event::assertDispatched(BookingConfirmed::class, function (BookingConfirmed $event): bool {
-            return $event->userId === $this->user->id;
-        });
+        Event::assertDispatched(BookingConfirmed::class, fn (BookingConfirmed $event): bool => $event->userId === $this->user->id);
     }
 
     public function test_it_does_not_dispatch_confirmed_event_when_require_approval(): void
@@ -254,10 +250,8 @@ final class BookingServiceTest extends TestCase
             'status' => 'confirmed',
         ]);
 
-        Event::assertDispatched(BookingConfirmed::class, function (BookingConfirmed $event) use ($bookingId): bool {
-            return $event->bookingId === $bookingId
-                && $event->userId === $this->user->id;
-        });
+        Event::assertDispatched(BookingConfirmed::class, fn (BookingConfirmed $event): bool => $event->bookingId === $bookingId
+            && $event->userId === $this->user->id);
     }
 
     public function test_it_cancels_booking(): void
@@ -292,12 +286,10 @@ final class BookingServiceTest extends TestCase
             'cancellation_reason' => 'Schedule conflict',
         ]);
 
-        Event::assertDispatched(BookingCancelled::class, function (BookingCancelled $event) use ($bookingId): bool {
-            return $event->bookingId === $bookingId
-                && $event->userId === $this->user->id
-                && $event->reason === 'Schedule conflict'
-                && $event->wasConfirmed === true;
-        });
+        Event::assertDispatched(BookingCancelled::class, fn (BookingCancelled $event): bool => $event->bookingId === $bookingId
+            && $event->userId === $this->user->id
+            && $event->reason === 'Schedule conflict'
+            && $event->wasConfirmed);
     }
 
     public function test_it_rejects_booking(): void
@@ -324,11 +316,9 @@ final class BookingServiceTest extends TestCase
             'status' => 'rejected',
         ]);
 
-        Event::assertDispatched(BookingRejected::class, function (BookingRejected $event) use ($bookingId): bool {
-            return $event->bookingId === $bookingId
-                && $event->userId === $this->user->id
-                && $event->reason === 'Resource not suitable';
-        });
+        Event::assertDispatched(BookingRejected::class, fn (BookingRejected $event): bool => $event->bookingId === $bookingId
+            && $event->userId === $this->user->id
+            && $event->reason === 'Resource not suitable');
     }
 
     public function test_it_marks_booking_as_completed(): void
@@ -354,10 +344,8 @@ final class BookingServiceTest extends TestCase
             'status' => 'completed',
         ]);
 
-        Event::assertDispatched(BookingCompleted::class, function (BookingCompleted $event) use ($bookingId): bool {
-            return $event->bookingId === $bookingId
-                && $event->userId === $this->user->id;
-        });
+        Event::assertDispatched(BookingCompleted::class, fn (BookingCompleted $event): bool => $event->bookingId === $bookingId
+            && $event->userId === $this->user->id);
     }
 
     public function test_it_throws_when_booking_has_fewer_than_minimum_consecutive_slots(): void
@@ -431,10 +419,8 @@ final class BookingServiceTest extends TestCase
             'status' => 'no_show',
         ]);
 
-        Event::assertDispatched(BookingNoShow::class, function (BookingNoShow $event) use ($bookingId): bool {
-            return $event->bookingId === $bookingId
-                && $event->userId === $this->user->id;
-        });
+        Event::assertDispatched(BookingNoShow::class, fn (BookingNoShow $event): bool => $event->bookingId === $bookingId
+            && $event->userId === $this->user->id);
     }
 
     public function test_it_refuses_to_cancel_another_users_booking(): void
@@ -1154,9 +1140,9 @@ final class BookingServiceTest extends TestCase
      */
     private function lockThatFirstRuns(Closure $before): BookingLockInterface
     {
-        return new class($before) implements BookingLockInterface
+        return new readonly class($before) implements BookingLockInterface
         {
-            public function __construct(private readonly Closure $before) {}
+            public function __construct(private Closure $before) {}
 
             public function forBooking(string $userId, string $resourceId, Closure $callback): mixed
             {

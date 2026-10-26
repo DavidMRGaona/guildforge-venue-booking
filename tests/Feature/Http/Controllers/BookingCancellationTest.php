@@ -21,9 +21,9 @@ final class BookingCancellationTest extends ModuleTestCase
 {
     use CreatesUsersWithPermissions;
 
-    private const CANCEL_OWN = 'venuebookings:bookings.cancel_own';
+    private const string CANCEL_OWN = 'venuebookings:bookings.cancel_own';
 
-    private const CANCEL_ANY = 'venuebookings:bookings.cancel_any';
+    private const string CANCEL_ANY = 'venuebookings:bookings.cancel_any';
 
     protected ?string $moduleName = 'venue-bookings';
 

@@ -111,10 +111,8 @@ final class EloquentBookingRepositoryTest extends TestCase
             gameTableId: 'gt-123',
             tournamentId: 'tour-456',
             fieldValues: $fieldValues,
-            cancellationReason: null,
             adminNotes: 'VIP booking',
             confirmedAt: new DateTimeImmutable('2026-03-28 10:00:00'),
-            cancelledAt: null,
         );
 
         $this->repository->save($booking);
