@@ -78,7 +78,6 @@ final class BookingFieldConfigTest extends TestCase
             type: 'number',
             required: true,
             visibility: 'authenticated',
-            options: null,
         );
 
         $array = $config->toArray();

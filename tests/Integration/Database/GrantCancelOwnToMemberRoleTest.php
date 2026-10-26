@@ -18,7 +18,7 @@ use Tests\Support\Modules\ModuleTestCase;
  */
 final class GrantCancelOwnToMemberRoleTest extends ModuleTestCase
 {
-    private const KEY = 'venuebookings:bookings.cancel_own';
+    private const string KEY = 'venuebookings:bookings.cancel_own';
 
     protected ?string $moduleName = 'venue-bookings';
 

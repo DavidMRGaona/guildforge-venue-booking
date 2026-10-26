@@ -29,11 +29,11 @@ final class BookingActionPermissionsTest extends ModuleTestCase
     use CreatesUsersWithPermissions;
     use InteractsWithModulePanel;
 
-    private const VIEW_ANY = 'venuebookings:bookings.view_any';
+    private const string VIEW_ANY = 'venuebookings:bookings.view_any';
 
-    private const MANAGE = 'venuebookings:bookings.manage';
+    private const string MANAGE = 'venuebookings:bookings.manage';
 
-    private const CANCEL_ANY = 'venuebookings:bookings.cancel_any';
+    private const string CANCEL_ANY = 'venuebookings:bookings.cancel_any';
 
     protected ?string $moduleName = 'venue-bookings';
 
