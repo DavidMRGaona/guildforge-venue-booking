@@ -132,36 +132,52 @@ final class DevelopmentSeeder extends Seeder
         ];
 
         foreach ($bookings as [$resource, $person, $status, $offset, $startTime, $slots, $reason]) {
-            $schedule = $resource->operatingSchedule;
-
-            if ($schedule === null) {
-                continue;
-            }
-
-            $slotMinutes = (int) $schedule->slot_duration_minutes;
-            $date = $this->nearestOpenDate($schedule->day_schedules, $offset);
-            $dayOpening = $this->dayOpening($schedule->day_schedules, $date);
-            $start = $startTime ?? $dayOpening;
-            $end = date('H:i', (int) strtotime($start) + $slotMinutes * $slots * 60);
-
-            $happened = in_array($status, [BookingStatus::Confirmed, BookingStatus::Completed, BookingStatus::NoShow], true);
-
-            BookingModel::updateOrCreate(
-                [
-                    'resource_id' => $resource->id,
-                    'user_id' => $people[$person]->id,
-                    'status' => $status->value,
-                ],
-                [
-                    'date' => $date,
-                    'start_time' => $start,
-                    'end_time' => $end,
-                    'cancellation_reason' => $reason,
-                    'confirmed_at' => $happened ? now()->subDays(4) : null,
-                    'cancelled_at' => $status === BookingStatus::Cancelled ? now()->subDay() : null,
-                ],
-            );
+            $this->seedBooking($resource, $people[$person], $status, $offset, $startTime, $slots, $reason);
         }
+    }
+
+    /**
+     * One booking of the list above. Its own typed parameters, because PHPStan loses track
+     * of a row destructured in the loop once one of its values goes through `??`.
+     */
+    private function seedBooking(
+        BookableResourceModel $resource,
+        UserModel $person,
+        BookingStatus $status,
+        int $offset,
+        ?string $startTime,
+        int $slots,
+        ?string $reason,
+    ): void {
+        $schedule = $resource->operatingSchedule;
+
+        if ($schedule === null) {
+            return;
+        }
+
+        $slotMinutes = (int) $schedule->slot_duration_minutes;
+        $date = $this->nearestOpenDate($schedule->day_schedules, $offset);
+        $dayOpening = $this->dayOpening($schedule->day_schedules, $date);
+        $start = $startTime ?? $dayOpening;
+        $end = date('H:i', (int) strtotime($start) + $slotMinutes * $slots * 60);
+
+        $happened = in_array($status, [BookingStatus::Confirmed, BookingStatus::Completed, BookingStatus::NoShow], true);
+
+        BookingModel::updateOrCreate(
+            [
+                'resource_id' => $resource->id,
+                'user_id' => $person->id,
+                'status' => $status->value,
+            ],
+            [
+                'date' => $date,
+                'start_time' => $start,
+                'end_time' => $end,
+                'cancellation_reason' => $reason,
+                'confirmed_at' => $happened ? now()->subDays(4) : null,
+                'cancelled_at' => $status === BookingStatus::Cancelled ? now()->subDay() : null,
+            ],
+        );
     }
 
     /**
