@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { mount, type VueWrapper } from '@vue/test-utils';
 import BookingForm from '../../resources/js/components/BookingForm.vue';
 import type { FieldDefinition } from '../../resources/js/types/bookings';
 import { focusedOpener } from './support/fixtures';
@@ -11,7 +11,7 @@ const notesField = {
     required: false,
 } as FieldDefinition;
 
-function mountForm(fieldDefinitions: FieldDefinition[] = [notesField]) {
+function mountForm(fieldDefinitions: FieldDefinition[] = [notesField]): VueWrapper {
     return mount(BookingForm, {
         props: {
             resourceId: 'resource-1',
@@ -84,7 +84,9 @@ describe('BookingForm', () => {
             } as FieldDefinition,
         ]);
 
-        const option = document.body.querySelector<HTMLOptionElement>('#field-game_table_id option[value="table-1"]');
+        const option = document.body.querySelector<HTMLOptionElement>(
+            '#field-game_table_id option[value="table-1"]'
+        );
         expect(option?.textContent?.trim()).toBe('La tumba de los horrores');
     });
 
