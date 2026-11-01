@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { mount, type VueWrapper } from '@vue/test-utils';
 import BookingDetailModal from '../../resources/js/components/BookingDetailModal.vue';
 import { bookingDetail, focusedOpener } from './support/fixtures';
 
-function mountModal() {
+function mountModal(): VueWrapper {
     return mount(BookingDetailModal, {
         props: { booking: bookingDetail() },
         attachTo: document.body,

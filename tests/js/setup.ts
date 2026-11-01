@@ -1,4 +1,5 @@
-import { afterEach, beforeEach, vi } from 'vitest';
+import { afterEach, beforeEach, vi, type Mock } from 'vitest';
+import type { Reactive, VNode } from 'vue';
 import { config, enableAutoUnmount } from '@vue/test-utils';
 import { createI18n } from 'vue-i18n';
 import coreEs from '@/locales/es';
@@ -11,9 +12,18 @@ vi.mock('@inertiajs/vue3', async () => {
     const { page: currentPage } = await import('./support/page');
 
     return {
-        usePage: () => currentPage,
+        usePage: (): typeof currentPage => currentPage,
         router: { visit: vi.fn(), reload: vi.fn(), delete: vi.fn(), post: vi.fn(), get: vi.fn() },
-        useForm: <T extends Record<string, unknown>>(data: T) =>
+        useForm: <T extends Record<string, unknown>>(
+            data: T
+        ): Reactive<
+            T & {
+                errors: Record<string, string>;
+                hasErrors: boolean;
+                processing: boolean;
+                post: Mock;
+            }
+        > =>
             reactive({
                 ...data,
                 errors: {},
@@ -22,10 +32,12 @@ vi.mock('@inertiajs/vue3', async () => {
                 post: vi.fn(),
             }),
         Link: defineComponent({
+            // Inertia's own name, which the stand-in keeps
+            // eslint-disable-next-line vue/multi-word-component-names, vue/no-reserved-component-names
             name: 'Link',
             props: { href: { type: String, required: true } },
             setup(props, { slots }) {
-                return () => h('a', { href: props.href }, slots.default?.());
+                return (): VNode => h('a', { href: props.href }, slots.default?.());
             },
         }),
     };
