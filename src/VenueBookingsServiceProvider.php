@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings;
 
+use App\Application\Knowledge\Contracts\KnowledgeCapabilityInterface;
 use App\Application\Modules\DTOs\ModuleRouteDTO;
 use App\Application\Modules\DTOs\NavigationItemDTO;
 use App\Application\Modules\DTOs\PagePrefixDTO;
@@ -39,6 +40,7 @@ use Modules\VenueBookings\Filament\Resources\BookableResourceResource;
 use Modules\VenueBookings\Filament\Resources\BookingResource;
 use Modules\VenueBookings\Filament\Widgets\TodayBookingsWidget;
 use Modules\VenueBookings\Filament\Widgets\UpcomingBookingsWidget;
+use Modules\VenueBookings\Infrastructure\Knowledge\CancelsOwnBookingsCapability;
 use Modules\VenueBookings\Infrastructure\Listeners\NotifyMemberOnBookingReceived;
 use Modules\VenueBookings\Infrastructure\Listeners\NotifyOnBookingCancelled;
 use Modules\VenueBookings\Infrastructure\Listeners\NotifyOnBookingConfirmed;
@@ -404,6 +406,16 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
         return [
             TodayBookingsWidget::class,
             UpcomingBookingsWidget::class,
+        ];
+    }
+
+    /**
+     * @return array<class-string<KnowledgeCapabilityInterface>>
+     */
+    public function registerKnowledgeCapabilities(): array
+    {
+        return [
+            CancelsOwnBookingsCapability::class,
         ];
     }
 }

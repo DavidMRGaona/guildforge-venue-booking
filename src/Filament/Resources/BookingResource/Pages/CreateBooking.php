@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Filament\Resources\BookingResource\Pages;
 
+use App\Filament\Concerns\HasKnowledgeGuideAction;
 use DomainException;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
@@ -17,6 +18,7 @@ use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingMode
 
 final class CreateBooking extends CreateRecord
 {
+    use HasKnowledgeGuideAction;
     use ShowsBookingRefusals;
 
     protected static string $resource = BookingResource::class;
@@ -28,6 +30,13 @@ final class CreateBooking extends CreateRecord
     public function getTitle(): string
     {
         return __('venue-bookings::messages.pages.create_booking');
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return array_filter([
+            $this->knowledgeGuideAction('venue-bookings.panel.create-booking'),
+        ]);
     }
 
     /**

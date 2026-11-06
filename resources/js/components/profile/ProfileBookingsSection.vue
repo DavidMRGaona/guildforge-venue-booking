@@ -4,6 +4,7 @@ import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { router, Link } from '@inertiajs/vue3';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
+import HelpLink from '@/components/knowledge/HelpLink.vue';
 import BookingCard from '../BookingCard.vue';
 import type { ProfileBookingsData } from '../../types/profile';
 
@@ -61,6 +62,7 @@ function confirmCancel(): void {
     <div class="space-y-10">
         <!-- Links to the full list and to the calendar: shown with no bookings too -->
         <div class="flex flex-wrap justify-end gap-3">
+            <HelpLink guide="venue-bookings.my-bookings" class="self-center" />
             <Link
                 href="/reservas/mis-reservas"
                 class="inline-flex min-h-[44px] items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"

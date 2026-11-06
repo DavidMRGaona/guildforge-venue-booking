@@ -8,6 +8,7 @@ use App\Application\Modules\Services\ModuleContextServiceInterface;
 use App\Application\Modules\Services\ModuleSettingsStoreInterface;
 use App\Application\Services\SettingsServiceInterface;
 use App\Filament\Concerns\ChecksPermissions;
+use App\Filament\Concerns\HasKnowledgeGuideAction;
 use App\Filament\Concerns\SafeModuleNavigation;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Repeater;
@@ -35,6 +36,7 @@ use Modules\VenueBookings\Domain\Enums\FieldVisibility;
 final class VenueBookingsSettings extends Page implements HasForms
 {
     use ChecksPermissions;
+    use HasKnowledgeGuideAction;
     use InteractsWithForms;
     use SafeModuleNavigation;
 
@@ -62,6 +64,13 @@ final class VenueBookingsSettings extends Page implements HasForms
     public function getTitle(): string
     {
         return __('venue-bookings::messages.settings.title');
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return array_filter([
+            $this->knowledgeGuideAction('venue-bookings.panel.settings'),
+        ]);
     }
 
     public static function canAccess(): bool

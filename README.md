@@ -16,11 +16,12 @@ Sistema de reservas del local para gestionar espacios y horarios, con calendario
 - **Integración con módulos**: asociación de la reserva con una mesa de rol, una campaña o un torneo (configurable en el panel). En la web se elige entre las que se le ofrecen al usuario y se guarda su id; en el panel cada una tiene su propio selector
 - **Notificaciones por email**: creación, confirmación, cancelación, rechazo y recordatorio antes del inicio
 - **Panel de administración**: espacios, reservas, configuración y dos widgets para el escritorio
+- **Ayuda**: guías del sitio y del panel en la base de conocimiento, con el botón «?» en sus páginas
 - **Zonas horarias**: los instantes (confirmación, cancelación, recordatorio) se guardan en la zona de almacenamiento del sitio (UTC cuando el sitio lo usa) y se muestran en su zona de visualización (por defecto Europe/Madrid). El día, la hora de inicio y la de fin de cada reserva son la hora del local y no se convierten; la zona del local es el ajuste *Zona horaria* o, si está vacío, la de visualización del sitio
 
 ## Requisitos
 
-- GuildForge core `^3.26` (almacenamiento de fechas en UTC y zona horaria de visualización; avisos solo a cargos activos)
+- GuildForge core `^3.35` (base de conocimiento con guías y botones con parámetros; almacenamiento de fechas en UTC y zona horaria de visualización; avisos solo a cargos activos)
 - PHP >= 8.5, Laravel >= 13, Filament 5
 
 El core rechaza el módulo si no se cumplen (`module.json` → `requires`).

@@ -28,7 +28,9 @@ final class NavigationLinksComponentsTest extends TestCase
 
         // The links sit in the wrapper that always renders; only the sections depend on having bookings
         $this->assertStringContainsString('<template v-if="profileBookings && profileBookings.total > 0">', $source);
-        $this->assertMatchesRegularExpression('/<template>\s*<div class="space-y-10">\s*<!--[^>]*-->\s*<div class="flex flex-wrap justify-end gap-3">\s*<Link\s+href="\/reservas\/mis-reservas"/', $source);
+        // The help «?» of the personal list may go first in the same row
+        $this->assertMatchesRegularExpression('/<template>\s*<div class="space-y-10">\s*<!--[^>]*-->\s*<div class="flex flex-wrap justify-end gap-3">\s*(<HelpLink guide="venue-bookings\.my-bookings"[^>]*\/>\s*)?<Link\s+href="\/reservas\/mis-reservas"/', $source);
+        $this->assertStringContainsString('<HelpLink guide="venue-bookings.my-bookings"', $source);
     }
 
     public function test_the_personal_list_links_back_to_the_calendar_from_its_header(): void

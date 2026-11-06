@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Filament\Resources\BookingResource\Pages;
 
+use App\Filament\Concerns\HasKnowledgeGuideAction;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -14,6 +15,8 @@ use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingMode
 
 final class ListBookings extends ListRecords
 {
+    use HasKnowledgeGuideAction;
+
     protected static string $resource = BookingResource::class;
 
     public function getTitle(): string
@@ -23,10 +26,11 @@ final class ListBookings extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [
+        return array_filter([
             CreateAction::make()
                 ->label(__('venue-bookings::messages.pages.create_booking')),
-        ];
+            $this->knowledgeGuideAction('venue-bookings.panel.manage-bookings'),
+        ]);
     }
 
     /**
