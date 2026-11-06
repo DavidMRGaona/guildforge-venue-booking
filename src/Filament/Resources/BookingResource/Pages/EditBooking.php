@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Filament\Resources\BookingResource\Pages;
 
+use App\Filament\Concerns\HasKnowledgeGuideAction;
 use DomainException;
 use Filament\Actions\DeleteAction;
 use Filament\Notifications\Notification;
@@ -24,6 +25,7 @@ use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingMode
 
 final class EditBooking extends EditRecord
 {
+    use HasKnowledgeGuideAction;
     use ShowsBookingRefusals;
 
     protected static string $resource = BookingResource::class;
@@ -39,9 +41,10 @@ final class EditBooking extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [
+        return array_filter([
             DeleteAction::make(),
-        ];
+            $this->knowledgeGuideAction('venue-bookings.panel.manage-bookings'),
+        ]);
     }
 
     /**

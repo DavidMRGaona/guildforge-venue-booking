@@ -3,6 +3,7 @@ import { Calendar } from '@lucide/vue';
 import { ref, computed, watch, useId } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Link } from '@inertiajs/vue3';
+import HelpLink from '@/components/knowledge/HelpLink.vue';
 import { useFlashMessages } from '@/composables/useFlashMessages';
 import { useAuth } from '@/composables/useAuth';
 import { useVerificationGate } from '@/composables/useVerificationGate';
@@ -214,6 +215,7 @@ async function onEventSelect(bookingId: string): Promise<void> {
         <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
             <h1 class="text-3xl font-bold tracking-tight text-base-primary">
                 {{ t('booking_calendar.title') }}
+                <HelpLink guide="venue-bookings.book" class="ml-1 align-middle" />
             </h1>
         </div>
     </div>

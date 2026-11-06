@@ -3,6 +3,7 @@ import { Calendar, Clock } from '@lucide/vue';
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { router, Link } from '@inertiajs/vue3';
+import HelpLink from '@/components/knowledge/HelpLink.vue';
 import { useFlashMessages } from '@/composables/useFlashMessages';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 import type { BookingListItem } from '../../types/bookings';
@@ -60,6 +61,7 @@ function confirmCancel(): void {
         >
             <h1 class="text-3xl font-bold tracking-tight text-base-primary">
                 {{ t('booking_calendar.my_bookings') }}
+                <HelpLink guide="venue-bookings.my-bookings" class="ml-1 align-middle" />
             </h1>
             <Link
                 href="/reservas"
