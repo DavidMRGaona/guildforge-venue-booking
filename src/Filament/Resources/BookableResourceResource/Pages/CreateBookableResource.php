@@ -28,16 +28,20 @@ final class CreateBookableResource extends CreateRecord
     }
 
     /**
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
+     * The form always sends its field configuration, so the settings template has to be
+     * what the form starts from: a new space begins with the template and the person
+     * creating it can adjust it before saving.
      */
-    protected function mutateFormDataBeforeCreate(array $data): array
+    protected function fillForm(): void
     {
-        if (! isset($data['field_config'])) {
-            $service = app(BookingFieldConfigServiceInterface::class);
-            $data['field_config'] = $service->getDefaultFieldConfig()->toArray();
-        }
+        $this->callHook('beforeFill');
 
-        return $data;
+        // Fill once with no state so every field takes its own default, then lay the template over it
+        $this->form->fill();
+        $this->form->fill(array_merge($this->data ?? [], [
+            'field_config' => app(BookingFieldConfigServiceInterface::class)->getDefaultFieldConfig()->toArray(),
+        ]));
+
+        $this->callHook('afterFill');
     }
 }
