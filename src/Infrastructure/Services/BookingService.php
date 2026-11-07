@@ -24,6 +24,7 @@ use Modules\VenueBookings\Domain\Events\BookingCompleted;
 use Modules\VenueBookings\Domain\Events\BookingConfirmed;
 use Modules\VenueBookings\Domain\Events\BookingCreated;
 use Modules\VenueBookings\Domain\Events\BookingExpired;
+use Modules\VenueBookings\Domain\Events\BookingMoved;
 use Modules\VenueBookings\Domain\Events\BookingNoShow;
 use Modules\VenueBookings\Domain\Events\BookingRejected;
 use Modules\VenueBookings\Domain\Exceptions\BookableResourceUnavailableException;
@@ -107,6 +108,19 @@ final readonly class BookingService implements BookingServiceInterface
 
             $this->bookingRepository->save($moved);
         });
+
+        // Once, after the lock is released; the event itself waits for any open transaction
+        if ($moved->takesPlaceElsewhereOrAtAnotherTimeThan($booking)) {
+            BookingMoved::dispatch(
+                $booking->id->value,
+                $booking->userId,
+                $booking->resourceId->value,
+                $booking->date,
+                substr($booking->timeRange->startTime, 0, 5),
+                substr($booking->timeRange->endTime, 0, 5),
+                $dto->notifyOwner,
+            );
+        }
 
         return BookingResponseDTO::fromEntity($moved);
     }

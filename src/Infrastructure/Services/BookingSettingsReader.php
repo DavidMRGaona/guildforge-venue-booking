@@ -101,6 +101,11 @@ final readonly class BookingSettingsReader
         return (bool) $this->get('notifications.notify_on_booking_rejected');
     }
 
+    public function isNotifyOnBookingMovedEnabled(): bool
+    {
+        return (bool) $this->get('notifications.notify_on_booking_moved');
+    }
+
     /**
      * @return array<array{label: string, open_time: string, close_time: string}>
      */

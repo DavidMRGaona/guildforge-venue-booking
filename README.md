@@ -14,7 +14,7 @@ Sistema de reservas del local para gestionar espacios y horarios, con calendario
 - **Cierre a la hora de inicio**: desde la web no se puede reservar un día pasado ni una franja que ya ha empezado, ni cancelar una reserva empezada. El panel no tiene ese límite
 - **Completado automático**: las reservas confirmadas pasan a completadas cuando ha pasado su hora de fin más un margen configurable
 - **Integración con módulos**: asociación de la reserva con una mesa de rol, una campaña o un torneo (configurable en el panel). En la web se elige entre las que se le ofrecen al usuario y se guarda su id; en el panel cada una tiene su propio selector
-- **Notificaciones por email**: creación, confirmación, cancelación, rechazo y recordatorio antes del inicio
+- **Notificaciones por email**: creación, confirmación, cancelación, rechazo, cambio de espacio, fecha u horario desde el panel y recordatorio antes del inicio
 - **Panel de administración**: espacios, reservas, configuración y dos widgets para el escritorio
 - **Ayuda**: guías del sitio y del panel en la base de conocimiento, con el botón «?» en sus páginas
 - **Zonas horarias**: los instantes (confirmación, cancelación, recordatorio) se guardan en la zona de almacenamiento del sitio (UTC cuando el sitio lo usa) y se muestran en su zona de visualización (por defecto Europe/Madrid). El día, la hora de inicio y la de fin de cada reserva son la hora del local y no se convierten; la zona del local es el ajuste *Zona horaria* o, si está vacío, la de visualización del sitio
@@ -212,7 +212,9 @@ Los dos widgets solo se muestran a quien puede ver el listado de reservas (`book
 | `BookingCancelled` | Una reserva fue cancelada |
 | `BookingCompleted` | Una reserva fue completada |
 | `BookingRejected` | Una reserva fue rechazada |
+| `BookingMoved` | El personal movió una reserva pendiente o confirmada a otro espacio, fecha u horario (se emite tras el commit; lleva los datos anteriores y si se avisa a la persona) |
 | `BookingNoShow` | El usuario no se presentó a la reserva |
+| `BookingExpired` | Una reserva pendiente terminó sin aprobarse y caducó (no se envía correo) |
 
 `BookingReminder` está definido pero no se emite: el recordatorio se envía directamente como notificación.
 

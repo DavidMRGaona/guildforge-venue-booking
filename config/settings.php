@@ -28,6 +28,8 @@ return [
         'notify_on_booking_confirmed' => true,
         'notify_on_booking_cancelled' => true,
         'notify_on_booking_rejected' => true,
+        // Whoever made a pending or confirmed booking hears when the staff move it
+        'notify_on_booking_moved' => true,
         'notify_on_booking_reminder' => true,
         'reminder_hours_before' => 24,
     ],

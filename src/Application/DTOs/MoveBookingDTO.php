@@ -12,5 +12,7 @@ final readonly class MoveBookingDTO
         public string $date,
         public string $startTime,
         public string $endTime,
+        // Whether whoever made the booking is mailed about the move (the settings may still say no)
+        public bool $notifyOwner = true,
     ) {}
 }

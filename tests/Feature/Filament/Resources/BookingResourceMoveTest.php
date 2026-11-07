@@ -6,13 +6,16 @@ namespace Modules\VenueBookings\Tests\Feature\Filament\Resources;
 
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Modules\VenueBookings\Filament\Resources\BookingResource;
+use Modules\VenueBookings\Filament\Resources\BookingResource\Pages\CreateBooking;
 use Modules\VenueBookings\Filament\Resources\BookingResource\Pages\EditBooking;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\OperatingScheduleModel;
+use Modules\VenueBookings\Notifications\BookingMovedNotification;
 use Tests\Support\Modules\InteractsWithModulePanel;
 use Tests\Support\Modules\ModuleTestCase;
 
@@ -212,6 +215,58 @@ final class BookingResourceMoveTest extends ModuleTestCase
             ->assertHasNoFormErrors();
 
         $this->assertSame('Llegan tarde', BookingModel::query()->findOrFail($booking)->admin_notes);
+    }
+
+    public function test_moving_a_booking_tells_its_owner_once_by_default(): void
+    {
+        Notification::fake();
+        $booking = $this->createBookingOf($this->member, '2026-03-16', '10:00', '12:00');
+        $this->actingAs($this->admin);
+
+        Livewire::test(EditBooking::class, ['record' => $booking])
+            ->assertFormSet(['notify_owner' => true])
+            ->fillForm(['date' => '2026-03-17', 'start_time' => '14:00', 'end_time' => '16:00'])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        Notification::assertSentToTimes($this->member, BookingMovedNotification::class, 1);
+    }
+
+    public function test_the_staff_may_save_a_move_without_telling_the_owner(): void
+    {
+        Notification::fake();
+        $booking = $this->createBookingOf($this->member, '2026-03-16', '10:00', '12:00');
+        $this->actingAs($this->admin);
+
+        Livewire::test(EditBooking::class, ['record' => $booking])
+            ->fillForm(['date' => '2026-03-17', 'notify_owner' => false])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame('2026-03-17', BookingModel::query()->findOrFail($booking)->date->format('Y-m-d'));
+        Notification::assertNotSentTo($this->member, BookingMovedNotification::class);
+    }
+
+    public function test_saving_without_moving_tells_nobody(): void
+    {
+        Notification::fake();
+        $booking = $this->createBookingOf($this->member, '2026-03-16', '10:00', '12:00');
+        $this->actingAs($this->admin);
+
+        Livewire::test(EditBooking::class, ['record' => $booking])
+            ->fillForm(['admin_notes' => 'Llaves en conserjería'])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        Notification::assertNotSentTo($this->member, BookingMovedNotification::class);
+    }
+
+    public function test_the_notify_switch_is_only_on_the_edit_form(): void
+    {
+        $this->actingAs($this->admin);
+
+        Livewire::test(CreateBooking::class)
+            ->assertFormFieldDoesNotExist('notify_owner');
     }
 
     private function createResource(string $slug, string $status = 'active'): BookableResourceModel

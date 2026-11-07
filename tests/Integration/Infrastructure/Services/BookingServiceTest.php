@@ -22,6 +22,7 @@ use Modules\VenueBookings\Domain\Events\BookingCancelled;
 use Modules\VenueBookings\Domain\Events\BookingCompleted;
 use Modules\VenueBookings\Domain\Events\BookingConfirmed;
 use Modules\VenueBookings\Domain\Events\BookingCreated;
+use Modules\VenueBookings\Domain\Events\BookingMoved;
 use Modules\VenueBookings\Domain\Events\BookingNoShow;
 use Modules\VenueBookings\Domain\Events\BookingRejected;
 use Modules\VenueBookings\Domain\Exceptions\BookableResourceUnavailableException;
@@ -813,6 +814,80 @@ final class BookingServiceTest extends TestCase
         $this->expectException(SlotUnavailableException::class);
 
         $this->service->moveBookingAsStaff(new MoveBookingDTO($bookingId, $this->resource->id, '2026-03-17', '11:00', '12:00'));
+    }
+
+    public function test_moving_an_active_booking_announces_it_once_with_where_and_when_it_was(): void
+    {
+        Event::fake([BookingMoved::class]);
+        $bookingId = $this->createConfirmedBookingOf($this->user);
+
+        $this->service->moveBookingAsStaff(new MoveBookingDTO($bookingId, $this->resource->id, '2026-03-18', '14:00', '16:00'));
+
+        Event::assertDispatchedTimes(BookingMoved::class, 1);
+        Event::assertDispatched(BookingMoved::class, fn (BookingMoved $event): bool => $event->bookingId === $bookingId
+            && $event->userId === $this->user->id
+            && $event->previousResourceId === $this->resource->id
+            && $event->previousDate === '2026-03-16'
+            && $event->previousStartTime === '10:00'
+            && $event->previousEndTime === '12:00'
+            && $event->notifyOwner);
+    }
+
+    public function test_a_pending_booking_moved_is_announced_too(): void
+    {
+        Event::fake([BookingMoved::class]);
+        $bookingId = $this->createConfirmedBookingOf($this->user);
+        BookingModel::query()->whereKey($bookingId)->update(['status' => 'pending']);
+
+        $this->service->moveBookingAsStaff(new MoveBookingDTO($bookingId, $this->resource->id, '2026-03-16', '11:00', '13:00'));
+
+        Event::assertDispatchedTimes(BookingMoved::class, 1);
+    }
+
+    public function test_the_staff_may_move_a_booking_without_telling_its_owner(): void
+    {
+        Event::fake([BookingMoved::class]);
+        $bookingId = $this->createConfirmedBookingOf($this->user);
+
+        $this->service->moveBookingAsStaff(new MoveBookingDTO($bookingId, $this->resource->id, '2026-03-18', '10:00', '12:00', notifyOwner: false));
+
+        Event::assertDispatched(BookingMoved::class, fn (BookingMoved $event): bool => ! $event->notifyOwner);
+    }
+
+    public function test_correcting_a_finished_booking_announces_nothing(): void
+    {
+        Event::fake([BookingMoved::class]);
+        $bookingId = $this->createConfirmedBookingOf($this->user);
+        BookingModel::query()->whereKey($bookingId)->update(['status' => 'completed']);
+
+        $this->service->moveBookingAsStaff(new MoveBookingDTO($bookingId, $this->resource->id, '2026-03-18', '10:00', '12:00'));
+
+        Event::assertNotDispatched(BookingMoved::class);
+    }
+
+    public function test_a_move_to_the_same_place_and_time_announces_nothing(): void
+    {
+        Event::fake([BookingMoved::class]);
+        $bookingId = $this->createConfirmedBookingOf($this->user);
+
+        $this->service->moveBookingAsStaff(new MoveBookingDTO($bookingId, $this->resource->id, '2026-03-16', '10:00', '12:00'));
+
+        Event::assertNotDispatched(BookingMoved::class);
+    }
+
+    public function test_a_refused_move_announces_nothing(): void
+    {
+        Event::fake([BookingMoved::class]);
+        $bookingId = $this->createConfirmedBookingOf($this->user);
+        $this->createConfirmedBookingOf(UserModel::factory()->create(), '2026-03-17');
+
+        try {
+            $this->service->moveBookingAsStaff(new MoveBookingDTO($bookingId, $this->resource->id, '2026-03-17', '11:00', '12:00'));
+            $this->fail('The move should have been refused');
+        } catch (SlotUnavailableException) {
+        }
+
+        Event::assertNotDispatched(BookingMoved::class);
     }
 
     public function test_a_move_resets_the_reminder_and_keeps_the_rest_of_the_booking(): void

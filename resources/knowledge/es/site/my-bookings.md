@@ -42,6 +42,7 @@ Según la configuración de la web:
 - «Reserva recibida»: tu reserva está pendiente de aprobación.
 - «Reserva confirmada»: ya la tienes.
 - «Reserva rechazada» o «Reserva cancelada»: con el motivo, si lo hay.
+- «Reserva modificada»: la organización ha cambiado el espacio, la fecha o el horario; trae los datos nuevos y los de antes.
 - «Recordatorio: tu reserva en …»: unas horas antes de una reserva confirmada.
 
 Cada correo trae el botón **Ver mis reservas**.

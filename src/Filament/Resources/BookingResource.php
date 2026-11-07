@@ -101,6 +101,13 @@ final class BookingResource extends BaseResource
                     ->required()
                     ->placeholder('HH:MM'),
 
+                // Not stored: EditBooking hands it to the move and drops it
+                Toggle::make('notify_owner')
+                    ->label(__('venue-bookings::messages.fields.notify_owner'))
+                    ->helperText(__('venue-bookings::messages.fields.notify_owner_help'))
+                    ->default(true)
+                    ->visibleOn('edit'),
+
                 Select::make('status')
                     ->label(__('venue-bookings::messages.fields.status'))
                     ->options(function (?BookingModel $record): array {

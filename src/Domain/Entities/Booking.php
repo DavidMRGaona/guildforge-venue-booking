@@ -180,6 +180,17 @@ final class Booking
             || substr($this->timeRange->startTime, 0, 5) !== substr($other->timeRange->startTime, 0, 5);
     }
 
+    /**
+     * Whether $other is on another resource or starts or ends at another time (seconds ignored).
+     */
+    public function takesPlaceElsewhereOrAtAnotherTimeThan(self $other): bool
+    {
+        // Resource ids are UUIDs, whatever their letter case
+        return strtolower($this->resourceId->value) !== strtolower($other->resourceId->value)
+            || $this->startsAtAnotherTimeThan($other)
+            || substr($this->timeRange->endTime, 0, 5) !== substr($other->timeRange->endTime, 0, 5);
+    }
+
     public function belongsTo(string $userId): bool
     {
         return $this->userId === $userId;
