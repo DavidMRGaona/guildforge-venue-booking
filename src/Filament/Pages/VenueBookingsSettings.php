@@ -242,6 +242,10 @@ final class VenueBookingsSettings extends Page implements HasForms
                     Toggle::make('notifications.notify_on_booking_rejected')
                         ->label(__('venue-bookings::messages.settings.fields.notify_on_booking_rejected')),
 
+                    Toggle::make('notifications.notify_on_booking_moved')
+                        ->label(__('venue-bookings::messages.settings.fields.notify_on_booking_moved'))
+                        ->helperText(__('venue-bookings::messages.settings.fields.notify_on_booking_moved_help')),
+
                     Toggle::make('notifications.notify_on_booking_reminder')
                         ->label(__('venue-bookings::messages.settings.fields.notify_on_booking_reminder')),
 

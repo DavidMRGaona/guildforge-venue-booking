@@ -68,6 +68,7 @@ final class EditBooking extends EditRecord
         }
 
         $data['field_values'] = $flat;
+        $data['notify_owner'] = true;
 
         return $data;
     }
@@ -128,6 +129,7 @@ final class EditBooking extends EditRecord
                     date: (string) $data['date'],
                     startTime: (string) $data['start_time'],
                     endTime: (string) $data['end_time'],
+                    notifyOwner: (bool) ($data['notify_owner'] ?? true),
                 ));
             } catch (DomainException|InvalidArgumentException $exception) {
                 $this->refuse($exception);
@@ -136,7 +138,7 @@ final class EditBooking extends EditRecord
             $record->refresh();
         }
 
-        unset($data['resource_id'], $data['date'], $data['start_time'], $data['end_time']);
+        unset($data['resource_id'], $data['date'], $data['start_time'], $data['end_time'], $data['notify_owner']);
 
         $newStatusValue = $data['status'] ?? null;
         $oldStatus = $record->status;

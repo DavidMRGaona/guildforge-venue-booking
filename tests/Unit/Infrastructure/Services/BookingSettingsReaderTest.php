@@ -144,6 +144,8 @@ final class BookingSettingsReaderTest extends TestCase
         $this->assertSame($defaults['notifications']['notify_on_booking_confirmed'], $this->reader->isNotifyOnBookingConfirmedEnabled());
         $this->assertSame($defaults['notifications']['notify_on_booking_cancelled'], $this->reader->isNotifyOnBookingCancelledEnabled());
         $this->assertSame($defaults['notifications']['notify_on_booking_rejected'], $this->reader->isNotifyOnBookingRejectedEnabled());
+        $this->assertSame($defaults['notifications']['notify_on_booking_moved'], $this->reader->isNotifyOnBookingMovedEnabled());
+        $this->assertTrue($this->reader->isNotifyOnBookingMovedEnabled());
         $this->assertSame($defaults['notifications']['notify_on_booking_reminder'], $this->reader->isReminderEnabled());
         $this->assertSame($defaults['associations']['game_tables_visibility'], $this->reader->get('associations.game_tables_visibility'));
     }

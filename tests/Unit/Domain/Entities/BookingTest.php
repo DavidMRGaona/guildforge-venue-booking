@@ -479,6 +479,18 @@ final class BookingTest extends TestCase
         $booking->expire(new DateTimeImmutable('2026-03-16 10:00', new DateTimeZone('UTC')), new DateTimeZone('UTC'));
     }
 
+    public function test_it_tells_whether_another_booking_takes_place_elsewhere_or_at_another_time(): void
+    {
+        $booking = $this->createBooking(date: '2026-03-15', startTime: '10:00', endTime: '12:00');
+        $sameResourceInCapitals = BookableResourceId::fromString(strtoupper($booking->resourceId->value));
+
+        $this->assertFalse($booking->movedTo($sameResourceInCapitals, '2026-03-15', new TimeRange('10:00:00', '12:00:00'))->takesPlaceElsewhereOrAtAnotherTimeThan($booking));
+        $this->assertTrue($booking->movedTo(BookableResourceId::generate(), '2026-03-15', new TimeRange('10:00', '12:00'))->takesPlaceElsewhereOrAtAnotherTimeThan($booking));
+        $this->assertTrue($booking->movedTo($booking->resourceId, '2026-03-16', new TimeRange('10:00', '12:00'))->takesPlaceElsewhereOrAtAnotherTimeThan($booking));
+        $this->assertTrue($booking->movedTo($booking->resourceId, '2026-03-15', new TimeRange('09:00', '12:00'))->takesPlaceElsewhereOrAtAnotherTimeThan($booking));
+        $this->assertTrue($booking->movedTo($booking->resourceId, '2026-03-15', new TimeRange('10:00', '13:00'))->takesPlaceElsewhereOrAtAnotherTimeThan($booking));
+    }
+
     private function createBooking(
         ?string $userId = null,
         string $date = '2026-03-15',

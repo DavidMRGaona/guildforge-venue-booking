@@ -5,7 +5,7 @@ summary: Aprueba o rechaza las reservas pendientes, cancela, marca a quien no vi
 category: activities
 audience: panel
 order: 50
-keywords: [reservas, gestionar reservas, aprobar reserva, confirmar reserva, rechazar reserva, pendientes, pendientes de aprobación, cancelar reserva, no presentado, no vino, mover reserva, cambiar hora, cambiar espacio, completar reserva, borrar reserva, notas del administrador, motivo de rechazo, motivo de cancelación, filtrar reservas]
+keywords: [reservas, gestionar reservas, aprobar reserva, confirmar reserva, rechazar reserva, pendientes, pendientes de aprobación, cancelar reserva, no presentado, no vino, mover reserva, cambiar hora, cambiar espacio, reserva modificada, avisar del cambio, completar reserva, borrar reserva, notas del administrador, motivo de rechazo, motivo de cancelación, filtrar reservas]
 related: [venue-bookings.panel.create-booking, venue-bookings.panel.overview, venue-bookings.panel.settings]
 conditions:
   permissions:
@@ -45,7 +45,7 @@ Puedes cambiar:
 - Las **Notas del administrador**: solo las ve quien tiene **Gestionar reservas**, también en el calendario de la web.
 - El evento, los datos del formulario y, si tu web tiene mesas de rol, la mesa o campaña asociada.
 
-Mover una reserva no envía ningún correo: avisa tú a la persona.
+Si mueves una reserva pendiente o confirmada, a la persona le llega el correo «Reserva modificada» con el espacio, la fecha y el horario nuevos y los de antes, si **Notificar al cambiar el espacio, la fecha o el horario de una reserva** está activado en la configuración. Para no enviarlo en un guardado concreto (por ejemplo, al corregir un error al teclear), apaga **Avisar del cambio por correo** antes de pulsar **Guardar cambios**. Mover una reserva ya terminada no envía nada.
 
 ## Borrar una reserva
 

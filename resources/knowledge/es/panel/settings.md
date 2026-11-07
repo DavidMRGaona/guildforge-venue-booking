@@ -55,6 +55,7 @@ Son la plantilla de los espacios que no tienen campos propios. La guía de campo
 | **Notificar al confirmar reserva** | La persona, al confirmarse (también con la confirmación automática). |
 | **Notificar al cancelar reserva** | La persona, la cancele ella o la organización. |
 | **Notificar al rechazar reserva** | La persona, con el motivo. |
+| **Notificar al cambiar el espacio, la fecha o el horario de una reserva** | La persona, cuando alguien mueve desde el panel su reserva pendiente o confirmada. Al guardar se puede apagar para ese cambio. |
 | **Enviar recordatorio** | La persona, una vez, antes de una reserva confirmada. |
 
 **Horas de antelación del recordatorio** (de 1 a 72; vienen 24) dice cuánto antes del inicio sale el recordatorio. Se revisa cada hora. Todos los interruptores vienen activados.
