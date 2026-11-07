@@ -23,6 +23,7 @@ const statusDotColor = computed(() => {
         cancelled: 'var(--color-error)',
         no_show: 'var(--color-error)',
         rejected: 'var(--color-error)',
+        expired: 'var(--color-text-muted)',
     };
 
     return colorMap[props.booking.status] ?? 'var(--color-text-muted)';

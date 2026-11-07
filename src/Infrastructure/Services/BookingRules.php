@@ -24,7 +24,10 @@ final readonly class BookingRules
 
     public function hasReachedBookingLimit(string $userId): bool
     {
-        return $this->bookingRepository->countActiveByUser($userId) >= $this->settings->getMaxActiveBookings();
+        // Only bookings under way or still ahead take up the allowance
+        $now = CarbonImmutable::now($this->settings->getDateTimeZone());
+
+        return $this->bookingRepository->countActiveByUser($userId, $now) >= $this->settings->getMaxActiveBookings();
     }
 
     /**

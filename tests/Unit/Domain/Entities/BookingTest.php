@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Modules\VenueBookings\Domain\Entities\Booking;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
+use Modules\VenueBookings\Domain\Exceptions\BookingNotEndedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingNotStartedException;
 use Modules\VenueBookings\Domain\Exceptions\InvalidStatusTransitionException;
 use Modules\VenueBookings\Domain\ValueObjects\BookableResourceId;
@@ -417,6 +418,65 @@ final class BookingTest extends TestCase
         $this->assertFalse($booking->movedTo($booking->resourceId, '2026-03-15', new TimeRange('10:00:00', '13:00'))->startsAtAnotherTimeThan($booking));
         $this->assertTrue($booking->movedTo($booking->resourceId, '2026-03-15', new TimeRange('09:00', '12:00'))->startsAtAnotherTimeThan($booking));
         $this->assertTrue($booking->movedTo($booking->resourceId, '2026-03-16', new TimeRange('10:00', '12:00'))->startsAtAnotherTimeThan($booking));
+    }
+
+    public function test_a_pending_booking_expires_once_it_has_ended(): void
+    {
+        $booking = $this->createBooking(date: '2026-03-15', startTime: '10:00', endTime: '12:00');
+
+        $booking->expire(new DateTimeImmutable('2026-03-15 12:00', new DateTimeZone('Europe/Madrid')), new DateTimeZone('Europe/Madrid'));
+
+        $this->assertSame(BookingStatus::Expired, $booking->status);
+        $this->assertNull($booking->cancellationReason);
+        $this->assertNull($booking->cancelledAt);
+    }
+
+    public function test_a_pending_booking_under_way_does_not_expire(): void
+    {
+        $booking = $this->createBooking(date: '2026-03-15', startTime: '10:00', endTime: '12:00');
+
+        try {
+            $booking->expire(new DateTimeImmutable('2026-03-15 11:59:59', new DateTimeZone('Europe/Madrid')), new DateTimeZone('Europe/Madrid'));
+            $this->fail('A booking under way must not expire');
+        } catch (BookingNotEndedException) {
+            $this->assertSame(BookingStatus::Pending, $booking->status);
+        }
+    }
+
+    public function test_expiring_reads_the_end_in_the_venue_timezone(): void
+    {
+        // Ends 12:00 in Madrid, 11:00 UTC: at 11:30 UTC it has ended at the venue
+        $booking = $this->createBooking(date: '2026-01-15', startTime: '10:00', endTime: '12:00');
+
+        $booking->expire(new DateTimeImmutable('2026-01-15 11:30', new DateTimeZone('UTC')), new DateTimeZone('Europe/Madrid'));
+
+        $this->assertSame(BookingStatus::Expired, $booking->status);
+    }
+
+    public function test_a_booking_that_crosses_midnight_expires_the_next_day(): void
+    {
+        $madrid = new DateTimeZone('Europe/Madrid');
+        $booking = $this->createBooking(date: '2026-03-15', startTime: '22:00', endTime: '02:00');
+
+        try {
+            $booking->expire(new DateTimeImmutable('2026-03-16 01:00', $madrid), $madrid);
+            $this->fail('A booking that crosses midnight ends the next day');
+        } catch (BookingNotEndedException) {
+        }
+
+        $booking->expire(new DateTimeImmutable('2026-03-16 02:00', $madrid), $madrid);
+
+        $this->assertSame(BookingStatus::Expired, $booking->status);
+    }
+
+    public function test_a_confirmed_booking_cannot_expire(): void
+    {
+        $booking = $this->createBooking(date: '2026-03-15', startTime: '10:00', endTime: '12:00');
+        $booking->confirm();
+
+        $this->expectException(InvalidStatusTransitionException::class);
+
+        $booking->expire(new DateTimeImmutable('2026-03-16 10:00', new DateTimeZone('UTC')), new DateTimeZone('UTC'));
     }
 
     private function createBooking(

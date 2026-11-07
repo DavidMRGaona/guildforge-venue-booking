@@ -60,7 +60,7 @@ Se configura en el panel: **Reservas del local → Configuración de reservas** 
 | Clave | Valor de una instalación nueva | Descripción |
 |-------|--------------------------------|-------------|
 | `approval_mode` | `require_approval` | Modo de aprobación: `auto_confirm` o `require_approval` |
-| `max_active_bookings_per_user` | `3` | Máximo de reservas activas (pendientes o confirmadas) por usuario |
+| `max_active_bookings_per_user` | `3` | Máximo de reservas activas (pendientes o confirmadas que aún no han terminado) por usuario |
 | `min_advance_minutes` | `60` | Antelación mínima en minutos para reservar |
 | `max_future_days` | `30` | Máximo de días en el futuro para reservar |
 | `auto_complete_enabled` | `true` | Completar automáticamente las reservas confirmadas ya terminadas |
@@ -94,6 +94,12 @@ Con **Completar reservas automáticamente** activado, `venue-bookings:complete-p
 
 El módulo lo programa cada hora (sin ejecuciones solapadas), junto a los recordatorios. Cada reserva se procesa por separado: si alguien la cambió mientras tanto se salta, y un fallo queda en el log sin detener al resto. La primera ejecución tras actualizar completa de una vez todas las reservas confirmadas antiguas.
 
+### Caducidad de las pendientes
+
+`venue-bookings:expire-past-pending` pasa a **Caducada** cada reserva pendiente cuyo fin (leído como arriba) ya ha pasado: mientras está en curso todavía se puede aprobar. No depende de **Completar reservas automáticamente** y no envía ningún email; dispara el evento `BookingExpired`. Se programa cada hora, igual que el completado, con las mismas reglas (se salta la reserva que alguien cambió entretanto y un fallo no detiene al resto). La primera ejecución tras actualizar caduca de una vez todas las pendientes antiguas.
+
+El límite de reservas activas no depende de esta tarea: solo cuenta las reservas pendientes o confirmadas que aún no han terminado.
+
 ### Franjas y reglas al reservar
 
 Al crear una reserva desde la web, el servidor exige que la franja esté hecha de turnos consecutivos que la página ofrece ese día (en el modo `time_blocks`, un bloque entero), que no se solape con otra reserva activa y que no haya empezado, y aplica el límite de reservas activas, la antelación mínima y los días máximos a futuro. La lista de turnos marca como no disponibles los que empiezan antes de la antelación mínima (cualquier día) y los de días más allá del máximo.
@@ -126,13 +132,14 @@ Dos avisos más pueden aparecer al reservar:
 | Cancelada | `cancelled` | Cancelada por el usuario o en el panel |
 | No presentado | `no_show` | El usuario no se presentó |
 | Rechazada | `rejected` | Rechazada en el panel |
+| Caducada | `expired` | Pendiente que terminó sin aprobarse (solo la pone `venue-bookings:expire-past-pending`) |
 
 ### Transiciones válidas
 
-- **Pendiente** → Confirmada, Cancelada, Rechazada
+- **Pendiente** → Confirmada, Cancelada, Rechazada, Caducada
 - **Confirmada** → Completada, Cancelada, No presentado
 
-Los estados Completada, Cancelada, No presentado y Rechazada son finales.
+Los estados Completada, Cancelada, No presentado, Rechazada y Caducada son finales.
 
 ## Panel de administración
 
@@ -157,6 +164,7 @@ Los dos widgets solo se muestran a quien puede ver el listado de reservas (`book
 |---------|-------------|
 | `venue-bookings:send-reminders` | Envía los recordatorios pendientes (programado cada hora por el módulo) |
 | `venue-bookings:complete-past` | Completa las reservas confirmadas ya terminadas (programado cada hora por el módulo) |
+| `venue-bookings:expire-past-pending` | Pasa a Caducada las reservas pendientes ya terminadas, sin enviar correos (programado cada hora por el módulo) |
 | `venue-bookings:migrate-settings` | Copia la configuración de `config/settings.php` a la tabla `settings` |
 
 ## Rutas web

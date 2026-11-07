@@ -17,6 +17,34 @@ final class BookingStatusTest extends TestCase
         $this->assertEquals('cancelled', BookingStatus::Cancelled->value);
         $this->assertEquals('no_show', BookingStatus::NoShow->value);
         $this->assertEquals('rejected', BookingStatus::Rejected->value);
+        $this->assertEquals('expired', BookingStatus::Expired->value);
+    }
+
+    public function test_an_expired_booking_reads_as_caducada_in_grey(): void
+    {
+        $translations = require __DIR__.'/../../../../lang/es/messages.php';
+
+        $this->assertSame('Caducada', $translations['enums']['booking_status']['expired']);
+        $this->assertSame('gray', BookingStatus::Expired->color());
+        $this->assertSame('var(--color-bg-muted)', BookingStatus::Expired->calendarCssColor());
+    }
+
+    public function test_only_a_pending_booking_can_expire(): void
+    {
+        foreach (BookingStatus::cases() as $from) {
+            $this->assertSame(
+                $from === BookingStatus::Pending,
+                $from->canTransitionTo(BookingStatus::Expired),
+                "Unexpected transition from {$from->value} to expired",
+            );
+        }
+    }
+
+    public function test_an_expired_booking_cannot_change_again(): void
+    {
+        foreach (BookingStatus::cases() as $target) {
+            $this->assertFalse(BookingStatus::Expired->canTransitionTo($target));
+        }
     }
 
     public function test_it_returns_label_for_each_case(): void
@@ -38,26 +66,28 @@ final class BookingStatusTest extends TestCase
         $options = BookingStatus::options();
 
         $this->assertSame(array_map(fn (BookingStatus $case): string => $case->label(), BookingStatus::cases()), array_values($options));
-        $this->assertCount(6, $options);
+        $this->assertCount(7, $options);
         $this->assertArrayHasKey('pending', $options);
         $this->assertArrayHasKey('confirmed', $options);
         $this->assertArrayHasKey('completed', $options);
         $this->assertArrayHasKey('cancelled', $options);
         $this->assertArrayHasKey('no_show', $options);
         $this->assertArrayHasKey('rejected', $options);
+        $this->assertArrayHasKey('expired', $options);
     }
 
     public function test_it_returns_values_array(): void
     {
         $values = BookingStatus::values();
 
-        $this->assertCount(6, $values);
+        $this->assertCount(7, $values);
         $this->assertContains('pending', $values);
         $this->assertContains('confirmed', $values);
         $this->assertContains('completed', $values);
         $this->assertContains('cancelled', $values);
         $this->assertContains('no_show', $values);
         $this->assertContains('rejected', $values);
+        $this->assertContains('expired', $values);
     }
 
     public function test_it_identifies_final_statuses(): void
@@ -66,6 +96,7 @@ final class BookingStatusTest extends TestCase
         $this->assertTrue(BookingStatus::Cancelled->isFinal());
         $this->assertTrue(BookingStatus::NoShow->isFinal());
         $this->assertTrue(BookingStatus::Rejected->isFinal());
+        $this->assertTrue(BookingStatus::Expired->isFinal());
 
         $this->assertFalse(BookingStatus::Pending->isFinal());
         $this->assertFalse(BookingStatus::Confirmed->isFinal());
@@ -80,6 +111,7 @@ final class BookingStatusTest extends TestCase
         $this->assertFalse(BookingStatus::Cancelled->isActive());
         $this->assertFalse(BookingStatus::NoShow->isActive());
         $this->assertFalse(BookingStatus::Rejected->isActive());
+        $this->assertFalse(BookingStatus::Expired->isActive());
     }
 
     public function test_can_transition_from_pending_to_confirmed(): void
@@ -137,6 +169,7 @@ final class BookingStatusTest extends TestCase
             [BookingStatus::Cancelled, 'var(--color-error-bg)'],
             [BookingStatus::NoShow, 'var(--color-error-bg)'],
             [BookingStatus::Rejected, 'var(--color-error-bg)'],
+            [BookingStatus::Expired, 'var(--color-bg-muted)'],
         ];
 
         foreach ($expected as [$status, $color]) {

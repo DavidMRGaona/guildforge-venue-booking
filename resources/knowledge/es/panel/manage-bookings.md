@@ -15,7 +15,7 @@ Las reservas están en **Reservas del local** → **Reservas**. Lo que puedes ha
 
 ## Encontrar una reserva
 
-- Las pestañas **Todas**, **Pendientes**, **Confirmadas** y **Canceladas** (que incluye las rechazadas) separan las reservas por estado. **Pendientes** lleva el número de reservas por revisar.
+- Las pestañas **Todas**, **Pendientes**, **Confirmadas** y **Canceladas** (que incluye las rechazadas y las caducadas) separan las reservas por estado. **Pendientes** lleva el número de reservas por revisar.
 - Con los filtros eliges el **Espacio**, el **Estado** y un intervalo de fechas (**Desde** y **Hasta**).
 - Puedes buscar por espacio o por usuario.
 
@@ -40,8 +40,8 @@ Desde el panel puedes cancelar una reserva aunque ya haya empezado.
 
 Puedes cambiar:
 
-- El **Espacio**, la **Fecha**, la **Hora de inicio** y la **Hora de fin**, para moverla. La nueva franja debe coincidir con los turnos del espacio y no solaparse con otra reserva. No puedes poner un inicio que ya haya pasado; si mantienes el inicio, una reserva en curso sí puede alargarse o cambiar de espacio. Las reservas ya terminadas (completadas, canceladas, rechazadas o no presentadas) se mueven sin comprobaciones, para corregir el registro.
-- El **Estado**, solo a los que permite el estado actual. Es la única forma de marcar a mano una reserva confirmada como **Completada**. El **Motivo de cancelación** se usa como motivo si la cancelas o la rechazas desde aquí.
+- El **Espacio**, la **Fecha**, la **Hora de inicio** y la **Hora de fin**, para moverla. La nueva franja debe coincidir con los turnos del espacio y no solaparse con otra reserva. No puedes poner un inicio que ya haya pasado; si mantienes el inicio, una reserva en curso sí puede alargarse o cambiar de espacio. Las reservas ya terminadas (completadas, canceladas, rechazadas, no presentadas o caducadas) se mueven sin comprobaciones, para corregir el registro.
+- El **Estado**, solo a los que permite el estado actual. **Caducada** no se elige a mano: la pone la web sola. Es la única forma de marcar a mano una reserva confirmada como **Completada**. El **Motivo de cancelación** se usa como motivo si la cancelas o la rechazas desde aquí.
 - Las **Notas del administrador**: solo las ve quien tiene **Gestionar reservas**, también en el calendario de la web.
 - El evento, los datos del formulario y, si tu web tiene mesas de rol, la mesa o campaña asociada.
 

@@ -351,7 +351,7 @@ final class EloquentBookingRepositoryTest extends TestCase
             'status' => 'completed',
         ]);
 
-        $count = $this->repository->countActiveByUser($this->user->id);
+        $count = $this->repository->countActiveByUser($this->user->id, new DateTimeImmutable('2026-03-01 09:00', new \DateTimeZone('Europe/Madrid')));
 
         $this->assertEquals(2, $count);
     }
@@ -934,6 +934,54 @@ final class EloquentBookingRepositoryTest extends TestCase
         $bookings = $this->repository->getConfirmedEndedBy(new DateTimeImmutable('2026-03-15 12:00', $madrid));
 
         $this->assertSame([$endedEarlier, $endedExactly], array_map(fn (Booking $b): string => $b->id->value, $bookings));
+    }
+
+    public function test_active_bookings_count_only_until_they_end_at_the_venue(): void
+    {
+        config()->set('modules.settings.venue-bookings.timezone', 'Europe/Madrid');
+        $now = new DateTimeImmutable('2026-03-15 12:00', new \DateTimeZone('Europe/Madrid'));
+
+        $this->createBookingOn('2026-03-15', '10:00', '12:00', 'pending');     // ended right now
+        $this->createBookingOn('2026-03-14', '10:00', '12:00', 'confirmed');   // ended yesterday
+        $this->createBookingOn('2026-03-14', '22:00', '11:00', 'pending');     // crossed midnight, ended at 11:00
+        $this->createBookingOn('2026-03-15', '11:00', '13:00', 'confirmed');   // under way: counts
+        $this->createBookingOn('2026-03-14', '22:00', '13:00', 'pending');     // crossed midnight, under way: counts
+        $this->createBookingOn('2026-03-16', '10:00', '12:00', 'pending');     // future: counts
+        $this->createBookingOn('2026-03-16', '10:00', '12:00', 'cancelled');   // final: never counts
+
+        $this->assertSame(3, $this->repository->countActiveByUser($this->user->id, $now));
+    }
+
+    public function test_the_active_count_reads_now_in_the_venue_timezone(): void
+    {
+        config()->set('modules.settings.venue-bookings.timezone', 'Europe/Madrid');
+        $this->createBookingOn('2026-01-15', '10:00', '12:00', 'pending');     // ends 11:00 UTC
+
+        $this->assertSame(1, $this->repository->countActiveByUser($this->user->id, new DateTimeImmutable('2026-01-15 10:59', new \DateTimeZone('UTC'))));
+        $this->assertSame(0, $this->repository->countActiveByUser($this->user->id, new DateTimeImmutable('2026-01-15 11:00', new \DateTimeZone('UTC'))));
+    }
+
+    public function test_it_gets_pending_bookings_ended_by_a_moment(): void
+    {
+        config()->set('modules.settings.venue-bookings.timezone', 'Europe/Madrid');
+        $madrid = new \DateTimeZone('Europe/Madrid');
+
+        $endedEarlier = $this->createBookingOn('2026-03-14', '10:00', '12:00', 'pending');
+        $crossedMidnight = $this->createBookingOn('2026-03-14', '22:00', '02:00', 'pending');   // ends 2026-03-15 02:00
+        $endedExactly = $this->createBookingOn('2026-03-15', '10:00', '12:00', 'pending');
+        $this->createBookingOn('2026-03-15', '11:00', '13:00', 'pending');     // under way
+        $this->createBookingOn('2026-03-14', '22:00', '13:00', 'pending');     // crosses midnight, ends 13:00
+        $this->createBookingOn('2026-03-16', '10:00', '12:00', 'pending');     // a later day
+        foreach (['confirmed', 'cancelled', 'rejected', 'completed', 'no_show', 'expired'] as $status) {
+            $this->createBookingOn('2026-03-14', '10:00', '12:00', $status);
+        }
+
+        $bookings = $this->repository->getPendingEndedBy(new DateTimeImmutable('2026-03-15 12:00', $madrid));
+
+        $this->assertSame(
+            [$endedEarlier, $crossedMidnight, $endedExactly],
+            array_map(fn (Booking $b): string => $b->id->value, $bookings),
+        );
     }
 
     private function createBookingOn(string $date, string $start, string $end, string $status = 'confirmed'): string

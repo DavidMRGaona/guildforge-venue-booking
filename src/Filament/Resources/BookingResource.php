@@ -121,6 +121,11 @@ final class BookingResource extends BaseResource
                                 continue;
                             }
 
+                            // Only the hourly task expires a booking, once it has ended
+                            if ($case === BookingStatus::Expired) {
+                                continue;
+                            }
+
                             // A no-show only makes sense once the booking has started
                             if ($case === BookingStatus::NoShow && ! $record->hasStarted()) {
                                 continue;

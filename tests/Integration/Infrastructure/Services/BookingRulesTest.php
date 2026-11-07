@@ -98,6 +98,7 @@ final class BookingRulesTest extends TestCase
 
     public function test_the_limit_counts_pending_and_confirmed_bookings_only(): void
     {
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 9, 0, 0, 'Europe/Madrid'));
         $this->bookingOf('pending');
         $this->assertFalse($this->rules->hasReachedBookingLimit($this->user->id));
 
@@ -106,6 +107,25 @@ final class BookingRulesTest extends TestCase
         $this->assertFalse($this->rules->hasReachedBookingLimit($this->user->id));
 
         $this->bookingOf('confirmed');
+        $this->assertTrue($this->rules->hasReachedBookingLimit($this->user->id));
+    }
+
+    public function test_bookings_that_have_ended_do_not_count_towards_the_limit(): void
+    {
+        // 2026-04-01 10:00-12:00 is over at the venue
+        $this->travelTo(CarbonImmutable::create(2026, 4, 1, 12, 0, 0, 'Europe/Madrid'));
+        $this->bookingOf('pending');
+        $this->bookingOf('confirmed');
+
+        $this->assertFalse($this->rules->hasReachedBookingLimit($this->user->id));
+    }
+
+    public function test_bookings_under_way_still_count_towards_the_limit(): void
+    {
+        $this->travelTo(CarbonImmutable::create(2026, 4, 1, 11, 59, 0, 'Europe/Madrid'));
+        $this->bookingOf('pending');
+        $this->bookingOf('confirmed');
+
         $this->assertTrue($this->rules->hasReachedBookingLimit($this->user->id));
     }
 

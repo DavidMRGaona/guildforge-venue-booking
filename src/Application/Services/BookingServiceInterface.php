@@ -100,4 +100,9 @@ interface BookingServiceInterface
     public function markCompleted(string $bookingId): BookingResponseDTO;
 
     public function markNoShow(string $bookingId): BookingResponseDTO;
+
+    /**
+     * Expire a pending booking that has ended, read in the venue timezone. Nobody is mailed.
+     */
+    public function expireBooking(string $bookingId): BookingResponseDTO;
 }

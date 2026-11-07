@@ -194,6 +194,35 @@ final class BookingResourceEditTest extends ModuleTestCase
         ]);
     }
 
+    public function test_staff_cannot_set_a_booking_to_expired_by_hand(): void
+    {
+        // Only the hourly task expires a pending booking, once it has ended
+        $booking = BookingModel::create([
+            'id' => (string) Str::uuid(),
+            'resource_id' => $this->bookableResource->id,
+            'user_id' => $this->admin->id,
+            'date' => '2026-03-16',
+            'start_time' => '10:00',
+            'end_time' => '12:00',
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($this->admin);
+
+        Livewire::test(EditBooking::class, ['record' => $booking->id])
+            ->assertFormFieldExists('status', fn ($field): bool => ! array_key_exists('expired', $field->getOptions()))
+            ->fillForm([
+                'status' => 'expired',
+            ])
+            ->call('save')
+            ->assertHasFormErrors(['status']);
+
+        $this->assertDatabaseHas('venuebookings_bookings', [
+            'id' => $booking->id,
+            'status' => 'pending',
+        ]);
+    }
+
     public function test_status_field_is_disabled_on_create_form(): void
     {
         $this->actingAs($this->admin);

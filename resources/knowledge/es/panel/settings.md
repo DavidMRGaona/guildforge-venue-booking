@@ -28,7 +28,7 @@ Valen para todas las reservas hechas en la web, también las de la administraci�
 
 | Campo | Qué decide |
 |---|---|
-| **Máximo de reservas activas por usuario** | Cuántas reservas pendientes o confirmadas puede tener cada persona a la vez. Cuentan también las ya pasadas mientras no se completen, se cancelen o se rechacen. Viene en 3. |
+| **Máximo de reservas activas por usuario** | Cuántas reservas pendientes o confirmadas puede tener cada persona a la vez. Solo cuentan las que aún no han terminado: las futuras y las que están en curso. Viene en 3. |
 | **Minutos mínimos de antelación** | Cuánto antes del inicio hay que reservar. Viene en 60. |
 | **Días máximos a futuro** | Hasta cuántos días por delante se puede reservar. Viene en 30. |
 

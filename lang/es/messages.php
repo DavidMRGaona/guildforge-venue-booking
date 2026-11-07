@@ -11,6 +11,7 @@ return [
             'cancelled' => 'Cancelada',
             'no_show' => 'No presentado',
             'rejected' => 'Rechazada',
+            'expired' => 'Caducada',
         ],
         'resource_status' => [
             'active' => 'Activo',
