@@ -67,12 +67,12 @@ final class BookingEligibilityServiceTest extends TestCase
     {
         config()->set('modules.settings.venue-bookings.max_active_bookings_per_user', 2);
 
-        // Create 2 active bookings (pending + confirmed)
+        // Create 2 active bookings ahead (pending + confirmed); ended ones do not count
         BookingModel::create([
             'id' => (string) Str::uuid(),
             'resource_id' => $this->resource->id,
             'user_id' => $this->user->id,
-            'date' => '2026-04-01',
+            'date' => date('Y-m-d', strtotime('+1 day')),
             'start_time' => '10:00',
             'end_time' => '12:00',
             'status' => 'pending',
@@ -82,7 +82,7 @@ final class BookingEligibilityServiceTest extends TestCase
             'id' => (string) Str::uuid(),
             'resource_id' => $this->resource->id,
             'user_id' => $this->user->id,
-            'date' => '2026-04-02',
+            'date' => date('Y-m-d', strtotime('+2 days')),
             'start_time' => '10:00',
             'end_time' => '12:00',
             'status' => 'confirmed',
@@ -132,7 +132,7 @@ final class BookingEligibilityServiceTest extends TestCase
             'id' => (string) Str::uuid(),
             'resource_id' => $this->resource->id,
             'user_id' => $this->user->id,
-            'date' => '2026-04-01',
+            'date' => date('Y-m-d', strtotime('+1 day')),
             'start_time' => '10:00',
             'end_time' => '12:00',
             'status' => 'pending',

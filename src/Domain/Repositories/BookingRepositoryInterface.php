@@ -36,9 +36,11 @@ interface BookingRepositoryInterface
     public function getByStatus(BookingStatus $status): array;
 
     /**
-     * Count active (non-final) bookings for a user.
+     * Count a user's active (pending or confirmed) bookings that have not ended at $now: under
+     * way or still ahead. The end is read in the venue timezone, on the next day when the
+     * range crosses midnight.
      */
-    public function countActiveByUser(string $userId): int;
+    public function countActiveByUser(string $userId, \DateTimeInterface $now): int;
 
     /**
      * Check if a time range on a date overlaps an active booking of the resource, also one of
@@ -72,6 +74,14 @@ interface BookingRepositoryInterface
      * @return array<Booking>
      */
     public function getConfirmedEndedBy(\DateTimeInterface $endedBy): array;
+
+    /**
+     * Pending bookings whose end (read as in getConfirmedEndedBy()) is at or before $endedBy,
+     * ordered by date and start time.
+     *
+     * @return array<Booking>
+     */
+    public function getPendingEndedBy(\DateTimeInterface $endedBy): array;
 
     /**
      * @return array<Booking>

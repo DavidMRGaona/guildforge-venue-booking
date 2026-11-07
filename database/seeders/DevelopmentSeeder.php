@@ -127,6 +127,8 @@ final class DevelopmentSeeder extends Seeder
             [$principal, 'richard', BookingStatus::Confirmed, 8, '18:00', 2, null],
             [$principal, 'john', BookingStatus::Pending, 9, '18:00', 1, null],
             [$painting, 'jane', BookingStatus::Completed, -2, null, 1, null],
+            // Nobody approved it before it ended
+            [$painting, 'john', BookingStatus::Expired, -4, null, 1, null],
             [$painting, 'richard', BookingStatus::Confirmed, 3, null, 1, null],
             [$painting, 'mary', BookingStatus::Pending, 7, null, 2, null],
         ];

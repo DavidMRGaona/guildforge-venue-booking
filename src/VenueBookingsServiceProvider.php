@@ -26,6 +26,7 @@ use Modules\VenueBookings\Application\Services\BookingServiceInterface;
 use Modules\VenueBookings\Application\Services\ModuleIntegrationServiceInterface;
 use Modules\VenueBookings\Application\Services\SlotAvailabilityServiceInterface;
 use Modules\VenueBookings\Console\Commands\CompletePastBookingsCommand;
+use Modules\VenueBookings\Console\Commands\ExpirePastPendingBookingsCommand;
 use Modules\VenueBookings\Console\Commands\MigrateSettingsToDatabase;
 use Modules\VenueBookings\Console\Commands\SendBookingRemindersCommand;
 use Modules\VenueBookings\Domain\Events\BookingCancelled;
@@ -139,6 +140,7 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
                 MigrateSettingsToDatabase::class,
                 SendBookingRemindersCommand::class,
                 CompletePastBookingsCommand::class,
+                ExpirePastPendingBookingsCommand::class,
             ]);
         }
     }
@@ -153,6 +155,11 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
 
             // Confirmed bookings become completed once they ended (plus the configured hours)
             $schedule->command('venue-bookings:complete-past')
+                ->hourly()
+                ->withoutOverlapping(10);
+
+            // Pending bookings nobody approved expire once they ended
+            $schedule->command('venue-bookings:expire-past-pending')
                 ->hourly()
                 ->withoutOverlapping(10);
         });

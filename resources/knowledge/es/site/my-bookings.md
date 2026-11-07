@@ -5,7 +5,7 @@ summary: Dónde ver tus reservas del local, en qué estado está cada una y qué
 category: venue
 audience: site
 order: 30
-keywords: [mis reservas, ver reservas, mis reservas del local, estado de la reserva, pendiente, confirmada, rechazada, reservas pasadas, próximas reservas, perfil, correo de reserva, recordatorio, misreservas]
+keywords: [mis reservas, ver reservas, mis reservas del local, estado de la reserva, pendiente, confirmada, rechazada, caducada, reservas pasadas, próximas reservas, perfil, correo de reserva, recordatorio, misreservas]
 related: [venue-bookings.overview, venue-bookings.book, venue-bookings.cancel-booking]
 ---
 Tus reservas están en dos sitios con la misma información.
@@ -33,6 +33,7 @@ Cada reserva muestra el espacio, su estado, el día, el horario y los datos que 
 | **Cancelada** | La has cancelado tú o la organización. |
 | **Completada** | Ya pasó. |
 | **No presentado** | La organización ha marcado que no fuiste. |
+| **Caducada** | Nadie la aprobó antes de que terminara. |
 
 ## Correos que te llegan
 

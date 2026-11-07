@@ -23,6 +23,7 @@ use Modules\VenueBookings\Domain\Events\BookingCancelled;
 use Modules\VenueBookings\Domain\Events\BookingCompleted;
 use Modules\VenueBookings\Domain\Events\BookingConfirmed;
 use Modules\VenueBookings\Domain\Events\BookingCreated;
+use Modules\VenueBookings\Domain\Events\BookingExpired;
 use Modules\VenueBookings\Domain\Events\BookingNoShow;
 use Modules\VenueBookings\Domain\Events\BookingRejected;
 use Modules\VenueBookings\Domain\Exceptions\BookableResourceUnavailableException;
@@ -290,6 +291,18 @@ final readonly class BookingService implements BookingServiceInterface
         $this->bookingRepository->save($booking);
 
         BookingNoShow::dispatch($booking->id->value, $booking->userId);
+
+        return BookingResponseDTO::fromEntity($booking);
+    }
+
+    public function expireBooking(string $bookingId): BookingResponseDTO
+    {
+        $booking = $this->bookingRepository->findOrFail(BookingId::fromString($bookingId));
+        $timezone = $this->settingsReader->getDateTimeZone();
+        $booking->expire(CarbonImmutable::now($timezone), $timezone);
+        $this->bookingRepository->save($booking);
+
+        BookingExpired::dispatch($booking->id->value, $booking->userId);
 
         return BookingResponseDTO::fromEntity($booking);
     }

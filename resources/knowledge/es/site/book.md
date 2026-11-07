@@ -40,7 +40,7 @@ Si tu web tiene mesas de rol y la organización lo permite, puedes asociar la re
 
 - **«Para reservar, verifica tu email.»**: el botón está desactivado hasta que verifiques tu correo. Pulsa **Ver cómo**.
 - **«No puedes realizar reservas»**, con el motivo:
-  - «Has alcanzado el máximo de … reservas activas.»: cancela alguna o espera a que pase.
+  - «Has alcanzado el máximo de … reservas activas.»: cancela alguna o espera a que termine alguna de ellas.
   - «Las reservas deben hacerse con al menos … minutos de antelación.»: elige un día u hora más tarde.
   - «Las reservas no pueden hacerse con más de … días de antelación.»: elige un día más cercano.
 - **Un turno sale tachado o como «No disponible»**: ya está reservado o empieza demasiado pronto.

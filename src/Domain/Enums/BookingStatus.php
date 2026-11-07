@@ -12,6 +12,8 @@ enum BookingStatus: string
     case Cancelled = 'cancelled';
     case NoShow = 'no_show';
     case Rejected = 'rejected';
+    // A pending booking nobody approved before it ended; only the hourly task sets it
+    case Expired = 'expired';
 
     public function label(): string
     {
@@ -22,6 +24,7 @@ enum BookingStatus: string
             self::Cancelled => __('venue-bookings::messages.enums.booking_status.cancelled'),
             self::NoShow => __('venue-bookings::messages.enums.booking_status.no_show'),
             self::Rejected => __('venue-bookings::messages.enums.booking_status.rejected'),
+            self::Expired => __('venue-bookings::messages.enums.booking_status.expired'),
         };
     }
 
@@ -34,6 +37,7 @@ enum BookingStatus: string
             self::Cancelled => 'danger',
             self::NoShow => 'danger',
             self::Rejected => 'danger',
+            self::Expired => 'gray',
         };
     }
 
@@ -45,7 +49,7 @@ enum BookingStatus: string
         return match ($this) {
             self::Pending => 'var(--color-warning-bg)',
             self::Confirmed => 'var(--color-success-bg)',
-            self::Completed => 'var(--color-bg-muted)',
+            self::Completed, self::Expired => 'var(--color-bg-muted)',
             self::Cancelled, self::NoShow, self::Rejected => 'var(--color-error-bg)',
         };
     }
@@ -57,15 +61,15 @@ enum BookingStatus: string
 
     public function isFinal(): bool
     {
-        return in_array($this, [self::Completed, self::Cancelled, self::NoShow, self::Rejected], true);
+        return in_array($this, [self::Completed, self::Cancelled, self::NoShow, self::Rejected, self::Expired], true);
     }
 
     public function canTransitionTo(self $newStatus): bool
     {
         return match ($this) {
-            self::Pending => in_array($newStatus, [self::Confirmed, self::Cancelled, self::Rejected], true),
+            self::Pending => in_array($newStatus, [self::Confirmed, self::Cancelled, self::Rejected, self::Expired], true),
             self::Confirmed => in_array($newStatus, [self::Completed, self::Cancelled, self::NoShow], true),
-            self::Completed, self::Cancelled, self::NoShow, self::Rejected => false,
+            self::Completed, self::Cancelled, self::NoShow, self::Rejected, self::Expired => false,
         };
     }
 

@@ -7,6 +7,7 @@ namespace Modules\VenueBookings\Domain\Entities;
 use DateTimeImmutable;
 use DateTimeZone;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
+use Modules\VenueBookings\Domain\Exceptions\BookingNotEndedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingNotStartedException;
 use Modules\VenueBookings\Domain\Exceptions\InvalidStatusTransitionException;
 use Modules\VenueBookings\Domain\ValueObjects\BookableResourceId;
@@ -72,6 +73,19 @@ final class Booking
         }
 
         $this->transitionTo(BookingStatus::NoShow);
+    }
+
+    /**
+     * A pending booking nobody approved expires once it has ended: $now is compared with the
+     * end read in the venue timezone the caller passes. While under way it can still be approved.
+     */
+    public function expire(DateTimeImmutable $now, DateTimeZone $timezone): void
+    {
+        if ($this->status->canTransitionTo(BookingStatus::Expired) && $now < $this->endsAt($timezone)) {
+            throw BookingNotEndedException::forSlot($this->date, $this->timeRange->endTime);
+        }
+
+        $this->transitionTo(BookingStatus::Expired);
     }
 
     public function isCancellable(): bool

@@ -6,7 +6,7 @@ category: activities
 audience: panel
 order: 10
 featured: true
-keywords: [reservas, reserva, reservas del local, local, sala, espacio, espacios, turnos, bloques, horario, estados, pendiente, confirmada, rechazada, cancelada, completada, no presentado, aprobación, permisos, cómo funciona, introducción, empezar]
+keywords: [reservas, reserva, reservas del local, local, sala, espacio, espacios, turnos, bloques, horario, estados, pendiente, confirmada, rechazada, cancelada, completada, no presentado, caducada, aprobación, permisos, cómo funciona, introducción, empezar]
 related: [venue-bookings.panel.spaces, venue-bookings.panel.schedule, venue-bookings.panel.manage-bookings, venue-bookings.panel.create-booking, venue-bookings.panel.settings, core.panel.roles-and-permissions]
 conditions:
   permissions:
@@ -26,19 +26,21 @@ El módulo de reservas deja que la gente de {{site_name}} reserve los espacios d
 
 | Estado | Qué significa | A qué puede pasar |
 |---|---|---|
-| **Pendiente** | Espera aprobación. Ya ocupa su franja. | **Confirmada**, **Rechazada** o **Cancelada** |
+| **Pendiente** | Espera aprobación. Ya ocupa su franja. | **Confirmada**, **Rechazada**, **Cancelada** o **Caducada** |
 | **Confirmada** | Aceptada. | **Completada**, **Cancelada** o **No presentado** |
 | **Completada** | Ya pasó. Es definitivo. | Ninguno |
 | **Cancelada** | La canceló la persona o la organización. Es definitivo. | Ninguno |
 | **Rechazada** | La organización no la aceptó. Es definitivo. | Ninguno |
 | **No presentado** | Estaba confirmada, ya había empezado y la persona no vino. Es definitivo. | Ninguno |
+| **Caducada** | Estaba pendiente y terminó sin que nadie la aprobara. Es definitivo. | Ninguno |
 
-Las reservas pendientes y confirmadas son las activas: ocupan su franja, salen en el calendario de la web y cuentan para el límite de reservas de cada persona. Una reserva pendiente no caduca sola: sigue pendiente, y contando para ese límite, hasta que alguien la revisa.
+Las reservas pendientes y confirmadas son las activas: ocupan su franja y salen en el calendario de la web. Para el límite de reservas de cada persona solo cuentan mientras no han terminado. Una reserva pendiente se puede aprobar hasta que termina; si nadie la revisa, pasa a **Caducada** y no se avisa a nadie.
 
 ## Lo que hace la web sola
 
 - Según el **Modo de aprobación** de la configuración, las reservas de la web nacen **Confirmada** o **Pendiente**.
 - Cada hora, las reservas confirmadas que terminaron hace más de las horas configuradas pasan a **Completada**, si **Completar reservas automáticamente** está activado.
+- Cada hora, las reservas pendientes que ya terminaron pasan a **Caducada**. No se envía ningún correo.
 - Cada hora se envía el recordatorio a las reservas confirmadas que empiezan pronto, si está activado.
 
 ## Web o panel

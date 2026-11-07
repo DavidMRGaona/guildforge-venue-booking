@@ -68,7 +68,7 @@ final class DevelopmentSeederTest extends ModuleTestCase
         }
 
         $today = now()->toDateString();
-        $this->assertTrue(BookingModel::where('status', BookingStatus::Completed->value)->get()->every(fn (BookingModel $b): bool => $b->date->toDateString() < $today));
+        $this->assertTrue(BookingModel::whereIn('status', [BookingStatus::Completed->value, BookingStatus::Expired->value])->get()->every(fn (BookingModel $b): bool => $b->date->toDateString() < $today));
         $this->assertTrue(BookingModel::whereIn('status', [BookingStatus::Pending->value, BookingStatus::Confirmed->value])->get()->every(fn (BookingModel $b): bool => $b->date->toDateString() >= $today));
         $this->assertNotNull(BookingModel::where('status', BookingStatus::Cancelled->value)->firstOrFail()->cancelled_at);
 

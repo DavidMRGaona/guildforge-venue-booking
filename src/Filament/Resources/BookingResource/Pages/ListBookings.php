@@ -55,6 +55,7 @@ final class ListBookings extends ListRecords
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereIn('status', [
                     BookingStatus::Cancelled->value,
                     BookingStatus::Rejected->value,
+                    BookingStatus::Expired->value,
                 ]))
                 ->icon('heroicon-o-x-circle'),
         ];

@@ -94,14 +94,25 @@ final readonly class EloquentBookingRepository implements BookingRepositoryInter
             ->all();
     }
 
-    public function countActiveByUser(string $userId): int
+    public function countActiveByUser(string $userId, DateTimeInterface $now): int
     {
-        return BookingModel::query()
+        $timezone = app(BookingSettingsReader::class)->getDateTimeZone();
+        $now = DateTimeImmutable::createFromInterface($now)->setTimezone($timezone);
+
+        // A booking ends on its day or the next: narrow to those days in SQL, compare the exact
+        // end in PHP, as getConfirmedEndedBy() does
+        $bookings = BookingModel::query()
             ->where('user_id', $userId)
             ->whereIn('status', [
                 BookingStatus::Pending->value,
                 BookingStatus::Confirmed->value,
             ])
+            ->where('date', '>=', $now->modify('-1 day')->format('Y-m-d'))
+            ->get()
+            ->map(fn (BookingModel $model): Booking => $this->toEntity($model));
+
+        return $bookings
+            ->filter(fn (Booking $booking): bool => $booking->endsAt($timezone) > $now)
             ->count();
     }
 
@@ -199,13 +210,29 @@ final readonly class EloquentBookingRepository implements BookingRepositoryInter
      */
     public function getConfirmedEndedBy(DateTimeInterface $endedBy): array
     {
+        return $this->getEndedBy(BookingStatus::Confirmed, $endedBy);
+    }
+
+    /**
+     * @return array<Booking>
+     */
+    public function getPendingEndedBy(DateTimeInterface $endedBy): array
+    {
+        return $this->getEndedBy(BookingStatus::Pending, $endedBy);
+    }
+
+    /**
+     * @return array<Booking>
+     */
+    private function getEndedBy(BookingStatus $status, DateTimeInterface $endedBy): array
+    {
         $timezone = app(BookingSettingsReader::class)->getDateTimeZone();
         $endedBy = DateTimeImmutable::createFromInterface($endedBy)->setTimezone($timezone);
 
         // Narrow by status and calendar day in SQL (a booking ends on its day or the next),
         // then compare the exact end in PHP, as getConfirmedBookingsForReminder() does
         $bookings = BookingModel::query()
-            ->where('status', BookingStatus::Confirmed->value)
+            ->where('status', $status->value)
             ->where('date', '<=', $endedBy->format('Y-m-d'))
             ->orderBy('date')
             ->orderBy('start_time')
