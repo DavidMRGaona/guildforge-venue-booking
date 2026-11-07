@@ -144,6 +144,7 @@ return [
         'booking_cancelled' => 'Reserva cancelada',
         'booking_no_show' => 'Reserva marcada como no presentado',
         'invalid_transition' => 'Transición de estado no permitida',
+        'booking_not_started' => 'Solo se puede marcar como no presentada una reserva que ya ha empezado',
     ],
 
     // Why the panel refused to create or move a booking

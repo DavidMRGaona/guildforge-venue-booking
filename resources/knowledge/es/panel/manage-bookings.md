@@ -26,7 +26,7 @@ Las reservas están en **Reservas del local** → **Reservas**. Lo que puedes ha
 | **Confirmar** | Reserva **Pendiente** | La pasa a **Confirmada**. | **Gestionar reservas** |
 | **Rechazar** | Reserva **Pendiente** | La rechaza. Pide el **Motivo de rechazo**. | **Gestionar reservas** |
 | **Cancelar** | Reserva pendiente o confirmada | La cancela y libera su franja. Pide el **Motivo de cancelación**. | **Cancelar cualquier reserva** |
-| **No presentado** | Reserva **Confirmada** | Marca que la persona no vino. | **Gestionar reservas** |
+| **No presentado** | Reserva **Confirmada** que ya ha empezado | Marca que la persona no vino. | **Gestionar reservas** |
 | **Editar** | Siempre | Abre la reserva. | **Gestionar reservas** |
 
 Cada acción pide confirmación. Según la configuración, la persona recibe el correo «Reserva confirmada», «Reserva rechazada» o «Reserva cancelada», con el motivo. **No presentado** no envía correo.

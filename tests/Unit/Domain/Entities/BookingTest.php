@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Modules\VenueBookings\Domain\Entities\Booking;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
+use Modules\VenueBookings\Domain\Exceptions\BookingNotStartedException;
 use Modules\VenueBookings\Domain\Exceptions\InvalidStatusTransitionException;
 use Modules\VenueBookings\Domain\ValueObjects\BookableResourceId;
 use Modules\VenueBookings\Domain\ValueObjects\BookingId;
@@ -126,7 +127,7 @@ final class BookingTest extends TestCase
         $booking = $this->createBooking();
         $booking->confirm();
 
-        $booking->markNoShow();
+        $booking->markNoShow(new DateTimeImmutable('2026-03-15 10:00', new DateTimeZone('UTC')), new DateTimeZone('UTC'));
 
         $this->assertEquals(BookingStatus::NoShow, $booking->status);
     }
@@ -137,7 +138,43 @@ final class BookingTest extends TestCase
 
         $this->expectException(InvalidStatusTransitionException::class);
 
-        $booking->markNoShow();
+        $booking->markNoShow(new DateTimeImmutable('2026-03-16 09:00', new DateTimeZone('UTC')), new DateTimeZone('UTC'));
+    }
+
+    public function test_it_refuses_no_show_before_the_booking_starts(): void
+    {
+        $booking = $this->createBooking();
+        $booking->confirm();
+
+        try {
+            $booking->markNoShow(new DateTimeImmutable('2026-03-15 09:59:59', new DateTimeZone('UTC')), new DateTimeZone('UTC'));
+            $this->fail('A booking that has not started cannot be a no-show.');
+        } catch (BookingNotStartedException) {
+            $this->assertEquals(BookingStatus::Confirmed, $booking->status);
+        }
+    }
+
+    public function test_it_reads_the_start_in_the_venue_timezone_for_no_show(): void
+    {
+        // 10:00 in Madrid (UTC+1 in winter) is 09:00 UTC: at 09:30 UTC it has started
+        $booking = $this->createBooking(date: '2026-01-15');
+        $booking->confirm();
+        $madrid = new DateTimeZone('Europe/Madrid');
+
+        $booking->markNoShow(new DateTimeImmutable('2026-01-15 09:30', new DateTimeZone('UTC')), $madrid);
+
+        $this->assertEquals(BookingStatus::NoShow, $booking->status);
+    }
+
+    public function test_it_refuses_no_show_when_the_venue_start_is_still_ahead_of_utc_now(): void
+    {
+        // Same instant read as UTC wall time would already have started; in Madrid it has not
+        $booking = $this->createBooking(date: '2026-01-15');
+        $booking->confirm();
+
+        $this->expectException(BookingNotStartedException::class);
+
+        $booking->markNoShow(new DateTimeImmutable('2026-01-15 08:30', new DateTimeZone('UTC')), new DateTimeZone('Europe/Madrid'));
     }
 
     public function test_it_is_cancellable_when_pending_or_confirmed(): void
@@ -167,7 +204,7 @@ final class BookingTest extends TestCase
 
         $noShow = $this->createBooking();
         $noShow->confirm();
-        $noShow->markNoShow();
+        $noShow->markNoShow(new DateTimeImmutable('2026-03-15 10:00', new DateTimeZone('UTC')), new DateTimeZone('UTC'));
         $this->assertFalse($noShow->isCancellable());
     }
 

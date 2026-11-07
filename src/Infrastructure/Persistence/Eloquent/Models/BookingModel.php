@@ -6,12 +6,15 @@ namespace Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models;
 
 use App\Infrastructure\Persistence\Eloquent\Concerns\StoresInstantsInStorageTimezone;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
+use Carbon\CarbonImmutable;
+use DateTimeImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Casts\TimeOfDay;
+use Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader;
 
 /**
  * @property string $id
@@ -97,6 +100,16 @@ final class BookingModel extends Model
                 $booking->setAttribute('reminder_sent_at', null);
             }
         });
+    }
+
+    /**
+     * Whether the booking has started now, read in the venue timezone (same rule as the entity).
+     */
+    public function hasStarted(): bool
+    {
+        $timezone = app(BookingSettingsReader::class)->getDateTimeZone();
+
+        return CarbonImmutable::now($timezone) >= new DateTimeImmutable("{$this->date->format('Y-m-d')} {$this->start_time}", $timezone);
     }
 
     /**
