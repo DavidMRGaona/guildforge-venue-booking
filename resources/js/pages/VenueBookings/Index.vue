@@ -14,6 +14,7 @@ import type {
     BookingEligibility,
 } from '../../types/bookings';
 import ResourceSelector from '../../components/ResourceSelector.vue';
+import ResourceDetails from '../../components/ResourceDetails.vue';
 import BookingCalendar from '../../components/BookingCalendar.vue';
 import BookingSlotPicker from '../../components/BookingSlotPicker.vue';
 import BookingForm from '../../components/BookingForm.vue';
@@ -263,6 +264,9 @@ async function onEventSelect(bookingId: string): Promise<void> {
                 :selected-id="currentResourceId"
                 @select="onResourceSelect"
             />
+
+            <!-- What the selected space is like and how many people fit -->
+            <ResourceDetails v-if="currentResource" :resource="currentResource" />
 
             <!-- Calendar -->
             <BookingCalendar

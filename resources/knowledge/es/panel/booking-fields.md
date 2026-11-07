@@ -21,6 +21,8 @@ Son cuatro: **Nombre de la actividad**, **Número de participantes**, **Teléfon
 2. Si debe rellenarse siempre, activa **Obligatorio**.
 3. Elige su **Visibilidad** (la explica la sección siguiente).
 
+El **Número de participantes** no admite un número mayor que la **Capacidad** del espacio, si tiene una. Lo explica la guía «Crear y configurar un espacio».
+
 ## Visibilidad
 
 La **Visibilidad** decide quién rellena el campo en la web y quién ve su valor al pulsar una reserva en el calendario:

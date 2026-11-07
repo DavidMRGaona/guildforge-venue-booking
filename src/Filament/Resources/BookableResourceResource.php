@@ -83,6 +83,7 @@ final class BookableResourceResource extends BaseResource
 
                                 TextInput::make('capacity')
                                     ->label(__('venue-bookings::messages.fields.capacity'))
+                                    ->helperText(__('venue-bookings::messages.fields.capacity_help'))
                                     ->numeric()
                                     ->minValue(1),
 

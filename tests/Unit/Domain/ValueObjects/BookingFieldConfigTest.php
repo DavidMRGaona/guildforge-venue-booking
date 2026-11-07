@@ -78,6 +78,7 @@ final class BookingFieldConfigTest extends TestCase
             type: 'number',
             required: true,
             visibility: 'authenticated',
+            max: 12,
         );
 
         $array = $config->toArray();
@@ -89,6 +90,7 @@ final class BookingFieldConfigTest extends TestCase
             'required' => true,
             'visibility' => 'authenticated',
             'options' => null,
+            'max' => 12,
         ], $array);
     }
 

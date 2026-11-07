@@ -33,9 +33,10 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
      */
     public function getEnabledFields(string $resourceId, ?UserModel $user = null): array
     {
-        $config = $this->resolveFieldConfig($resourceId);
+        $resource = $this->findResource($resourceId);
+        $config = $resource->fieldConfig ?? $this->getDefaultFieldConfig();
 
-        $fields = $this->getPredefinedFieldsForConfig($config);
+        $fields = $this->getPredefinedFieldsForConfig($config, $resource?->capacity);
         $fields = array_merge($fields, $this->getCustomFieldsForConfig($config));
 
         return array_merge($fields, $this->getAssociationFields($user));
@@ -69,7 +70,7 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
                 ...match (BookingFieldType::from($field->type)) {
                     BookingFieldType::Text => ['string', 'max:255'],
                     BookingFieldType::Textarea => ['string', 'max:2000'],
-                    BookingFieldType::Number => ['integer', 'min:0'],
+                    BookingFieldType::Number => ['integer', 'min:0', ...($field->max !== null ? ['max:'.$field->max] : [])],
                     BookingFieldType::Select => ['string', Rule::in($field->optionValues())],
                     BookingFieldType::Toggle => ['boolean'],
                 },
@@ -165,21 +166,15 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
         return ResourceFieldConfig::fromGlobalConfig($predefinedFields, $customFields);
     }
 
-    private function resolveFieldConfig(string $resourceId): ResourceFieldConfig
+    private function findResource(string $resourceId): ?BookableResource
     {
-        $resource = $this->resourceRepository->find(BookableResourceId::fromString($resourceId));
-
-        if ($resource instanceof BookableResource && $resource->fieldConfig instanceof ResourceFieldConfig) {
-            return $resource->fieldConfig;
-        }
-
-        return $this->getDefaultFieldConfig();
+        return $this->resourceRepository->find(BookableResourceId::fromString($resourceId));
     }
 
     /**
      * @return array<BookingFieldConfig>
      */
-    private function getPredefinedFieldsForConfig(ResourceFieldConfig $config): array
+    private function getPredefinedFieldsForConfig(ResourceFieldConfig $config, ?int $capacity): array
     {
         $fields = [];
         $predefinedMeta = [
@@ -187,7 +182,7 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
                 'label' => __('venue-bookings::messages.fields.activity_name'),
                 'type' => BookingFieldType::Text,
             ],
-            'num_participants' => [
+            BookingFieldConfig::NUM_PARTICIPANTS_KEY => [
                 'label' => __('venue-bookings::messages.fields.num_participants'),
                 'type' => BookingFieldType::Number,
             ],
@@ -216,6 +211,8 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
                 type: $meta['type']->value,
                 required: $required,
                 visibility: $visibility->value,
+                // The space's capacity is the most people one booking may bring
+                max: $key === BookingFieldConfig::NUM_PARTICIPANTS_KEY ? $capacity : null,
             );
         }
 
