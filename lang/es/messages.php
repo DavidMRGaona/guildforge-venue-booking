@@ -124,6 +124,10 @@ return [
         'reject' => 'Rechazar',
         'cancel' => 'Cancelar',
         'no_show' => 'No presentado',
+        'delete_resource_bookings' => '{0} Este espacio no tiene reservas.|{1} Se borrará también su única reserva.|[2,*] Se borrarán también sus :count reservas.',
+        'delete_resource_upcoming' => '{1} 1 de ellas es futura.|[2,*] :count de ellas son futuras.',
+        'delete_resource_irreversible' => 'No se puede deshacer.',
+        'delete_resource_confirmation_check' => 'Entiendo que se borrarán el espacio y todas sus reservas y que no se puede deshacer',
     ],
 
     'filters' => [

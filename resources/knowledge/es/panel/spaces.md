@@ -45,9 +45,9 @@ En la lista de espacios, la columna **Reservas** cuenta todas las reservas de ca
 
 ## Borrar un espacio
 
-Dentro del espacio, pulsa **Borrar** y confirma.
+Dentro del espacio, pulsa **Borrar**. La ventana te dice cuántas reservas se borrarán (y cuántas de ellas son futuras) y te pide marcar la casilla de confirmación antes de poder confirmar.
 
 > [!WARNING]
-> Al borrar un espacio se borran también su horario y todas sus reservas, pasadas y futuras, sin avisar a nadie. Si solo quieres dejar de ofrecerlo, cámbialo a **Inactivo**.
+> Al borrar un espacio se borran también su horario y todas sus reservas, pasadas y futuras, sin avisar a nadie, y no se puede deshacer. Si solo quieres dejar de ofrecerlo, cámbialo a **Inactivo**.
 
 [[action:filament.admin.resources.bookable-resources.index|Ver los espacios]]
