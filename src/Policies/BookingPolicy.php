@@ -17,9 +17,13 @@ final class BookingPolicy
         return $this->authorize($user, 'venuebookings:bookings.view_any');
     }
 
+    /**
+     * No panel page shows a single booking: whoever sees the list may see each one in it, and
+     * everyone may see their own.
+     */
     public function view(UserModel $user, BookingModel $booking): bool
     {
-        return $this->authorize($user, 'venuebookings:bookings.view')
+        return $this->viewAny($user)
             || $booking->getAttribute('user_id') === $user->id;
     }
 
