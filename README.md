@@ -66,7 +66,7 @@ Se configura en el panel: **Reservas del local → Configuración de reservas** 
 | `auto_complete_enabled` | `true` | Completar automáticamente las reservas confirmadas ya terminadas |
 | `auto_complete_after_hours` | `24` | Horas tras el fin de la reserva para completarla (0–720) |
 | `time_block_presets` | ninguno | Bloques horarios predefinidos |
-| `predefined_fields` | actividad, participantes, teléfono y notas, todos desactivados | Campos predefinidos con visibilidad configurable |
+| `predefined_fields` | actividad, participantes, teléfono y notas, todos desactivados | Campos predefinidos con visibilidad configurable; el número de participantes no admite más que la capacidad del espacio, si tiene una (web y panel) |
 | `custom_fields` | ninguno | Campos personalizados |
 | `notifications` | todas activadas, recordatorio 24 horas antes | Avisos por email y recordatorio |
 | `associations` | desactivadas, visibles para usuarios registrados | Asociación con mesas de rol, campañas y torneos |
@@ -194,6 +194,7 @@ Los dos widgets solo se muestran a quien puede ver el listado de reservas (`book
 | `BookingStatusBadge` | Insignia de estado de la reserva con colores |
 | `BookingTooltip` | Tooltip con información de la reserva |
 | `ResourceSelector` | Selector de espacio reservable |
+| `ResourceDetails` | Descripción y capacidad del espacio elegido, encima del calendario; no se pinta si el espacio no tiene ninguna de las dos |
 | `ProfileBookingsSection` | Pestaña **Reservas** del perfil del usuario |
 
 ### Páginas

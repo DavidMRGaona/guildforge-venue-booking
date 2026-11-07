@@ -272,6 +272,34 @@ final class BookingResourceCreateTest extends ModuleTestCase
         $this->assertSame([], $booking->field_values ?? []);
     }
 
+    public function test_the_number_of_participants_cannot_exceed_the_capacity_of_the_space(): void
+    {
+        $this->bookableResource->update([
+            'capacity' => 4,
+            'field_config' => [
+                'predefined_fields' => [
+                    'num_participants' => ['enabled' => true, 'required' => false, 'visibility' => 'public'],
+                ],
+                'custom_fields' => [],
+            ],
+        ]);
+        $this->actingAs($this->admin);
+
+        Livewire::test(CreateBooking::class)
+            ->fillForm($this->formFor('2026-03-16', '10:00', '11:00'))
+            ->fillForm(['field_values' => ['num_participants' => 5]])
+            ->call('create')
+            ->assertHasFormErrors(['field_values.num_participants' => 'max']);
+        $this->assertSame(0, BookingModel::query()->count());
+
+        Livewire::test(CreateBooking::class)
+            ->fillForm($this->formFor('2026-03-16', '10:00', '11:00'))
+            ->fillForm(['field_values' => ['num_participants' => 4]])
+            ->call('create')
+            ->assertHasNoFormErrors();
+        $this->assertSame(1, BookingModel::query()->count());
+    }
+
     /**
      * @return array<string, string>
      */

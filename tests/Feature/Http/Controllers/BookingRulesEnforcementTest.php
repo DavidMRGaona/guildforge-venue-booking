@@ -260,10 +260,47 @@ final class BookingRulesEnforcementTest extends ModuleTestCase
         $this->assertSame(1, BookingModel::query()->count());
     }
 
+    public function test_the_number_of_participants_cannot_exceed_the_capacity_of_the_space(): void
+    {
+        $this->askForParticipants(capacity: 6);
+
+        $this->book($this->user, '2026-11-12', '10:00', '11:00', ['num_participants' => 7])
+            ->assertRedirect(route('bookings.index'))
+            ->assertSessionHasErrors(['field_values.num_participants' => 'El número de participantes no puede superar la capacidad del espacio (6).']);
+        $this->assertSame(0, BookingModel::query()->count());
+
+        $this->book($this->user, '2026-11-12', '10:00', '11:00', ['num_participants' => 6])
+            ->assertRedirect(route('bookings.my-bookings'));
+        $this->assertSame(1, BookingModel::query()->count());
+    }
+
+    public function test_a_space_without_capacity_takes_any_number_of_participants(): void
+    {
+        $this->askForParticipants(capacity: null);
+
+        $this->book($this->user, '2026-11-12', '10:00', '11:00', ['num_participants' => 250])
+            ->assertRedirect(route('bookings.my-bookings'));
+        $this->assertSame(1, BookingModel::query()->count());
+    }
+
+    private function askForParticipants(?int $capacity): void
+    {
+        $this->room->update([
+            'capacity' => $capacity,
+            'field_config' => [
+                'predefined_fields' => [
+                    'num_participants' => ['enabled' => true, 'required' => true, 'visibility' => 'public'],
+                ],
+                'custom_fields' => [],
+            ],
+        ]);
+    }
+
     /**
+     * @param  array<string, mixed>  $fieldValues
      * @return TestResponse<Response>
      */
-    private function book(UserModel $user, string $date, string $startTime, string $endTime): TestResponse
+    private function book(UserModel $user, string $date, string $startTime, string $endTime, array $fieldValues = []): TestResponse
     {
         return $this->actingAs($user)
             ->from(route('bookings.index'))
@@ -272,6 +309,7 @@ final class BookingRulesEnforcementTest extends ModuleTestCase
                 'date' => $date,
                 'start_time' => $startTime,
                 'end_time' => $endTime,
+                'field_values' => $fieldValues,
             ]);
     }
 

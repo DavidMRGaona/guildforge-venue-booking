@@ -221,6 +221,8 @@ final class BookingResource extends BaseResource
                             BookingFieldType::Number => TextInput::make("field_values.{$field->key}")
                                 ->label($field->label)
                                 ->numeric()
+                                ->minValue(0)
+                                ->maxValue($field->max)
                                 ->required($field->required),
                             BookingFieldType::Textarea => Textarea::make("field_values.{$field->key}")
                                 ->label($field->label)

@@ -7,6 +7,7 @@ namespace Modules\VenueBookings\Http\Requests;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\FormRequest;
 use Modules\VenueBookings\Application\Services\BookingFieldConfigServiceInterface;
+use Modules\VenueBookings\Domain\ValueObjects\BookingFieldConfig;
 use Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader;
 
 final class StoreBookingRequest extends FormRequest
@@ -47,6 +48,8 @@ final class StoreBookingRequest extends FormRequest
     {
         return [
             'date.after_or_equal' => (string) __('venue-bookings::messages.frontend.booking_date_in_the_past'),
+            // :max is the capacity of the space
+            'field_values.'.BookingFieldConfig::NUM_PARTICIPANTS_KEY.'.max' => (string) __('venue-bookings::messages.frontend.participants_over_capacity'),
         ];
     }
 }

@@ -39,7 +39,8 @@ Cerrar un espacio no toca sus reservas: siguen como estaban. Revísalas en **Res
 ## Los demás campos
 
 - **Orden**: los números más bajos salen primero en la web. Con dos a cuatro espacios activos, la web los muestra como pestañas; con cinco o más, como una lista.
-- **Descripción** y **Capacidad**: son información interna. La web no las muestra ahora mismo y la capacidad no limita el **Número de participantes** de las reservas.
+- **Descripción**: sale en la página de reservas, encima del calendario, cuando se elige el espacio. Los saltos de línea se respetan.
+- **Capacidad**: cuántas personas caben como máximo en una reserva. Sale en la página de reservas («Capacidad: hasta … personas») y, si el espacio pregunta el **Número de participantes**, no se acepta un número mayor, ni en la web ni al crear o editar una reserva en el panel. Si cambias la capacidad, las reservas que ya pasaban de ella no cambian, pero para guardarlas en el panel hay que bajar su **Número de participantes**. Déjala vacía si no quieres límite.
 
 En la lista de espacios, la columna **Reservas** cuenta todas las reservas de cada espacio, también las pasadas.
 

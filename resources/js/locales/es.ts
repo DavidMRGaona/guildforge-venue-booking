@@ -41,6 +41,8 @@ export default {
         field_required: 'Campo obligatorio',
         resource: 'Espacio',
         select_resource: 'Selecciona un espacio',
+        resource_details: 'Sobre {name}',
+        capacity: 'Capacidad: hasta {count} persona | Capacidad: hasta {count} personas',
         date: 'Fecha',
         time: 'Hora',
         status: 'Estado',

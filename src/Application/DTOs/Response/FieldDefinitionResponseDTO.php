@@ -17,6 +17,7 @@ final readonly class FieldDefinitionResponseDTO
         public string $type,
         public bool $required,
         public ?array $options,
+        public ?int $max = null,
     ) {}
 
     public static function fromConfig(BookingFieldConfig $config): self
@@ -27,6 +28,7 @@ final readonly class FieldDefinitionResponseDTO
             type: $config->type,
             required: $config->required,
             options: $config->options,
+            max: $config->max,
         );
     }
 
@@ -41,6 +43,7 @@ final readonly class FieldDefinitionResponseDTO
             'type' => $this->type,
             'required' => $this->required,
             'options' => $this->options,
+            'max' => $this->max,
         ];
     }
 }

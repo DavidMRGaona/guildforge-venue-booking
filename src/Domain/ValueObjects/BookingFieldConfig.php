@@ -13,11 +13,15 @@ final readonly class BookingFieldConfig
 
     public const string TOURNAMENT_KEY = 'tournament_id';
 
+    /** The number of participants, capped by the capacity of the space when it has one */
+    public const string NUM_PARTICIPANTS_KEY = 'num_participants';
+
     /**
      * Each option is sent as `value` and shown as `label`: a game table, campaign or tournament
      * is chosen by its id, a custom option is its own value.
      *
      * @param  list<array{value: string, label: string}>|null  $options
+     * @param  int|null  $max  the largest number a number field takes, when it has a limit
      */
     public function __construct(
         public string $key,
@@ -26,6 +30,7 @@ final readonly class BookingFieldConfig
         public bool $required,
         public string $visibility,
         public ?array $options = null,
+        public ?int $max = null,
     ) {}
 
     public function isSelectField(): bool
@@ -47,7 +52,7 @@ final readonly class BookingFieldConfig
     }
 
     /**
-     * @return array{key: string, label: string, type: string, required: bool, visibility: string, options: list<array{value: string, label: string}>|null}
+     * @return array{key: string, label: string, type: string, required: bool, visibility: string, options: list<array{value: string, label: string}>|null, max: int|null}
      */
     public function toArray(): array
     {
@@ -58,6 +63,7 @@ final readonly class BookingFieldConfig
             'required' => $this->required,
             'visibility' => $this->visibility,
             'options' => $this->options,
+            'max' => $this->max,
         ];
     }
 

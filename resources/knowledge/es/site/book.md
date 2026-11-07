@@ -5,7 +5,7 @@ summary: Elige el espacio, el día y los turnos o el bloque, rellena el formular
 category: venue
 audience: site
 order: 20
-keywords: [reservar, reserva, hacer una reserva, nueva reserva, pedir sala, reservar sala, reservar mesa, local, espacio, turno, turnos, bloque, horario, día, calendario, formulario de reserva, resrvar, reseva, reserbar]
+keywords: [capacidad, participantes, cuántas personas, reservar, reserva, hacer una reserva, nueva reserva, pedir sala, reservar sala, reservar mesa, local, espacio, turno, turnos, bloque, horario, día, calendario, formulario de reserva, resrvar, reseva, reserbar]
 related: [venue-bookings.overview, venue-bookings.my-bookings, venue-bookings.cancel-booking, core.account.verify-email]
 ---
 Reservas desde la página **Reservas del local**. Necesitas haber iniciado sesión.
@@ -13,7 +13,7 @@ Reservas desde la página **Reservas del local**. Necesitas haber iniciado sesi�
 ## Paso a paso
 
 1. Abre **Reservas del local**. También llegas desde tu perfil, pestaña **Reservas**, con **Hacer una reserva**.
-2. Si hay varios espacios, elige el tuyo encima del calendario.
+2. Si hay varios espacios, elige el tuyo encima del calendario. Debajo verás su descripción y cuántas personas caben, si la organización los ha puesto.
 3. Pulsa el día en el calendario. Con **Mes**, **Semana** y **Día** cambias la vista.
 4. Debajo salen los horarios de ese día:
    - En un espacio por turnos, **Selecciona los turnos**: pulsa uno o varios turnos seguidos. Solo puedes añadir los que están justo antes o justo después de los que ya tienes.
@@ -32,7 +32,7 @@ Mientras está pendiente, tu reserva ya ocupa el horario.
 
 ## Los campos del formulario
 
-Cada espacio decide qué te pregunta: por ejemplo, el **Nombre de la actividad**, el **Número de participantes**, un **Teléfono de contacto** o unas **Notas**. Algunos datos los ve cualquiera que pulse tu reserva en el calendario, según lo que haya decidido la organización: no escribas nada privado si no hace falta.
+Cada espacio decide qué te pregunta: por ejemplo, el **Nombre de la actividad**, el **Número de participantes**, un **Teléfono de contacto** o unas **Notas**. El **Número de participantes** no puede pasar de la capacidad del espacio. Algunos datos los ve cualquiera que pulse tu reserva en el calendario, según lo que haya decidido la organización: no escribas nada privado si no hace falta.
 
 Si tu web tiene mesas de rol y la organización lo permite, puedes asociar la reserva a una de tus mesas o campañas publicadas.
 
@@ -52,5 +52,6 @@ Si tu web tiene mesas de rol y la organización lo permite, puedes asociar la re
 - **«Esa franja ya ha empezado. Elige una hora posterior.»**: el turno ya ha empezado.
 - **«Ahora mismo se está procesando otra reserva. Inténtalo de nuevo en unos segundos.»**: espera un momento y repite.
 - **«Este espacio no admite reservas en este momento.»**: la organización lo ha cerrado a reservas.
+- **«El número de participantes no puede superar la capacidad del espacio (…).»**: sois más de los que caben. Pon un número menor o elige un espacio más grande.
 
 [[action:bookings.index|Hacer una reserva]]

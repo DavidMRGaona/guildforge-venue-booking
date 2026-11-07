@@ -80,6 +80,8 @@ export interface FieldDefinition {
     type: BookingFieldType;
     required: boolean;
     options: FieldOption[] | null;
+    /** Largest value a number field takes: the capacity of the space for the participants. */
+    max: number | null;
 }
 
 export interface BookingEligibility {

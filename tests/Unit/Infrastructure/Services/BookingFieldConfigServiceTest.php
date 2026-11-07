@@ -27,6 +27,15 @@ final class BookingFieldConfigServiceTest extends TestCase
 
     private string $resourceId;
 
+    private const array PARTICIPANTS_AND_A_CUSTOM_NUMBER = [
+        'predefined_fields' => [
+            'num_participants' => ['enabled' => true, 'required' => false, 'visibility' => 'public'],
+        ],
+        'custom_fields' => [
+            ['key' => 'tables', 'label' => 'Mesas', 'type' => 'number', 'required' => false, 'visibility' => 'public'],
+        ],
+    ];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -217,6 +226,33 @@ final class BookingFieldConfigServiceTest extends TestCase
         $this->assertSame([['value' => 'campaign-1', 'label' => 'La maldición de Strahd']], $fields[1]->options);
     }
 
+    public function test_the_capacity_of_the_space_caps_the_number_of_participants(): void
+    {
+        $this->mockResourceWithFieldConfig(self::PARTICIPANTS_AND_A_CUSTOM_NUMBER, capacity: 8);
+
+        $fields = array_column(array_map(
+            static fn ($field): array => ['key' => $field->key, 'max' => $field->max],
+            $this->service->getEnabledFields($this->resourceId),
+        ), 'max', 'key');
+
+        $this->assertSame(['num_participants' => 8, 'tables' => null], $fields);
+
+        $rules = $this->service->getValidationRules($this->resourceId, null);
+        $this->assertSame(['nullable', 'integer', 'min:0', 'max:8'], $rules['field_values.num_participants']);
+        $this->assertSame(['nullable', 'integer', 'min:0'], $rules['field_values.tables']);
+    }
+
+    public function test_a_space_without_capacity_does_not_cap_the_number_of_participants(): void
+    {
+        $this->mockResourceWithFieldConfig(self::PARTICIPANTS_AND_A_CUSTOM_NUMBER);
+
+        $this->assertNull($this->service->getEnabledFields($this->resourceId)[0]->max);
+        $this->assertSame(
+            ['nullable', 'integer', 'min:0'],
+            $this->service->getValidationRules($this->resourceId, null)['field_values.num_participants'],
+        );
+    }
+
     public function test_get_default_field_config_reads_from_global_config(): void
     {
         config()->set('modules.settings.venue-bookings.predefined_fields', [
@@ -235,7 +271,7 @@ final class BookingFieldConfigServiceTest extends TestCase
     /**
      * @param  array<string, mixed>|null  $fieldConfigData
      */
-    private function mockResourceWithFieldConfig(?array $fieldConfigData): void
+    private function mockResourceWithFieldConfig(?array $fieldConfigData, ?int $capacity = null): void
     {
         $fieldConfig = $fieldConfigData !== null
             ? ResourceFieldConfig::fromArray($fieldConfigData)
@@ -246,7 +282,7 @@ final class BookingFieldConfigServiceTest extends TestCase
             name: 'Test Resource',
             slug: 'test-resource',
             description: null,
-            capacity: null,
+            capacity: $capacity,
             status: BookableResourceStatus::Active,
             sortOrder: 0,
             fieldConfig: $fieldConfig,

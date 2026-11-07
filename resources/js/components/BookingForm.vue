@@ -251,6 +251,7 @@ function updateField(key: string, value: string | number | boolean): void {
                         :required="field.required"
                         :value="form.field_values[field.key]"
                         min="0"
+                        :max="field.max ?? undefined"
                         class="w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-base-primary focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         @input="
                             updateField(

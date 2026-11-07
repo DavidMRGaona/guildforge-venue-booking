@@ -90,6 +90,32 @@ describe('BookingForm', () => {
         expect(option?.textContent?.trim()).toBe('La tumba de los horrores');
     });
 
+    it('caps a number field at its maximum, such as the capacity of the space', () => {
+        mountForm([
+            {
+                key: 'num_participants',
+                label: 'Número de participantes',
+                type: 'number',
+                required: false,
+                options: null,
+                max: 8,
+            },
+            {
+                key: 'tables',
+                label: 'Mesas',
+                type: 'number',
+                required: false,
+                options: null,
+                max: null,
+            },
+        ]);
+
+        expect(document.body.querySelector('#field-num_participants')?.getAttribute('max')).toBe(
+            '8'
+        );
+        expect(document.body.querySelector('#field-tables')?.hasAttribute('max')).toBe(false);
+    });
+
     it('gives the focus back to the element that opened it', () => {
         const opener = focusedOpener();
         const wrapper = mountForm();
