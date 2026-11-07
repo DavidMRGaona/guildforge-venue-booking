@@ -285,7 +285,8 @@ final readonly class BookingService implements BookingServiceInterface
     public function markNoShow(string $bookingId): BookingResponseDTO
     {
         $booking = $this->bookingRepository->findOrFail(BookingId::fromString($bookingId));
-        $booking->markNoShow();
+        $timezone = $this->settingsReader->getDateTimeZone();
+        $booking->markNoShow(CarbonImmutable::now($timezone), $timezone);
         $this->bookingRepository->save($booking);
 
         BookingNoShow::dispatch($booking->id->value, $booking->userId);

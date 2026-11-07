@@ -114,12 +114,49 @@ final class BookingActionPermissionsTest extends ModuleTestCase
 
     public function test_managers_mark_no_shows(): void
     {
+        $this->confirmed->update(['date' => now()->subDay()->toDateString()]);
         $this->actingAs($this->editorWithPermissions([self::VIEW_ANY, self::MANAGE]));
 
         Livewire::test(ListBookings::class)
             ->assertTableActionVisible('no_show', $this->confirmed)
             ->callTableAction('no_show', $this->confirmed)
             ->assertHasNoTableActionErrors();
+
+        $this->assertStatus('no_show', $this->confirmed);
+    }
+
+    public function test_no_show_is_not_offered_nor_accepted_before_the_booking_starts(): void
+    {
+        $this->actingAs($this->editorWithPermissions([self::VIEW_ANY, self::MANAGE]));
+
+        Livewire::test(ListBookings::class)->assertTableActionHidden('no_show', $this->confirmed);
+        $this->forceTableAction('no_show', $this->confirmed);
+        $this->assertStatus('confirmed', $this->confirmed);
+
+        Livewire::test(EditBooking::class, ['record' => $this->confirmed->getRouteKey()])
+            ->assertFormFieldExists('status', fn ($field): bool => ! array_key_exists('no_show', $field->getOptions()));
+
+        try {
+            Livewire::test(EditBooking::class, ['record' => $this->confirmed->getRouteKey()])
+                ->fillForm(['status' => 'no_show'])
+                ->call('save');
+        } catch (Throwable) {
+            // Refusing with an error is fine; only the booking matters
+        }
+
+        $this->assertStatus('confirmed', $this->confirmed);
+    }
+
+    public function test_the_edit_page_offers_no_show_once_the_booking_has_started(): void
+    {
+        $this->confirmed->update(['date' => now()->subDay()->toDateString()]);
+        $this->actingAs($this->editorWithPermissions([self::VIEW_ANY, self::MANAGE]));
+
+        Livewire::test(EditBooking::class, ['record' => $this->confirmed->getRouteKey()])
+            ->assertFormFieldExists('status', fn ($field): bool => array_key_exists('no_show', $field->getOptions()))
+            ->fillForm(['status' => 'no_show'])
+            ->call('save')
+            ->assertHasNoFormErrors();
 
         $this->assertStatus('no_show', $this->confirmed);
     }

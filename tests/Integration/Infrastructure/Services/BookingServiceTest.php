@@ -29,6 +29,7 @@ use Modules\VenueBookings\Domain\Exceptions\BookingAlreadyStartedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingBusyException;
 use Modules\VenueBookings\Domain\Exceptions\BookingCancellationNotAllowedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingLimitExceededException;
+use Modules\VenueBookings\Domain\Exceptions\BookingNotStartedException;
 use Modules\VenueBookings\Domain\Exceptions\MaximumSlotsExceededException;
 use Modules\VenueBookings\Domain\Exceptions\MinimumSlotsNotMetException;
 use Modules\VenueBookings\Domain\Exceptions\SlotOutsideScheduleException;
@@ -396,6 +397,32 @@ final class BookingServiceTest extends TestCase
         $this->assertEquals(BookingStatus::Confirmed, $result->status);
     }
 
+    public function test_it_refuses_no_show_before_the_booking_starts(): void
+    {
+        Event::fake();
+
+        $bookingId = (string) Str::uuid();
+        BookingModel::create([
+            'id' => $bookingId,
+            'resource_id' => $this->resource->id,
+            'user_id' => $this->user->id,
+            'date' => '2026-03-16',
+            'start_time' => '10:00',
+            'end_time' => '12:00',
+            'status' => 'confirmed',
+        ]);
+
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 9, 59, 59, self::VENUE_TIMEZONE));
+
+        try {
+            $this->service->markNoShow($bookingId);
+            $this->fail('A booking that has not started cannot be a no-show.');
+        } catch (BookingNotStartedException) {
+            $this->assertDatabaseHas('venuebookings_bookings', ['id' => $bookingId, 'status' => 'confirmed']);
+            Event::assertNotDispatched(BookingNoShow::class);
+        }
+    }
+
     public function test_it_marks_booking_as_no_show(): void
     {
         Event::fake();
@@ -410,6 +437,8 @@ final class BookingServiceTest extends TestCase
             'end_time' => '12:00',
             'status' => 'confirmed',
         ]);
+
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 10, 0, 0, self::VENUE_TIMEZONE));
 
         $result = $this->service->markNoShow($bookingId);
 

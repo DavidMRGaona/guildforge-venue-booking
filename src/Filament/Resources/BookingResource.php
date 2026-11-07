@@ -121,6 +121,11 @@ final class BookingResource extends BaseResource
                                 continue;
                             }
 
+                            // A no-show only makes sense once the booking has started
+                            if ($case === BookingStatus::NoShow && ! $record->hasStarted()) {
+                                continue;
+                            }
+
                             $options[$case->value] = $case->label();
                         }
 
@@ -388,7 +393,7 @@ final class BookingResource extends BaseResource
                     ->icon('heroicon-o-user-minus')
                     ->color('gray')
                     ->requiresConfirmation()
-                    ->visible(fn (BookingModel $record): bool => $record->status === BookingStatus::Confirmed)
+                    ->visible(fn (BookingModel $record): bool => $record->status === BookingStatus::Confirmed && $record->hasStarted())
                     ->authorize('markNoShow')
                     ->action(function (BookingModel $record): void {
                         Gate::authorize('markNoShow', $record);

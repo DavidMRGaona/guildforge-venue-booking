@@ -18,6 +18,7 @@ use Modules\VenueBookings\Application\DTOs\MoveBookingDTO;
 use Modules\VenueBookings\Application\Services\BookingFieldConfigServiceInterface;
 use Modules\VenueBookings\Application\Services\BookingServiceInterface;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
+use Modules\VenueBookings\Domain\Exceptions\BookingNotStartedException;
 use Modules\VenueBookings\Domain\Exceptions\InvalidStatusTransitionException;
 use Modules\VenueBookings\Filament\Resources\BookingResource;
 use Modules\VenueBookings\Filament\Resources\BookingResource\Pages\Concerns\ShowsBookingRefusals;
@@ -173,6 +174,13 @@ final class EditBooking extends EditRecord
 
                 unset($data['status'], $data['cancellation_reason']);
                 $record->refresh();
+            } catch (BookingNotStartedException) {
+                Notification::make()
+                    ->title(__('venue-bookings::messages.notifications.booking_not_started'))
+                    ->danger()
+                    ->send();
+
+                $this->halt();
             } catch (InvalidStatusTransitionException) {
                 Notification::make()
                     ->title(__('venue-bookings::messages.notifications.invalid_transition'))

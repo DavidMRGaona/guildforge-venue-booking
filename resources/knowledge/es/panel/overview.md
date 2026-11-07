@@ -31,7 +31,7 @@ El módulo de reservas deja que la gente de {{site_name}} reserve los espacios d
 | **Completada** | Ya pasó. Es definitivo. | Ninguno |
 | **Cancelada** | La canceló la persona o la organización. Es definitivo. | Ninguno |
 | **Rechazada** | La organización no la aceptó. Es definitivo. | Ninguno |
-| **No presentado** | Estaba confirmada y la persona no vino. Es definitivo. | Ninguno |
+| **No presentado** | Estaba confirmada, ya había empezado y la persona no vino. Es definitivo. | Ninguno |
 
 Las reservas pendientes y confirmadas son las activas: ocupan su franja, salen en el calendario de la web y cuentan para el límite de reservas de cada persona. Una reserva pendiente no caduca sola: sigue pendiente, y contando para ese límite, hasta que alguien la revisa.
 

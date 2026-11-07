@@ -7,6 +7,7 @@ namespace Modules\VenueBookings\Domain\Entities;
 use DateTimeImmutable;
 use DateTimeZone;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
+use Modules\VenueBookings\Domain\Exceptions\BookingNotStartedException;
 use Modules\VenueBookings\Domain\Exceptions\InvalidStatusTransitionException;
 use Modules\VenueBookings\Domain\ValueObjects\BookableResourceId;
 use Modules\VenueBookings\Domain\ValueObjects\BookingFieldValue;
@@ -60,8 +61,16 @@ final class Booking
         $this->transitionTo(BookingStatus::Completed);
     }
 
-    public function markNoShow(): void
+    /**
+     * A no-show can only be recorded from the start time on: $now is compared with the start
+     * read in the venue timezone the caller passes.
+     */
+    public function markNoShow(DateTimeImmutable $now, DateTimeZone $timezone): void
     {
+        if ($this->status->canTransitionTo(BookingStatus::NoShow) && ! $this->hasStarted($now, $timezone)) {
+            throw BookingNotStartedException::forSlot($this->date, $this->timeRange->startTime);
+        }
+
         $this->transitionTo(BookingStatus::NoShow);
     }
 
