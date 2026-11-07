@@ -308,7 +308,6 @@ return [
 
     'permissions' => [
         'view_any' => 'Ver reservas',
-        'view' => 'Ver detalle de reserva',
         'create' => 'Crear reservas',
         'cancel_own' => 'Cancelar reservas propias',
         'cancel_any' => 'Cancelar cualquier reserva',
