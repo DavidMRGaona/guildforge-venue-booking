@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Filament\Resources;
 
+use App\Filament\Actions\RowDetailsAction;
 use App\Filament\Resources\BaseResource;
 use App\Infrastructure\Persistence\Eloquent\Models\EventModel;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
@@ -360,6 +361,7 @@ final class BookingResource extends BaseResource
             // One menu: four labelled actions plus the edit one made the table overflow its container
             ->recordActions([
                 ActionGroup::make([
+                    RowDetailsAction::make(),
                     Action::make('confirm')
                         ->label(__('venue-bookings::messages.actions.confirm'))
                         ->icon('heroicon-o-check-circle')

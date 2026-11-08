@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Tests\Feature\Filament;
 
+use App\Filament\Actions\RowDetailsAction;
+use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Support\Enums\Alignment;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
@@ -45,6 +48,41 @@ final class PanelTablesFitTest extends ModuleTestCase
 
         $this->assertCount(1, $actions);
         $this->assertInstanceOf(ActionGroup::class, $actions[0]);
+    }
+
+    public function test_the_bookings_menu_starts_with_the_row_details(): void
+    {
+        $group = $this->table(ListBookings::class)->getRecordActions()[0];
+
+        $this->assertInstanceOf(ActionGroup::class, $group);
+        $this->assertSame(RowDetailsAction::NAME, array_key_first($group->getFlatActions()));
+        $this->assertNotNull($this->table(ListBookings::class)->getAction(RowDetailsAction::NAME));
+    }
+
+    public function test_the_spaces_edit_action_and_row_details_share_one_menu(): void
+    {
+        $actions = $this->table(ListBookableResources::class)->getRecordActions();
+
+        $this->assertCount(1, $actions);
+        $this->assertInstanceOf(ActionGroup::class, $actions[0]);
+        $this->assertSame([RowDetailsAction::NAME, 'edit'], array_keys($actions[0]->getFlatActions()));
+    }
+
+    public function test_the_upcoming_widget_offers_row_details_as_an_icon(): void
+    {
+        $actions = $this->table(UpcomingBookingsWidget::class)->getRecordActions();
+
+        $this->assertCount(1, $actions);
+        $this->assertInstanceOf(Action::class, $actions[0]);
+        $this->assertSame(RowDetailsAction::NAME, $actions[0]->getName());
+        $this->assertTrue($actions[0]->isIconButton());
+    }
+
+    public function test_the_space_counters_are_centred(): void
+    {
+        foreach (['capacity', 'bookings_count'] as $name) {
+            $this->assertSame(Alignment::Center, $this->table(ListBookableResources::class)->getColumn($name)?->getAlignment());
+        }
     }
 
     /**

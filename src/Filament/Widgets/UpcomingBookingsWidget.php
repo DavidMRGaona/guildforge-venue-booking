@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\VenueBookings\Filament\Widgets;
 
 use App\Application\Services\DashboardWidgetConfigServiceInterface;
+use App\Filament\Actions\RowDetailsAction;
 use Carbon\CarbonImmutable;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -68,6 +69,7 @@ final class UpcomingBookingsWidget extends BaseWidget
                     ->color(fn (BookingStatus $state): string => $state->color())
                     ->formatStateUsing(fn (BookingStatus $state): string => $state->label()),
             ])
+            ->recordActions([RowDetailsAction::makeIconButton()])
             // As in the bookings list: the row opens the booking for whoever may edit it
             ->recordUrl(fn (BookingModel $record): ?string => BookingResource::canEdit($record)
                 ? BookingResource::getUrl('edit', ['record' => $record])
