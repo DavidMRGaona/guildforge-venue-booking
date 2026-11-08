@@ -41,11 +41,13 @@ final class UpcomingBookingsWidget extends BaseWidget
             ->columns([
                 TextColumn::make('resource.name')
                     ->label(__('venue-bookings::messages.fields.resource'))
-                    ->limit(30),
+                    ->limit(30)
+                    ->wrap(),
 
                 TextColumn::make('user.name')
                     ->label(__('venue-bookings::messages.fields.user'))
-                    ->limit(20),
+                    ->limit(20)
+                    ->visibleFrom('lg'),
 
                 TextColumn::make('date')
                     ->label(__('venue-bookings::messages.fields.date'))
@@ -53,10 +55,12 @@ final class UpcomingBookingsWidget extends BaseWidget
                     ->sortable(),
 
                 TextColumn::make('start_time')
-                    ->label(__('venue-bookings::messages.fields.start_time')),
+                    ->label(__('venue-bookings::messages.fields.start_time'))
+                    ->visibleFrom('sm'),
 
                 TextColumn::make('end_time')
-                    ->label(__('venue-bookings::messages.fields.end_time')),
+                    ->label(__('venue-bookings::messages.fields.end_time'))
+                    ->visibleFrom('md'),
 
                 TextColumn::make('status')
                     ->label(__('venue-bookings::messages.fields.status'))

@@ -21,6 +21,8 @@ Las reservas están en **Reservas del local** → **Reservas**. Lo que puedes ha
 
 ## Las acciones de cada fila
 
+Todas están en el menú **⋯** del final de la fila. Solo salen las que valen para esa reserva y las que tu permiso permite. Según el ancho de la ventana, la lista oculta columnas como **Inicio**, **Fin** y **Usuario**; ábrela con **Editar** para verlas.
+
 | Acción | Cuándo sale | Qué hace | Permiso |
 |---|---|---|---|
 | **Confirmar** | Reserva **Pendiente** | La pasa a **Confirmada**. | **Gestionar reservas** |
@@ -35,7 +37,7 @@ Desde el panel puedes cancelar una reserva aunque ya haya empezado.
 
 ## Editar una reserva
 
-1. Pulsa **Editar** en la fila.
+1. Abre el menú **⋯** de la fila y pulsa **Editar**.
 2. Cambia lo que necesites y pulsa **Guardar cambios**.
 
 Puedes cambiar:

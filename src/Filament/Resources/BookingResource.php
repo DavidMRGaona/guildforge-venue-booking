@@ -8,6 +8,7 @@ use App\Filament\Resources\BaseResource;
 use App\Infrastructure\Persistence\Eloquent\Models\EventModel;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
@@ -268,26 +269,52 @@ final class BookingResource extends BaseResource
     {
         return $table
             ->columns([
+                // Space, date and times side by side do not fit on a phone: one stacked column
+                // stands in for them below 640 px. The separate columns stay in the table (hidden
+                // by CSS), so searching and sorting by them keep working
+                TextColumn::make('summary')
+                    ->label(__('venue-bookings::messages.fields.resource'))
+                    ->state(fn (BookingModel $record): string => $record->resource->name)
+                    // Word joiners keep the time range in one piece when the line wraps
+                    ->description(fn (BookingModel $record): string => sprintf(
+                        "%s, %s\u{2060}–\u{2060}%s",
+                        $record->date->format('d/m/Y'),
+                        $record->start_time,
+                        $record->end_time,
+                    ))
+                    ->wrap()
+                    ->sortable(query: function (Builder $query, string $direction): Builder {
+                        $direction = $direction === 'desc' ? 'desc' : 'asc';
+
+                        return $query->orderBy('date', $direction)->orderBy('start_time', $direction);
+                    })
+                    ->hiddenFrom('sm'),
+
                 TextColumn::make('resource.name')
                     ->label(__('venue-bookings::messages.fields.resource'))
                     ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->visibleFrom('sm'),
 
                 TextColumn::make('user.name')
                     ->label(__('venue-bookings::messages.fields.user'))
                     ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->visibleFrom('xl'),
 
                 TextColumn::make('date')
                     ->label(__('venue-bookings::messages.fields.date'))
                     ->date('d/m/Y')
-                    ->sortable(),
+                    ->sortable()
+                    ->visibleFrom('sm'),
 
                 TextColumn::make('start_time')
-                    ->label(__('venue-bookings::messages.fields.start_time')),
+                    ->label(__('venue-bookings::messages.fields.start_time'))
+                    ->visibleFrom('sm'),
 
                 TextColumn::make('end_time')
-                    ->label(__('venue-bookings::messages.fields.end_time')),
+                    ->label(__('venue-bookings::messages.fields.end_time'))
+                    ->visibleFrom('md'),
 
                 TextColumn::make('status')
                     ->label(__('venue-bookings::messages.fields.status'))
@@ -330,98 +357,102 @@ final class BookingResource extends BaseResource
                             fn (Builder $query, string $date): Builder => $query->where('date', '<=', $date),
                         )),
             ])
+            // One menu: four labelled actions plus the edit one made the table overflow its container
             ->recordActions([
-                Action::make('confirm')
-                    ->label(__('venue-bookings::messages.actions.confirm'))
-                    ->icon('heroicon-o-check-circle')
-                    ->color('success')
-                    ->requiresConfirmation()
-                    ->visible(fn (BookingModel $record): bool => $record->status === BookingStatus::Pending)
-                    ->authorize('confirm')
-                    ->action(function (BookingModel $record): void {
-                        Gate::authorize('confirm', $record);
+                ActionGroup::make([
+                    Action::make('confirm')
+                        ->label(__('venue-bookings::messages.actions.confirm'))
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->visible(fn (BookingModel $record): bool => $record->status === BookingStatus::Pending)
+                        ->authorize('confirm')
+                        ->action(function (BookingModel $record): void {
+                            Gate::authorize('confirm', $record);
 
-                        $service = app(BookingServiceInterface::class);
-                        $service->confirmBooking($record->id);
+                            $service = app(BookingServiceInterface::class);
+                            $service->confirmBooking($record->id);
 
-                        Notification::make()
-                            ->title(__('venue-bookings::messages.notifications.booking_confirmed'))
-                            ->success()
-                            ->send();
-                    }),
+                            Notification::make()
+                                ->title(__('venue-bookings::messages.notifications.booking_confirmed'))
+                                ->success()
+                                ->send();
+                        }),
 
-                Action::make('reject')
-                    ->label(__('venue-bookings::messages.actions.reject'))
-                    ->icon('heroicon-o-x-circle')
-                    ->color('danger')
-                    ->requiresConfirmation()
-                    ->schema([
-                        Textarea::make('reason')
-                            ->label(__('venue-bookings::messages.fields.rejection_reason'))
-                            ->required(),
-                    ])
-                    ->visible(fn (BookingModel $record): bool => $record->status === BookingStatus::Pending)
-                    ->authorize('reject')
-                    ->action(function (BookingModel $record, array $data): void {
-                        Gate::authorize('reject', $record);
+                    Action::make('reject')
+                        ->label(__('venue-bookings::messages.actions.reject'))
+                        ->icon('heroicon-o-x-circle')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->schema([
+                            Textarea::make('reason')
+                                ->label(__('venue-bookings::messages.fields.rejection_reason'))
+                                ->required(),
+                        ])
+                        ->visible(fn (BookingModel $record): bool => $record->status === BookingStatus::Pending)
+                        ->authorize('reject')
+                        ->action(function (BookingModel $record, array $data): void {
+                            Gate::authorize('reject', $record);
 
-                        $service = app(BookingServiceInterface::class);
-                        $service->rejectBooking($record->id, $data['reason']);
+                            $service = app(BookingServiceInterface::class);
+                            $service->rejectBooking($record->id, $data['reason']);
 
-                        Notification::make()
-                            ->title(__('venue-bookings::messages.notifications.booking_rejected'))
-                            ->success()
-                            ->send();
-                    }),
+                            Notification::make()
+                                ->title(__('venue-bookings::messages.notifications.booking_rejected'))
+                                ->success()
+                                ->send();
+                        }),
 
-                Action::make('cancel')
-                    ->label(__('venue-bookings::messages.actions.cancel'))
-                    ->icon('heroicon-o-no-symbol')
-                    ->color('warning')
-                    ->requiresConfirmation()
-                    ->schema([
-                        Textarea::make('reason')
-                            ->label(__('venue-bookings::messages.fields.cancellation_reason'))
-                            ->required(),
-                    ])
-                    ->visible(fn (BookingModel $record): bool => $record->status->isActive())
-                    ->authorize('cancel')
-                    ->action(function (BookingModel $record, array $data): void {
-                        Gate::authorize('cancel', $record);
+                    Action::make('cancel')
+                        ->label(__('venue-bookings::messages.actions.cancel'))
+                        ->icon('heroicon-o-no-symbol')
+                        ->color('warning')
+                        ->requiresConfirmation()
+                        ->schema([
+                            Textarea::make('reason')
+                                ->label(__('venue-bookings::messages.fields.cancellation_reason'))
+                                ->required(),
+                        ])
+                        ->visible(fn (BookingModel $record): bool => $record->status->isActive())
+                        ->authorize('cancel')
+                        ->action(function (BookingModel $record, array $data): void {
+                            Gate::authorize('cancel', $record);
 
-                        $service = app(BookingServiceInterface::class);
-                        $service->cancelBookingAsStaff(new CancelBookingDTO(
-                            bookingId: $record->id,
-                            userId: (string) Auth::id(),
-                            reason: $data['reason'],
-                        ));
+                            $service = app(BookingServiceInterface::class);
+                            $service->cancelBookingAsStaff(new CancelBookingDTO(
+                                bookingId: $record->id,
+                                userId: (string) Auth::id(),
+                                reason: $data['reason'],
+                            ));
 
-                        Notification::make()
-                            ->title(__('venue-bookings::messages.notifications.booking_cancelled'))
-                            ->success()
-                            ->send();
-                    }),
+                            Notification::make()
+                                ->title(__('venue-bookings::messages.notifications.booking_cancelled'))
+                                ->success()
+                                ->send();
+                        }),
 
-                Action::make('no_show')
-                    ->label(__('venue-bookings::messages.actions.no_show'))
-                    ->icon('heroicon-o-user-minus')
-                    ->color('gray')
-                    ->requiresConfirmation()
-                    ->visible(fn (BookingModel $record): bool => $record->status === BookingStatus::Confirmed && $record->hasStarted())
-                    ->authorize('markNoShow')
-                    ->action(function (BookingModel $record): void {
-                        Gate::authorize('markNoShow', $record);
+                    Action::make('no_show')
+                        ->label(__('venue-bookings::messages.actions.no_show'))
+                        ->icon('heroicon-o-user-minus')
+                        ->color('gray')
+                        ->requiresConfirmation()
+                        ->visible(fn (BookingModel $record): bool => $record->status === BookingStatus::Confirmed && $record->hasStarted())
+                        ->authorize('markNoShow')
+                        ->action(function (BookingModel $record): void {
+                            Gate::authorize('markNoShow', $record);
 
-                        $service = app(BookingServiceInterface::class);
-                        $service->markNoShow($record->id);
+                            $service = app(BookingServiceInterface::class);
+                            $service->markNoShow($record->id);
 
-                        Notification::make()
-                            ->title(__('venue-bookings::messages.notifications.booking_no_show'))
-                            ->success()
-                            ->send();
-                    }),
+                            Notification::make()
+                                ->title(__('venue-bookings::messages.notifications.booking_no_show'))
+                                ->success()
+                                ->send();
+                        }),
 
-                EditAction::make(),
+                    EditAction::make(),
+
+                ]),
             ])
             ->defaultSort('date', 'desc');
     }
