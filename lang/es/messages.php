@@ -51,11 +51,11 @@ return [
     'model' => [
         'bookable_resource' => [
             'singular' => 'espacio reservable',
-            'plural' => 'espacios reservables',
+            'plural' => 'Espacios reservables',
         ],
         'booking' => [
             'singular' => 'reserva',
-            'plural' => 'reservas',
+            'plural' => 'Reservas',
         ],
     ],
 

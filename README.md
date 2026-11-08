@@ -266,7 +266,9 @@ src/modules/venue-bookings/
 │   ├── migrations/            # Migraciones (espacios, horarios, reservas, permiso cancel_own de member)
 │   └── seeders/               # Seeders de desarrollo
 ├── lang/
-│   └── es/                    # Traducciones en español
+│   ├── es/                    # Traducciones en español
+│   │   └── messages.php
+│   └── en/                    # Etiquetas de modelo en inglés; el resto cae al español
 │       └── messages.php
 ├── resources/js/
 │   ├── components/            # Componentes Vue
