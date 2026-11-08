@@ -361,12 +361,14 @@ final class BookableResourceResource extends BaseResource
                 TextColumn::make('capacity')
                     ->label(__('venue-bookings::messages.fields.capacity'))
                     ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->visibleFrom('sm'),
 
                 TextColumn::make('bookings_count')
                     ->label(__('venue-bookings::messages.fields.bookings_count'))
                     ->counts('bookings')
-                    ->sortable(),
+                    ->sortable()
+                    ->visibleFrom('md'),
 
                 TextColumn::make('created_at')
                     ->label(__('venue-bookings::messages.fields.created_at'))
