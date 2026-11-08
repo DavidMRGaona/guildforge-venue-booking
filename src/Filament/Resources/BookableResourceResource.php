@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Filament\Resources;
 
+use App\Filament\Actions\RowDetailsAction;
 use App\Filament\Resources\BaseResource;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Repeater;
@@ -360,12 +362,14 @@ final class BookableResourceResource extends BaseResource
 
                 TextColumn::make('capacity')
                     ->label(__('venue-bookings::messages.fields.capacity'))
+                    ->alignCenter()
                     ->numeric()
                     ->sortable()
                     ->visibleFrom('sm'),
 
                 TextColumn::make('bookings_count')
                     ->label(__('venue-bookings::messages.fields.bookings_count'))
+                    ->alignCenter()
                     ->counts('bookings')
                     ->sortable()
                     ->visibleFrom('md'),
@@ -377,7 +381,10 @@ final class BookableResourceResource extends BaseResource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->recordActions([
-                EditAction::make(),
+                ActionGroup::make([
+                    RowDetailsAction::make(),
+                    EditAction::make(),
+                ]),
             ])
             ->defaultSort('sort_order', 'asc');
     }
