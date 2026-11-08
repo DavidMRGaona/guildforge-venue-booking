@@ -10,6 +10,7 @@ use App\Application\Modules\DTOs\NavigationItemDTO;
 use App\Application\Modules\DTOs\PagePrefixDTO;
 use App\Application\Modules\DTOs\PermissionDTO;
 use App\Application\Modules\DTOs\SlotRegistrationDTO;
+use App\Filament\Support\PanelNavigationGroup;
 use App\Modules\ModuleServiceProvider;
 use Filament\Pages\Page;
 use Filament\Resources\Resource as FilamentResource;
@@ -271,15 +272,13 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
     }
 
     /**
+     * The sidebar groups belong to the core (PanelNavigationGroup): the module declares none.
+     *
      * @return array<string, array{icon?: string, sort?: int}>
      */
     public function registerNavigationGroups(): array
     {
-        return [
-            __('venue-bookings::messages.navigation.group') => [
-                'sort' => 14,
-            ],
-        ];
+        return [];
     }
 
     /**
@@ -342,8 +341,8 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
                 label: __('venue-bookings::messages.navigation.resources'),
                 route: 'filament.admin.resources.bookable-resources.index',
                 icon: 'heroicon-o-building-office',
-                group: __('venue-bookings::messages.navigation.group'),
-                sort: 1,
+                group: PanelNavigationGroup::Activities->getLabel(),
+                sort: 31,
                 permissions: ['venuebookings:bookings.manage'],
                 module: 'venuebookings',
             ),
@@ -351,8 +350,8 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
                 label: __('venue-bookings::messages.navigation.bookings'),
                 route: 'filament.admin.resources.bookings.index',
                 icon: 'heroicon-o-calendar-days',
-                group: __('venue-bookings::messages.navigation.group'),
-                sort: 2,
+                group: PanelNavigationGroup::Activities->getLabel(),
+                sort: 30,
                 permissions: ['venuebookings:bookings.view_any'],
                 module: 'venuebookings',
             ),

@@ -43,7 +43,7 @@ En este modo cuenta una franja por día de la semana: si añades dos filas para 
 2. Si en la configuración hay bloques predefinidos, elige uno en **Bloque horario**: rellena las horas y el nombre.
 3. Marca los días en **Día de la semana**, pon las horas y confirma.
 
-Se añade una fila por cada día marcado. Los bloques predefinidos se preparan en **Configuración de reservas** → **Bloques horarios predefinidos**.
+Se añade una fila por cada día marcado. Los bloques predefinidos se preparan en **Sistema** → **Configuración** → **Reservas** → **Bloques horarios predefinidos**.
 
 ## Abrir hasta pasada la medianoche
 

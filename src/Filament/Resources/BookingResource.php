@@ -6,6 +6,7 @@ namespace Modules\VenueBookings\Filament\Resources;
 
 use App\Filament\Actions\RowDetailsAction;
 use App\Filament\Resources\BaseResource;
+use App\Filament\Support\PanelNavigationGroup;
 use App\Infrastructure\Persistence\Eloquent\Models\EventModel;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Filament\Actions\Action;
@@ -46,11 +47,11 @@ final class BookingResource extends BaseResource
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-calendar-days';
 
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 30;
 
     public static function getNavigationGroup(): string
     {
-        return __('venue-bookings::messages.navigation.group');
+        return PanelNavigationGroup::Activities->getLabel();
     }
 
     public static function getNavigationLabel(): string

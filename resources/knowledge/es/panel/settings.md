@@ -11,7 +11,7 @@ conditions:
   permissions:
     all: ['venuebookings:bookings.settings']
 ---
-La configuración decide cómo funcionan todas las reservas. Ábrela en el menú lateral: **Reservas del local** → **Configuración de reservas**. Al terminar, pulsa **Guardar**.
+La configuración decide cómo funcionan todas las reservas. Ábrela en el menú lateral: **Sistema** → **Configuración** → **Reservas**. La página se llama **Configuración de reservas**. Al terminar, pulsa **Guardar**.
 
 ## Aprobación
 
@@ -64,4 +64,4 @@ Son la plantilla de los espacios que no tienen campos propios. La guía de campo
 
 Solo sale si tu web tiene mesas de rol. **Permitir asociar con mesas de juego** y **Permitir asociar con campañas** añaden esos campos al formulario de reserva, cada uno con su **Visibilidad**.
 
-[[action:filament.admin.pages.venue-bookings-settings|Abrir la configuración de reservas]]
+[[action:filament.admin.configuracion.pages.venue-bookings-settings|Abrir la configuración de reservas]]

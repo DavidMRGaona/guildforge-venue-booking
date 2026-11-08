@@ -15,7 +15,7 @@ Desde el panel puedes reservar un espacio para cualquier persona con cuenta, por
 
 ## Paso a paso
 
-1. En el menú lateral, abre **Reservas del local** → **Reservas** y pulsa **Crear reserva**.
+1. En el menú lateral, abre **Actividades** → **Reservas** y pulsa **Crear reserva**.
 2. Elige el **Espacio** y el **Usuario** a cuyo nombre va la reserva.
 3. Pon la **Fecha** (el día en que empieza), la **Hora de inicio** y la **Hora de fin**, en formato `HH:MM`.
 4. Si quieres, elige el **Evento** y, si tu web tiene mesas de rol, la mesa o campaña.
