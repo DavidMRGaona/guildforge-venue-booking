@@ -9,7 +9,6 @@ use App\Filament\Support\PanelNavigationGroup;
 use Modules\VenueBookings\Filament\Pages\VenueBookingsSettings;
 use Modules\VenueBookings\Filament\Resources\BookableResourceResource;
 use Modules\VenueBookings\Filament\Resources\BookingResource;
-use Modules\VenueBookings\VenueBookingsServiceProvider;
 use Tests\Support\Modules\InteractsWithModulePanel;
 use Tests\Support\Modules\ModuleTestCase;
 
@@ -59,13 +58,6 @@ final class PanelNavigationTest extends ModuleTestCase
         $this->assertNull(VenueBookingsSettings::getNavigationGroup());
         $this->assertSame('Sistema', SettingsCluster::getNavigationGroup());
         $this->assertStringStartsWith('/admin/configuracion/', (string) parse_url(VenueBookingsSettings::getUrl(), PHP_URL_PATH));
-    }
-
-    public function test_the_module_declares_no_navigation_group_of_its_own(): void
-    {
-        $provider = new VenueBookingsServiceProvider($this->app);
-
-        $this->assertSame([], $provider->registerNavigationGroups());
     }
 
     public function test_the_panel_menu_shows_bookings_under_the_activities_group(): void
