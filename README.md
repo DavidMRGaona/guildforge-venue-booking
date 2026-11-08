@@ -55,7 +55,7 @@ En las releases los assets los compila el workflow y van dentro del ZIP.
 
 ## Configuración
 
-Se configura en el panel: **Reservas del local → Configuración de reservas** (permiso `bookings.settings`; los administradores siempre tienen acceso). Los valores se guardan en la tabla `settings` (clave `module_settings:venue-bookings`), así que se conservan al actualizar el módulo. `config/settings.php` es el único sitio donde se escriben los valores por defecto: se aplican a una instalación nueva y a toda opción que no se haya guardado aún (por ejemplo, la que añade una versión nueva). El código lee los ajustes con `BookingSettingsReader::get()`, que rechaza cualquier clave que no esté declarada en ese fichero.
+Se configura en el panel: **Sistema → Configuración → Reservas** (permiso `bookings.settings`; los administradores siempre tienen acceso). Los valores se guardan en la tabla `settings` (clave `module_settings:venue-bookings`), así que se conservan al actualizar el módulo. `config/settings.php` es el único sitio donde se escriben los valores por defecto: se aplican a una instalación nueva y a toda opción que no se haya guardado aún (por ejemplo, la que añade una versión nueva). El código lee los ajustes con `BookingSettingsReader::get()`, que rechaza cualquier clave que no esté declarada en ese fichero.
 
 | Clave | Valor de una instalación nueva | Descripción |
 |-------|--------------------------------|-------------|
@@ -143,13 +143,13 @@ Los estados Completada, Cancelada, No presentado, Rechazada y Caducada son final
 
 ## Panel de administración
 
-Grupo **Reservas del local**:
+Los elementos del menú lateral están en el grupo **Actividades** (Reservas, con Espacios debajo) y en **Sistema → Configuración** (Reservas):
 
 | Elemento | Descripción |
 |----------|-------------|
-| Espacios | Espacios reservables, con su horario y la configuración de sus campos |
+| Espacios (debajo de Reservas) | Espacios reservables, con su horario y la configuración de sus campos |
 | Reservas | Listado, creación, edición y borrado de reservas; confirmar, rechazar, cancelar o marcar como no presentado (cada acción exige su permiso, ver [Permisos](#permisos)) |
-| Configuración de reservas | Configuración del módulo (permiso `bookings.settings`) |
+| Configuración de reservas (Sistema → Configuración → Reservas) | Configuración del módulo (permiso `bookings.settings`) |
 
 Widgets del escritorio (se activan y ordenan en la configuración del escritorio):
 

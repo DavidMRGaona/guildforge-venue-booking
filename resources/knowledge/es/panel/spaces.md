@@ -15,7 +15,7 @@ Un espacio es lo que la gente reserva: una sala, una mesa o una zona del local. 
 
 ## Crear un espacio
 
-1. En el menú lateral, abre **Reservas del local** y elige **Espacios**.
+1. En el menú lateral, abre **Actividades** → **Reservas**; **Espacios** aparece debajo de **Reservas**.
 2. Pulsa **Crear espacio**.
 3. En **Información básica**, escribe el **Nombre**. Es lo que la gente ve en la web.
 4. Elige el **Estado** (lo explica la sección siguiente).

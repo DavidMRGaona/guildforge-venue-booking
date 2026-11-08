@@ -62,7 +62,7 @@ Salvo **Cancelar reservas propias**, que viene concedido al rol base de todas la
 
 ## Dónde está cada cosa
 
-- En el menú lateral, el grupo **Reservas del local** tiene **Espacios**, **Reservas** y **Configuración de reservas**.
+- En el menú lateral, el grupo **Actividades** tiene **Reservas**; **Espacios** aparece debajo de **Reservas**. La configuración está en **Sistema** → **Configuración** → **Reservas**.
 - En el escritorio, los widgets **Reservas de hoy**, **Pendientes de aprobación** y **Próximas reservas** resumen lo que viene.
 - Para que la gente encuentre la página de reservas, añade **Reservas** o **Mis reservas** al menú del sitio.
 

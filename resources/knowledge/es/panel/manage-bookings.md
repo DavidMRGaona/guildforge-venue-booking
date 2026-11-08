@@ -11,7 +11,7 @@ conditions:
   permissions:
     all: ['venuebookings:bookings.view_any']
 ---
-Las reservas están en **Reservas del local** → **Reservas**. Lo que puedes hacer en cada una depende de tus permisos.
+Las reservas están en **Actividades** → **Reservas**. Lo que puedes hacer en cada una depende de tus permisos.
 
 ## Encontrar una reserva
 

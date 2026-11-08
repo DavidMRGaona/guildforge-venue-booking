@@ -42,10 +42,10 @@ return [
     ],
 
     'navigation' => [
-        'group' => 'Reservas del local',
         'resources' => 'Espacios',
         'bookings' => 'Reservas',
         'settings' => 'Configuración de reservas',
+        'settings_page' => 'Reservas',
     ],
 
     'model' => [
@@ -314,6 +314,7 @@ return [
         'cancel_any' => 'Cancelar cualquier reserva',
         'manage' => 'Gestionar reservas',
         'settings' => 'Configuración de reservas',
+        'settings_page' => 'Reservas',
     ],
 
     'routes' => [

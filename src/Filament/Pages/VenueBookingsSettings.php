@@ -7,6 +7,7 @@ namespace Modules\VenueBookings\Filament\Pages;
 use App\Application\Modules\Services\ModuleContextServiceInterface;
 use App\Application\Modules\Services\ModuleSettingsStoreInterface;
 use App\Application\Services\SettingsServiceInterface;
+use App\Filament\Clusters\SettingsCluster;
 use App\Filament\Concerns\ChecksPermissions;
 use App\Filament\Concerns\HasKnowledgeGuideAction;
 use App\Filament\Concerns\SafeModuleNavigation;
@@ -42,7 +43,9 @@ final class VenueBookingsSettings extends Page implements HasForms
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-cog-6-tooth';
 
-    protected static ?int $navigationSort = 99;
+    protected static ?string $cluster = SettingsCluster::class;
+
+    protected static ?int $navigationSort = 160;
 
     protected string $view = 'filament.pages.simple-settings';
 
@@ -51,14 +54,9 @@ final class VenueBookingsSettings extends Page implements HasForms
      */
     public ?array $data = [];
 
-    public static function getNavigationGroup(): string
-    {
-        return __('venue-bookings::messages.navigation.group');
-    }
-
     public static function getNavigationLabel(): string
     {
-        return __('venue-bookings::messages.navigation.settings');
+        return __('venue-bookings::messages.navigation.settings_page');
     }
 
     public function getTitle(): string

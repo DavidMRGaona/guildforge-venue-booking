@@ -51,10 +51,10 @@ Guarda el espacio para aplicar los cambios. Las reservas que ya existen conserva
 
 ## La plantilla de la configuración
 
-En **Configuración de reservas** están las secciones **Campos predefinidos (plantilla por defecto)** y **Campos personalizados (plantilla por defecto)**. Se usan en los espacios que no tienen campos propios guardados. Un espacio creado desde el panel guarda siempre los suyos (al crearlo empiezan desactivados), así que la plantilla no se copia en él: configura los campos en cada espacio.
+En **Sistema** → **Configuración** → **Reservas** están las secciones **Campos predefinidos (plantilla por defecto)** y **Campos personalizados (plantilla por defecto)**. Se usan en los espacios que no tienen campos propios guardados. Un espacio creado desde el panel guarda siempre los suyos (al crearlo empiezan desactivados), así que la plantilla no se copia en él: configura los campos en cada espacio.
 
 ## Mesas y campañas
 
-Si tu web tiene mesas de rol, **Configuración de reservas** → **Asociaciones** permite añadir al formulario los campos **Mesa de juego** y **Campaña**, cada uno con su visibilidad. En la web, cada persona elige entre las mesas y campañas publicadas que ha creado.
+Si tu web tiene mesas de rol, **Sistema** → **Configuración** → **Reservas** → **Asociaciones** permite añadir al formulario los campos **Mesa de juego** y **Campaña**, cada uno con su visibilidad. En la web, cada persona elige entre las mesas y campañas publicadas que ha creado.
 
 [[action:filament.admin.resources.bookable-resources.index|Ver los espacios|if=venuebookings:bookings.manage]]

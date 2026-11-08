@@ -6,6 +6,7 @@ namespace Modules\VenueBookings\Filament\Resources;
 
 use App\Filament\Actions\RowDetailsAction;
 use App\Filament\Resources\BaseResource;
+use App\Filament\Support\PanelNavigationGroup;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\EditAction;
@@ -46,7 +47,12 @@ final class BookableResourceResource extends BaseResource
 
     public static function getNavigationGroup(): string
     {
-        return __('venue-bookings::messages.navigation.group');
+        return PanelNavigationGroup::Activities->getLabel();
+    }
+
+    public static function getNavigationParentItem(): string
+    {
+        return BookingResource::getNavigationLabel();
     }
 
     public static function getNavigationLabel(): string
