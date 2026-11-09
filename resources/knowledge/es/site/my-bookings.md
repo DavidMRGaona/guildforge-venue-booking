@@ -47,4 +47,6 @@ Según la configuración de la web:
 
 Cada correo trae el botón **Ver mis reservas**.
 
+Los correos sobre tu reserva (recibida, confirmada, rechazada, cancelada o modificada) siempre se envían. El recordatorio es optativo: puedes dejar de recibirlo en la pestaña **Correos** de tu perfil, en «Recordatorios de reservas», o con el enlace de baja del propio correo.
+
 [[action:bookings.my-bookings|Ver mis reservas]]

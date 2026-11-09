@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Notifications;
 
+use App\Application\Mail\Contracts\HasMailCategory;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Modules\VenueBookings\Filament\Resources\BookingResource;
 use Modules\VenueBookings\Notifications\Concerns\FormatsBookingDate;
+use Modules\VenueBookings\VenueBookingsServiceProvider;
 
-final class BookingCreatedNotification extends Notification implements ShouldQueue
+final class BookingCreatedNotification extends Notification implements HasMailCategory, ShouldQueue
 {
     use FormatsBookingDate;
     use Queueable;
@@ -24,6 +26,11 @@ final class BookingCreatedNotification extends Notification implements ShouldQue
         private readonly string $startTime,
         private readonly string $endTime,
     ) {}
+
+    public function mailCategory(): string
+    {
+        return VenueBookingsServiceProvider::MAIL_MANAGEMENT;
+    }
 
     /**
      * @return array<string>
