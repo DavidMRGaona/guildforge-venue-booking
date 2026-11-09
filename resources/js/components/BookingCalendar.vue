@@ -6,7 +6,11 @@ import dayGridPlugin from '@fullcalendar/vue3/daygrid';
 import timeGridPlugin from '@fullcalendar/vue3/timegrid';
 import interactionPlugin from '@fullcalendar/vue3/interaction';
 import { useCalendarLocale } from '@/composables/useCalendarLocale';
-import { calendarClassOptions, calendarThemePlugin } from '@/utils/calendarTheme';
+import {
+    calendarClassOptions,
+    calendarThemePlugin,
+    calendarToolbarOptions,
+} from '@/utils/calendarTheme';
 import type {
     CalendarOptions,
     DateClickInfo,
@@ -167,11 +171,9 @@ const calendarOptions = computed<CalendarOptions>(() => ({
         minute: '2-digit',
         hour12: false,
     },
-    headerToolbar: {
-        left: 'prev,next today',
-        center: 'title',
-        right: 'dayGridMonth,timeGridWeek,timeGridDay',
-    },
+    // The toolbar of every site calendar: title with ‹ › and, below it while the calendar
+    // is narrow, «Hoy» with the views
+    ...calendarToolbarOptions('dayGridMonth,timeGridWeek,timeGridDay'),
     buttons: {
         today: { text: t('calendar.today') },
         dayGridMonth: { text: t('booking_calendar.view_month') },
