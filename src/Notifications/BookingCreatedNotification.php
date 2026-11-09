@@ -27,14 +27,14 @@ final class BookingCreatedNotification extends Notification implements HasMailCa
         private readonly string $endTime,
     ) {}
 
-    /**
-     * @return array<string>
-     */
     public function mailCategory(): string
     {
         return VenueBookingsServiceProvider::MAIL_MANAGEMENT;
     }
 
+    /**
+     * @return array<string>
+     */
     public function via(object $notifiable): array
     {
         return ['mail'];

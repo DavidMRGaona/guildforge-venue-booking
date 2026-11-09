@@ -26,14 +26,14 @@ final class BookingReminderNotification extends Notification implements HasMailC
         private readonly string $endTime,
     ) {}
 
-    /**
-     * @return array<string>
-     */
     public function mailCategory(): string
     {
         return VenueBookingsServiceProvider::MAIL_REMINDERS;
     }
 
+    /**
+     * @return array<string>
+     */
     public function via(object $notifiable): array
     {
         return ['mail'];

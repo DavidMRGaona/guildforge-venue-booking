@@ -27,14 +27,14 @@ final class BookingRejectedNotification extends Notification implements HasMailC
         private readonly ?string $reason = null,
     ) {}
 
-    /**
-     * @return array<string>
-     */
     public function mailCategory(): string
     {
         return VenueBookingsServiceProvider::MAIL_MY_BOOKINGS;
     }
 
+    /**
+     * @return array<string>
+     */
     public function via(object $notifiable): array
     {
         return ['mail'];
