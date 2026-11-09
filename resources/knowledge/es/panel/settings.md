@@ -60,6 +60,8 @@ Son la plantilla de los espacios que no tienen campos propios. La guía de campo
 
 **Horas de antelación del recordatorio** (de 1 a 72; vienen 24) dice cuánto antes del inicio sale el recordatorio. Se revisa cada hora. Todos los interruptores vienen activados.
 
+Cada persona puede, además, dejar de recibir el recordatorio y el aviso de reservas nuevas desde la pestaña **Correos** de su perfil (categorías «Recordatorios de reservas» y «Gestión de reservas»). Los interruptores de esta página mandan primero: si uno está apagado, el correo no sale aunque la persona lo tenga activado. Los avisos sobre la reserva de cada persona (recibida, confirmada, rechazada, cancelada, modificada) siempre se envían.
+
 ## Asociaciones
 
 Solo sale si tu web tiene mesas de rol. **Permitir asociar con mesas de juego** y **Permitir asociar con campañas** añaden esos campos al formulario de reserva, cada uno con su **Visibilidad**.

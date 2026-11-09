@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings;
 
+use App\Application\Authorization\Services\AuthorizationServiceInterface;
 use App\Application\Knowledge\Contracts\KnowledgeCapabilityInterface;
+use App\Application\Mail\DTOs\MailCategoryDTO;
 use App\Application\Modules\DTOs\ModuleRouteDTO;
 use App\Application\Modules\DTOs\NavigationItemDTO;
 use App\Application\Modules\DTOs\PagePrefixDTO;
@@ -73,6 +75,13 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
     {
         return 'venue-bookings';
     }
+
+    /** Confirmations and changes to a booking the person made: always sent. */
+    public const string MAIL_MY_BOOKINGS = 'venue-bookings.my-bookings';
+
+    public const string MAIL_REMINDERS = 'venue-bookings.reminders';
+
+    public const string MAIL_MANAGEMENT = 'venue-bookings.management';
 
     public function register(): void
     {
@@ -413,6 +422,38 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
     {
         return [
             CancelsOwnBookingsCapability::class,
+        ];
+    }
+
+    /**
+     * @return list<MailCategoryDTO>
+     */
+    public function registerMailCategories(): array
+    {
+        $section = 'venue-bookings::messages.mail_categories.section';
+
+        return [
+            MailCategoryDTO::mandatory(
+                key: self::MAIL_MY_BOOKINGS,
+                section: $section,
+                label: 'venue-bookings::messages.mail_categories.my_bookings.label',
+                description: 'venue-bookings::messages.mail_categories.my_bookings.description',
+                reason: 'venue-bookings::messages.mail_categories.my_bookings.reason',
+            ),
+            MailCategoryDTO::optional(
+                key: self::MAIL_REMINDERS,
+                section: $section,
+                label: 'venue-bookings::messages.mail_categories.reminders.label',
+                description: 'venue-bookings::messages.mail_categories.reminders.description',
+            ),
+            MailCategoryDTO::optional(
+                key: self::MAIL_MANAGEMENT,
+                section: $section,
+                label: 'venue-bookings::messages.mail_categories.management.label',
+                description: 'venue-bookings::messages.mail_categories.management.description',
+                audience: static fn (object $user): bool => app(AuthorizationServiceInterface::class)
+                    ->can($user, 'venuebookings:bookings.manage'),
+            ),
         ];
     }
 }

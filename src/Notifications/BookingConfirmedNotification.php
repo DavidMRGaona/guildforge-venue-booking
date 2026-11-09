@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Notifications;
 
+use App\Application\Mail\Contracts\HasMailCategory;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Modules\VenueBookings\Notifications\Concerns\FormatsBookingDate;
+use Modules\VenueBookings\VenueBookingsServiceProvider;
 
-final class BookingConfirmedNotification extends Notification implements ShouldQueue
+final class BookingConfirmedNotification extends Notification implements HasMailCategory, ShouldQueue
 {
     use FormatsBookingDate;
     use Queueable;
@@ -27,6 +29,11 @@ final class BookingConfirmedNotification extends Notification implements ShouldQ
     /**
      * @return array<string>
      */
+    public function mailCategory(): string
+    {
+        return VenueBookingsServiceProvider::MAIL_MY_BOOKINGS;
+    }
+
     public function via(object $notifiable): array
     {
         return ['mail'];

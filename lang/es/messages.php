@@ -238,6 +238,23 @@ return [
         ],
     ],
 
+    'mail_categories' => [
+        'section' => 'Reservas del local',
+        'my_bookings' => [
+            'label' => 'Mis reservas',
+            'description' => 'Avisos de que tu reserva se ha recibido, confirmado, rechazado, cancelado o modificado.',
+            'reason' => 'Confirman o cambian una reserva que has hecho.',
+        ],
+        'reminders' => [
+            'label' => 'Recordatorios de reservas',
+            'description' => 'Un aviso antes de que empiece una reserva confirmada.',
+        ],
+        'management' => [
+            'label' => 'Gestión de reservas',
+            'description' => 'Aviso de cada reserva nueva que hay que confirmar o rechazar.',
+        ],
+    ],
+
     'emails' => [
         'booking_created' => [
             'subject' => 'Nueva reserva: :resource, :date',
