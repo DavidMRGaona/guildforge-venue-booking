@@ -213,7 +213,7 @@ async function onEventSelect(bookingId: string): Promise<void> {
 
 <template>
     <!-- Same width and title band as the core's lists, so the title lines up with the logo -->
-    <div data-testid="page-band" class="bg-surface shadow dark:shadow-neutral-900/50">
+    <div data-testid="page-band" class="bg-surface shadow">
         <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
             <h1 class="text-3xl font-bold tracking-tight text-base-primary">
                 {{ t('booking_calendar.title') }}

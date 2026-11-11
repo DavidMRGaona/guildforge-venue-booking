@@ -56,7 +56,7 @@ function confirmCancel(): void {
 
 <template>
     <!-- Same width and title band as the core's lists, so the title lines up with the logo -->
-    <div data-testid="page-band" class="bg-surface shadow dark:shadow-neutral-900/50">
+    <div data-testid="page-band" class="bg-surface shadow">
         <div
             class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-6 sm:px-6 lg:px-8"
         >

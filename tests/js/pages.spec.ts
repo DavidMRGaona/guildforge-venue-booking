@@ -28,9 +28,7 @@ describe('booking pages', () => {
         });
         const band = wrapper.get('[data-testid="page-band"]');
 
-        expect(band.classes()).toEqual(
-            expect.arrayContaining(['bg-surface', 'shadow', 'dark:shadow-neutral-900/50'])
-        );
+        expect(band.classes()).toEqual(expect.arrayContaining(['bg-surface', 'shadow']));
         expect(band.text()).toContain('Elige un espacio y un día para reservar');
         expect(wrapper.find('.max-w-5xl').exists()).toBe(false);
         expect(wrapper.findAll('.max-w-7xl')).toHaveLength(2);
@@ -40,9 +38,7 @@ describe('booking pages', () => {
         const wrapper = mount(MyBookings, { props: { bookings: [] } });
         const band = wrapper.get('[data-testid="page-band"]');
 
-        expect(band.classes()).toEqual(
-            expect.arrayContaining(['bg-surface', 'shadow', 'dark:shadow-neutral-900/50'])
-        );
+        expect(band.classes()).toEqual(expect.arrayContaining(['bg-surface', 'shadow']));
         expect(band.text()).toContain('Tus reservas próximas y las que ya pasaron');
         expect(wrapper.find('.max-w-5xl').exists()).toBe(false);
         expect(wrapper.findAll('.max-w-7xl')).toHaveLength(2);

@@ -38,7 +38,8 @@ final class NavigationLinksComponentsTest extends TestCase
         $source = $this->source('pages/VenueBookings/MyBookings.vue');
 
         $this->assertStringContainsString("import { router, Link } from '@inertiajs/vue3';", $source);
-        $this->assertMatchesRegularExpression('/<h1[^>]*>.*?<\/h1>\s*<Link\s+href="\/reservas"/s', $source);
+        // The title and its subtitle, then the button, in the same band
+        $this->assertMatchesRegularExpression('/<h1[^>]*>.*?<\/h1>\s*<p[^>]*>.*?<\/p>\s*<\/div>\s*<Link\s+href="\/reservas"/s', $source);
         $this->assertStringContainsString("t('booking_calendar.new_booking')", $source);
     }
 
