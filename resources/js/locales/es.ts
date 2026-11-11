@@ -17,6 +17,7 @@ export default {
     },
     booking_calendar: {
         title: 'Reservas del local',
+        subtitle: 'Elige un espacio y un día para reservar',
         select_date: 'Selecciona una fecha',
         select_slots: 'Selecciona los turnos',
         selected_time: 'Horario seleccionado',
@@ -26,6 +27,7 @@ export default {
         cancel_confirm: '\u00bfEst\u00e1s seguro de que quieres cancelar esta reserva?',
         cancel_reason: 'Motivo de cancelaci\u00f3n',
         my_bookings: 'Mis reservas',
+        my_bookings_subtitle: 'Tus reservas próximas y las que ya pasaron',
         new_booking: 'Hacer una reserva',
         upcoming: 'Pr\u00f3ximas',
         past: 'Anteriores',

@@ -17,6 +17,7 @@ export default {
     },
     booking_calendar: {
         title: 'Venue bookings',
+        subtitle: 'Choose a space and a day to book',
         select_date: 'Select a date',
         select_slots: 'Select time slots',
         selected_time: 'Selected time',
@@ -26,6 +27,7 @@ export default {
         cancel_confirm: 'Are you sure you want to cancel this booking?',
         cancel_reason: 'Cancellation reason',
         my_bookings: 'My bookings',
+        my_bookings_subtitle: 'Your upcoming bookings and the ones already past',
         new_booking: 'Make a booking',
         upcoming: 'Upcoming',
         past: 'Past',

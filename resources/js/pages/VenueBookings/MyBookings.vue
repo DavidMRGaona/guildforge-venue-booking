@@ -55,14 +55,20 @@ function confirmCancel(): void {
 </script>
 
 <template>
-    <div class="bg-surface shadow">
+    <!-- Same width and title band as the core's lists, so the title lines up with the logo -->
+    <div data-testid="page-band" class="bg-surface shadow">
         <div
-            class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-4 px-4 py-8 sm:px-6 lg:px-8"
+            class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-6 sm:px-6 lg:px-8"
         >
-            <h1 class="text-3xl font-bold tracking-tight text-base-primary">
-                {{ t('booking_calendar.my_bookings') }}
-                <HelpLink guide="venue-bookings.my-bookings" class="ml-1 align-middle" />
-            </h1>
+            <div>
+                <h1 class="text-3xl font-bold tracking-tight text-base-primary">
+                    {{ t('booking_calendar.my_bookings') }}
+                    <HelpLink guide="venue-bookings.my-bookings" class="ml-1 align-middle" />
+                </h1>
+                <p class="mt-2 text-lg text-base-secondary">
+                    {{ t('booking_calendar.my_bookings_subtitle') }}
+                </p>
+            </div>
             <Link
                 href="/reservas"
                 class="inline-flex min-h-[44px] items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
@@ -72,7 +78,7 @@ function confirmCancel(): void {
         </div>
     </div>
 
-    <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <!-- Flash messages -->
         <div v-if="hasMessages" class="mb-6">
             <div
