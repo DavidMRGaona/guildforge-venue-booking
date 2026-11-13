@@ -72,6 +72,13 @@ final readonly class BookingService implements BookingServiceInterface
         return $this->create($dto, $dto->date, applySettingsRules: false);
     }
 
+    public function createBookingForApprovedEvent(CreateBookingDTO $dto, ?string $adminNotes = null): BookingResponseDTO
+    {
+        // Approving the event is the staff's review: the booking skips the settings rules and the
+        // approval of the space, like the panel's, and is confirmed whatever the approval mode
+        return $this->create($dto, $dto->date, applySettingsRules: false, confirmed: true, adminNotes: $adminNotes);
+    }
+
     public function moveBookingAsStaff(MoveBookingDTO $dto): BookingResponseDTO
     {
         $booking = $this->bookingRepository->findOrFail(BookingId::fromString($dto->bookingId));
@@ -125,8 +132,13 @@ final readonly class BookingService implements BookingServiceInterface
         return BookingResponseDTO::fromEntity($moved);
     }
 
-    private function create(CreateBookingDTO $dto, string $date, bool $applySettingsRules): BookingResponseDTO
-    {
+    private function create(
+        CreateBookingDTO $dto,
+        string $date,
+        bool $applySettingsRules,
+        bool $confirmed = false,
+        ?string $adminNotes = null,
+    ): BookingResponseDTO {
         $timeRange = new TimeRange($dto->startTime, $dto->endTime);
         $resourceId = BookableResourceId::fromString($dto->resourceId);
 
@@ -138,7 +150,7 @@ final readonly class BookingService implements BookingServiceInterface
             throw BookableResourceUnavailableException::withId($dto->resourceId);
         }
 
-        $initialStatus = $this->settingsReader->requiresApproval()
+        $initialStatus = ! $confirmed && $this->settingsReader->requiresApproval()
             ? BookingStatus::Pending
             : BookingStatus::Confirmed;
 
@@ -159,6 +171,7 @@ final readonly class BookingService implements BookingServiceInterface
             tournamentId: $dto->tournamentId,
             campaignId: $dto->campaignId,
             fieldValues: $fieldValues,
+            adminNotes: $adminNotes,
             confirmedAt: $initialStatus === BookingStatus::Confirmed
                 ? new \DateTimeImmutable
                 : null,

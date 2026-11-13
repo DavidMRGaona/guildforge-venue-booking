@@ -58,6 +58,21 @@ interface BookingServiceInterface
     public function createBookingAsStaff(CreateBookingDTO $dto): BookingResponseDTO;
 
     /**
+     * Create the booking an approved event proposal asked for, while the approval runs (its
+     * transaction is still open). The same checks as createBookingAsStaff(); the booking is
+     * confirmed even when the settings ask to approve bookings, and keeps $adminNotes. Its
+     * notices go out once the approval commits, and never when it rolls back.
+     *
+     * @throws BookableResourceUnavailableException
+     * @throws BookingAlreadyStartedException
+     * @throws SlotOutsideScheduleException
+     * @throws MinimumSlotsNotMetException
+     * @throws MaximumSlotsExceededException
+     * @throws SlotUnavailableException
+     */
+    public function createBookingForApprovedEvent(CreateBookingDTO $dto, ?string $adminNotes = null): BookingResponseDTO;
+
+    /**
      * Move a booking to another resource, date or time range from the admin panel, which
      * authorizes the caller. A finished booking is moved without checks. An active one is
      * refused onto an inactive resource, when its start changes to a moment already past,

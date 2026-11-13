@@ -13,6 +13,7 @@ Sistema de reservas del local para gestionar espacios y horarios, con calendario
 - **Mis reservas**: cada usuario ve sus reservas en `/reservas/mis-reservas` y en la pestaña **Reservas** de su perfil, y las cancela si tiene el permiso `bookings.cancel_own`
 - **Cierre a la hora de inicio**: desde la web no se puede reservar un día pasado ni una franja que ya ha empezado, ni cancelar una reserva empezada. El panel no tiene ese límite
 - **Completado automático**: las reservas confirmadas pasan a completadas cuando ha pasado su hora de fin más un margen configurable
+- **Peticiones en las propuestas de evento**: quien propone un evento desde la web puede pedir un espacio («¿Necesitas reservar un espacio?», con el espacio y una nota opcional). Al aprobar la propuesta se reserva a nombre de quien la propuso, enlazada al evento y **Confirmada** aunque el modo de aprobación pida aprobar las reservas, con el día y las horas del evento en la zona del local. Valen el horario del espacio, los solapes y su estado, no las reglas de la configuración. Solo para eventos de un día; si el espacio está ocupado, la franja no encaja o el evento dura más, la aprobación no sigue y el panel dice por qué
 - **Integración con módulos**: asociación de la reserva con una mesa de rol, una campaña o un torneo (configurable en el panel). En la web se elige entre las que se le ofrecen al usuario y se guarda su id; en el panel cada una tiene su propio selector
 - **Notificaciones por email**: creación, confirmación, cancelación, rechazo, cambio de espacio, fecha u horario desde el panel y recordatorio antes del inicio. Los mismos avisos salen en la campana de la web (centro de avisos del core): a quien reservó, con enlace a «Mis reservas», y a quien gestiona, un solo aviso agrupado de reservas nuevas mientras no se lea, con enlace a la reserva en el panel; se comprueba al entregarlos, y desaparecen si se borra la reserva
 - **Panel de administración**: espacios, reservas, configuración y dos widgets para el escritorio
@@ -21,7 +22,7 @@ Sistema de reservas del local para gestionar espacios y horarios, con calendario
 
 ## Requisitos
 
-- GuildForge core `^3.58` (centro de avisos con `forgetActor()` al anonimizar; base de conocimiento con guías y botones con parámetros; almacenamiento de fechas en UTC y zona horaria de visualización; avisos solo a cargos activos)
+- GuildForge core `^3.64.0` (peticiones de módulos en las propuestas de evento; centro de avisos con `forgetActor()` al anonimizar; base de conocimiento con guías y botones con parámetros; almacenamiento de fechas en UTC y zona horaria de visualización; avisos solo a cargos activos)
 - PHP >= 8.5, Laravel >= 13, Filament 5
 
 El core rechaza el módulo si no se cumplen (`module.json` → `requires`).
@@ -208,8 +209,8 @@ Los dos widgets solo se muestran a quien puede ver el listado de reservas (`book
 
 | Evento | Descripción |
 |--------|-------------|
-| `BookingCreated` | Se creó una nueva reserva |
-| `BookingConfirmed` | Una reserva fue confirmada |
+| `BookingCreated` | Se creó una nueva reserva (se emite tras el commit) |
+| `BookingConfirmed` | Una reserva fue confirmada (se emite tras el commit: una reserva hecha al aprobar una propuesta no avisa si la aprobación se deshace) |
 | `BookingCancelled` | Una reserva fue cancelada |
 | `BookingCompleted` | Una reserva fue completada |
 | `BookingRejected` | Una reserva fue rechazada |

@@ -270,6 +270,18 @@ final readonly class EloquentBookingRepository implements BookingRepositoryInter
             ->all();
     }
 
+    public function hasActiveBookingForEvent(string $eventId, BookableResourceId $resourceId): bool
+    {
+        return BookingModel::query()
+            ->where('event_id', $eventId)
+            ->where('resource_id', $resourceId->value)
+            ->whereIn('status', [
+                BookingStatus::Pending->value,
+                BookingStatus::Confirmed->value,
+            ])
+            ->exists();
+    }
+
     private function toEntity(BookingModel $model): Booking
     {
         $fieldValues = $model->field_values !== null

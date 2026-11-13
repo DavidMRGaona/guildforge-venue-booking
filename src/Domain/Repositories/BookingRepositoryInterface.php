@@ -84,6 +84,11 @@ interface BookingRepositoryInterface
     public function getPendingEndedBy(\DateTimeInterface $endedBy): array;
 
     /**
+     * Whether the event has an active (pending or confirmed) booking of the resource.
+     */
+    public function hasActiveBookingForEvent(string $eventId, BookableResourceId $resourceId): bool;
+
+    /**
      * @return array<Booking>
      */
     public function getByResourceInDateRange(

@@ -401,4 +401,31 @@ return [
         'calendar_title' => 'Reservas del local',
         'my_bookings_title' => 'Mis reservas',
     ],
+
+    // The space booking an event proposal may ask for (core#581)
+    'proposal_request' => [
+        'label' => 'Reserva de espacio',
+        'question' => '¿Necesitas reservar un espacio?',
+        'fields' => [
+            'resource' => 'Espacio',
+            'note' => 'Nota para la reserva',
+            'note_help' => 'Opcional. La lee quien gestiona las reservas.',
+        ],
+        'describe' => [
+            'resource' => 'Reserva de :resource',
+            'with_note' => 'Reserva de :resource (nota: :note)',
+            'unknown_resource' => 'Reserva de un espacio que ya no existe',
+        ],
+        'refusals' => [
+            'no_resource' => 'El espacio pedido ya no existe. Elige otro o desmarca la petición.',
+            'no_author' => 'La propuesta no tiene autor: desmarca la petición y haz la reserva a mano en el panel.',
+            'multi_day' => 'El evento dura más de un día: desmarca la petición y haz las reservas a mano en el panel.',
+            'already_booked' => 'El evento ya tiene una reserva de :resource.',
+            'slot_taken' => ':resource ya está ocupado el :date entre las :start y las :end. Elige otro espacio o desmarca la petición y resérvalo a mano.',
+            'outside_schedule' => 'El horario del evento (:date, de :start a :end) no encaja con los turnos de :resource. Desmarca la petición y haz la reserva a mano en el panel.',
+            'resource_unavailable' => ':resource ya no admite reservas. Elige otro espacio o desmarca la petición.',
+            'already_started' => 'El evento ya ha empezado: desmarca la petición y, si aún hace falta, haz la reserva a mano en el panel.',
+            'busy' => 'Se está guardando otra reserva de :resource. Vuelve a intentarlo en unos segundos.',
+        ],
+    ],
 ];
