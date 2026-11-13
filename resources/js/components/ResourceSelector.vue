@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { FormSelect } from '@/components/form';
 import type { BookableResource } from '../types/bookings';
 
 interface Props {
@@ -18,9 +19,14 @@ const { t } = useI18n();
 
 const useDropdown = computed(() => props.resources.length >= 5);
 
-function handleSelect(event: Event): void {
-    const target = event.target as HTMLSelectElement;
-    emit('select', target.value);
+const options = computed(() =>
+    props.resources.map((resource) => ({ value: resource.id, label: resource.name }))
+);
+
+// The placeholder is only a prompt: picking it never chooses an empty space
+function handleSelect(value: string | number | null): void {
+    if (value === null || value === '') return;
+    emit('select', String(value));
 }
 
 function handleTabClick(id: string): void {
@@ -39,20 +45,14 @@ function handleTabClick(id: string): void {
         </label>
 
         <!-- Dropdown for 5+ resources -->
-        <select
+        <FormSelect
             v-if="useDropdown"
             id="resource-selector"
-            :value="selectedId ?? ''"
-            class="w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-base-primary focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-            @change="handleSelect"
-        >
-            <option value="" disabled>
-                {{ t('booking_calendar.select_resource') }}
-            </option>
-            <option v-for="resource in resources" :key="resource.id" :value="resource.id">
-                {{ resource.name }}
-            </option>
-        </select>
+            :model-value="selectedId"
+            :options="options"
+            :placeholder="t('booking_calendar.select_resource')"
+            @update:model-value="handleSelect"
+        />
 
         <!-- Tab buttons for 2-4 resources -->
         <div v-else role="tablist" class="flex gap-2">
