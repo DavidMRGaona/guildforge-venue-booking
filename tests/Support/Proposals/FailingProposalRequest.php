@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Modules\VenueBookings\Tests\Support\Proposals;
 
 use App\Application\Proposals\Contracts\EventProposalRequestInterface;
-use App\Domain\ValueObjects\EventId;
 use App\Domain\Proposals\Exceptions\ProposalRequestRefusedException;
+use App\Domain\ValueObjects\EventId;
 
 /**
  * A request of another module that always refuses and runs after the booking request, so a test
