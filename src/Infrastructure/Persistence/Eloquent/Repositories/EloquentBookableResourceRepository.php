@@ -11,6 +11,7 @@ use Modules\VenueBookings\Domain\Repositories\BookableResourceRepositoryInterfac
 use Modules\VenueBookings\Domain\ValueObjects\BookableResourceId;
 use Modules\VenueBookings\Domain\ValueObjects\ResourceFieldConfig;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
+use Modules\VenueBookings\Infrastructure\Services\BookingNoticesForgetter;
 
 final readonly class EloquentBookableResourceRepository implements BookableResourceRepositoryInterface
 {
@@ -42,6 +43,7 @@ final readonly class EloquentBookableResourceRepository implements BookableResou
 
     public function delete(BookableResourceId $id): void
     {
+        app(BookingNoticesForgetter::class)->forgetBookingsOfResource($id->value);
         BookableResourceModel::query()->where('id', $id->value)->delete();
     }
 

@@ -255,6 +255,19 @@ return [
         ],
     ],
 
+    // Notices in the bell: the day is the venue's, as in the emails
+    'notices' => [
+        'subject_booking' => 'Reserva',
+        'received' => 'Hemos recibido tu reserva de :resource del :date',
+        'confirmed' => 'Tu reserva de :resource del :date está confirmada',
+        'rejected' => 'Tu reserva de :resource del :date se ha rechazado',
+        'cancelled' => 'Tu reserva de :resource del :date se ha cancelado',
+        'moved' => 'Hemos cambiado tu reserva: ahora es en :resource el :date',
+        'reminder' => 'Recordatorio: tu reserva de :resource es el :date',
+        'created' => ':user ha reservado :resource el :date',
+        'created_grouped' => 'Hay :count reservas nuevas por revisar',
+    ],
+
     'emails' => [
         'booking_created' => [
             'subject' => 'Nueva reserva: :resource, :date',

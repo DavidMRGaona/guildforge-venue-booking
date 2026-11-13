@@ -439,12 +439,14 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
                 label: 'venue-bookings::messages.mail_categories.my_bookings.label',
                 description: 'venue-bookings::messages.mail_categories.my_bookings.description',
                 reason: 'venue-bookings::messages.mail_categories.my_bookings.reason',
+                site: true,
             ),
             MailCategoryDTO::optional(
                 key: self::MAIL_REMINDERS,
                 section: $section,
                 label: 'venue-bookings::messages.mail_categories.reminders.label',
                 description: 'venue-bookings::messages.mail_categories.reminders.description',
+                site: true,
             ),
             MailCategoryDTO::optional(
                 key: self::MAIL_MANAGEMENT,
@@ -453,6 +455,7 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
                 description: 'venue-bookings::messages.mail_categories.management.description',
                 audience: static fn (object $user): bool => app(AuthorizationServiceInterface::class)
                     ->can($user, 'venuebookings:bookings.manage'),
+                site: true,
             ),
         ];
     }

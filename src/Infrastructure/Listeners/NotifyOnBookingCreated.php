@@ -48,6 +48,7 @@ final readonly class NotifyOnBookingCreated
             date: $event->date,
             startTime: $event->startTime,
             endTime: $event->endTime,
+            actorId: $event->userId,
         );
 
         // Whoever can confirm or reject it, as authorization sees them: a paused role does not count

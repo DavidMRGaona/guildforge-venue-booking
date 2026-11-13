@@ -55,7 +55,7 @@ Salvo **Cancelar reservas propias**, que viene concedido al rol base de todas la
 |---|---|
 | **Ver reservas** | Ver la lista de reservas en el panel |
 | **Crear reservas** | Crear reservas desde el panel |
-| **Gestionar reservas** | Crear y cambiar espacios, editar, mover y borrar reservas, confirmarlas, rechazarlas y marcarlas como no presentadas. Recibe el aviso de cada reserva nueva y, en la web, ve quién hizo cada reserva y las notas internas |
+| **Gestionar reservas** | Crear y cambiar espacios, editar, mover y borrar reservas, confirmarlas, rechazarlas y marcarlas como no presentadas. Recibe el aviso de cada reserva nueva (por correo y en la campana) y, en la web, ve quién hizo cada reserva y las notas internas |
 | **Cancelar cualquier reserva** | Cancelar reservas de otras personas, desde el panel o desde la web |
 | **Cancelar reservas propias** | Cancelar sus propias reservas en la web |
 | **Configuración de reservas** | Cambiar la página de configuración del módulo |

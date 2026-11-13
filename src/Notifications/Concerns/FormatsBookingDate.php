@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Notifications\Concerns;
 
-use Carbon\CarbonImmutable;
-use Throwable;
+use Modules\VenueBookings\Application\Services\BookingMailSubjects;
 
 trait FormatsBookingDate
 {
@@ -14,10 +13,6 @@ trait FormatsBookingDate
      */
     private function displayDate(string $date): string
     {
-        try {
-            return CarbonImmutable::createFromFormat('Y-m-d', $date)?->format('d/m/Y') ?? $date;
-        } catch (Throwable) {
-            return $date;
-        }
+        return BookingMailSubjects::displayDate($date);
     }
 }

@@ -5,18 +5,22 @@ declare(strict_types=1);
 namespace Modules\VenueBookings\Notifications;
 
 use App\Application\Mail\Contracts\HasMailCategory;
+use App\Application\Mail\Contracts\HasMailSubject;
+use App\Application\SiteNotifications\Contracts\HasSiteNotification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Modules\VenueBookings\Notifications\Concerns\AnnouncesOnSite;
 use Modules\VenueBookings\Notifications\Concerns\FormatsBookingDate;
 use Modules\VenueBookings\VenueBookingsServiceProvider;
 
 /**
  * Tells the member their booking arrived and waits for approval.
  */
-final class BookingReceivedNotification extends Notification implements HasMailCategory, ShouldQueue
+final class BookingReceivedNotification extends Notification implements HasMailCategory, HasMailSubject, HasSiteNotification, ShouldQueue
 {
+    use AnnouncesOnSite;
     use FormatsBookingDate;
     use Queueable;
 
@@ -39,7 +43,7 @@ final class BookingReceivedNotification extends Notification implements HasMailC
      */
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', HasSiteNotification::CHANNEL];
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -57,6 +61,11 @@ final class BookingReceivedNotification extends Notification implements HasMailC
             ->line('**'.__('venue-bookings::messages.emails.booking_received.date').':** '.$this->displayDate($this->date))
             ->line('**'.__('venue-bookings::messages.emails.booking_received.time').':** '.$this->startTime.' - '.$this->endTime)
             ->action(__('venue-bookings::messages.emails.booking_received.view_bookings'), url('/reservas/mis-reservas'));
+    }
+
+    protected function siteTitle(): string
+    {
+        return __('venue-bookings::messages.notices.received', $this->siteReplacements());
     }
 
     /**
