@@ -144,7 +144,16 @@ final class Booking
      */
     public function hasStarted(DateTimeImmutable $now, DateTimeZone $timezone): bool
     {
-        return $now >= $this->startsAt($timezone);
+        return self::startHasPassed($this->startsAt($timezone), $now);
+    }
+
+    /**
+     * The one rule for «already started»: from the start moment on (inclusive). Shared by
+     * hasStarted() and by whoever asks before a booking exists (the proposal's early warning).
+     */
+    public static function startHasPassed(DateTimeImmutable $startsAt, DateTimeImmutable $now): bool
+    {
+        return $now >= $startsAt;
     }
 
     /**

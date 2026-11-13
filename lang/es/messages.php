@@ -420,6 +420,7 @@ return [
             'no_resource' => 'El espacio pedido ya no existe: elige otro o desmarca la petición.',
             'resource_unavailable' => ':resource ya no admite reservas: elige otro espacio o desmarca la petición.',
             'multi_day' => 'El evento va del :date al :end_date y la reserva de :resource cubre un solo día: quien revise tendrá que hacer las reservas a mano.',
+            'already_started' => 'El evento empezó el :date a las :start: quien revise tendrá que reservar a mano, si aún hace falta.',
             'outside_schedule' => 'El horario del evento (:date, de :start a :end) no encaja con los turnos o el horario de :resource: quien revise tendrá que reservar a mano.',
             'slot_taken' => ':resource ya está ocupado el :date entre las :start y las :end: elige otro espacio u otras fechas.',
         ],
