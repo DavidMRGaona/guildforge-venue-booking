@@ -23,8 +23,8 @@ final class CreateBooking extends CreateRecord
 
     protected static string $resource = BookingResource::class;
 
-    // BookingService saves under its lock; a transaction around it would commit after the lock
-    // is released, and another request could miss the booking in its overlap check
+    // BookingService saves under its lock, held until any surrounding transaction ends; the
+    // page needs none of its own
     protected ?bool $hasDatabaseTransactions = false;
 
     public function getTitle(): string

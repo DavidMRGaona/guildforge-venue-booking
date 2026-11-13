@@ -12,6 +12,7 @@ use App\Application\Modules\DTOs\NavigationItemDTO;
 use App\Application\Modules\DTOs\PagePrefixDTO;
 use App\Application\Modules\DTOs\PermissionDTO;
 use App\Application\Modules\DTOs\SlotRegistrationDTO;
+use App\Application\Proposals\Contracts\EventProposalRequestInterface;
 use App\Filament\Support\PanelNavigationGroup;
 use App\Modules\ModuleServiceProvider;
 use Filament\Pages\Page;
@@ -57,6 +58,7 @@ use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingMode
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories\EloquentBookableResourceRepository;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories\EloquentBookingRepository;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Repositories\EloquentOperatingScheduleRepository;
+use Modules\VenueBookings\Infrastructure\Proposals\BookingProposalRequest;
 use Modules\VenueBookings\Infrastructure\Services\BookingEligibilityService;
 use Modules\VenueBookings\Infrastructure\Services\BookingFieldConfigService;
 use Modules\VenueBookings\Infrastructure\Services\BookingQueryService;
@@ -413,6 +415,16 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
             TodayBookingsWidget::class,
             UpcomingBookingsWidget::class,
         ];
+    }
+
+    /**
+     * The space booking an event proposal may ask for, made when the proposal is approved.
+     *
+     * @return array<class-string<EventProposalRequestInterface>>
+     */
+    public function registerEventProposalRequests(): array
+    {
+        return [BookingProposalRequest::class];
     }
 
     /**

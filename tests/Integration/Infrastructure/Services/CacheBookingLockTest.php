@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Tests\Integration\Infrastructure\Services;
 
+use Illuminate\Support\Facades\DB;
 use Modules\VenueBookings\Domain\Exceptions\BookingBusyException;
 use Modules\VenueBookings\Infrastructure\Services\CacheBookingLock;
 use RuntimeException;
@@ -126,6 +127,46 @@ final class CacheBookingLockTest extends TestCase
             BookingBusyException::class,
         );
 
+        $booking = new stdClass;
+
+        $this->assertSame($booking, $this->lock->forBooking(self::USER, 'resource-2', fn (): stdClass => $booking));
+    }
+
+    /**
+     * Whether another request could take the resource's lock right now.
+     */
+    private function resourceIsFree(): bool
+    {
+        try {
+            return $this->lock->forBooking('user-2', self::RESOURCE, fn (): bool => true);
+        } catch (BookingBusyException) {
+            return false;
+        }
+    }
+
+    public function test_inside_a_transaction_the_locks_are_held_until_it_commits(): void
+    {
+        // A booking saved under the lock is invisible to other requests until the transaction
+        // commits: another one must not pass its overlap check in between (event proposals are
+        // approved, and their bookings made, inside one transaction)
+        DB::transaction(function (): void {
+            $this->lock->forBooking(self::USER, self::RESOURCE, fn (): string => 'booked');
+
+            $this->assertFalse($this->resourceIsFree());
+        });
+
+        $this->assertTrue($this->resourceIsFree());
+    }
+
+    public function test_a_rolled_back_transaction_releases_the_locks(): void
+    {
+        $this->assertThrows(fn () => DB::transaction(function (): never {
+            $this->lock->forBooking(self::USER, self::RESOURCE, fn (): string => 'booked');
+
+            throw new RuntimeException('Another step failed');
+        }), RuntimeException::class);
+
+        $this->assertTrue($this->resourceIsFree());
         $booking = new stdClass;
 
         $this->assertSame($booking, $this->lock->forBooking(self::USER, 'resource-2', fn (): stdClass => $booking));
