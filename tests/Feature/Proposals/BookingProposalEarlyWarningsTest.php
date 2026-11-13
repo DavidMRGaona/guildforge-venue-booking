@@ -126,6 +126,56 @@ final class BookingProposalEarlyWarningsTest extends ModuleTestCase
         $this->assertStringContainsString('06/12/2026', $warnings[0]);
     }
 
+    public function test_an_event_that_has_started_warns_naming_the_date_and_comes_before_the_schedule_and_slot_warnings(): void
+    {
+        // Now is 20/11 at 09:00; the event began an hour ago, on top of a taken slot
+        $this->book('2026-11-20', '08:00', '09:00');
+        $this->room->update(['status' => 'active']);
+
+        $this->assertSame(
+            ['El evento empezó el 20/11/2026 a las 08:00: quien revise tendrá que reservar a mano, si aún hace falta.'],
+            $this->warningsFor('2026-11-20 08:00', '2026-11-20 10:00'),
+        );
+    }
+
+    public function test_a_multi_day_event_that_has_started_gets_the_multi_day_warning_first(): void
+    {
+        $warnings = $this->warningsFor('2026-11-19 20:00', '2026-11-21 14:00');
+
+        $this->assertCount(1, $warnings);
+        $this->assertStringContainsString('cubre un solo día', $warnings[0]);
+    }
+
+    public function test_a_future_event_does_not_warn_about_starting(): void
+    {
+        $this->assertSame([], $this->warningsFor('2026-11-20 10:00', '2026-11-20 11:00'));
+    }
+
+    public function test_an_event_starting_exactly_now_has_started(): void
+    {
+        $warnings = $this->warningsFor('2026-11-20 09:00', '2026-11-20 11:00');
+
+        $this->assertCount(1, $warnings);
+        $this->assertStringContainsString('empezó el 20/11/2026 a las 09:00', $warnings[0]);
+    }
+
+    public function test_the_start_is_compared_by_the_minute_like_apply_does(): void
+    {
+        // 09:00:30 is booked as 09:00, which is already past at 09:00:10
+        $this->travelTo(CarbonImmutable::create(2026, 11, 20, 9, 0, 10, self::VENUE_TIMEZONE));
+
+        $warnings = $this->request()->warnings(
+            new ProposedEventDTO(
+                CarbonImmutable::parse('2026-11-20 09:00:30', self::VENUE_TIMEZONE)->toDateTimeImmutable(),
+                CarbonImmutable::parse('2026-11-20 11:00', self::VENUE_TIMEZONE)->toDateTimeImmutable(),
+            ),
+            ['resource' => $this->room->id, 'note' => null],
+        );
+
+        $this->assertCount(1, $warnings);
+        $this->assertStringContainsString('empezó', $warnings[0]);
+    }
+
     public function test_a_multi_day_event_warns(): void
     {
         $this->assertSame(

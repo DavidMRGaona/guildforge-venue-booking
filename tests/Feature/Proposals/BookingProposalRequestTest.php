@@ -255,6 +255,28 @@ final class BookingProposalRequestTest extends ModuleTestCase
         $this->assertSame(0, BookingModel::query()->count());
     }
 
+    public function test_an_event_that_has_started_is_refused(): void
+    {
+        $message = $this->refusalOf($this->proposal('2026-11-20 08:00', '2026-11-20 11:00'));
+
+        $this->assertSame('El evento ya ha empezado: desmarca la petición y, si aún hace falta, haz la reserva a mano en el panel.', $message);
+        $this->assertSame(0, BookingModel::query()->count());
+    }
+
+    public function test_an_event_starting_exactly_now_is_refused_like_the_early_warning_says(): void
+    {
+        $event = $this->proposal('2026-11-20 09:00', '2026-11-20 11:00');
+
+        $this->assertStringContainsString('ya ha empezado', $this->refusalOf($event));
+    }
+
+    public function test_an_event_starting_later_today_is_booked(): void
+    {
+        $this->approve($this->proposal('2026-11-20 10:00', '2026-11-20 11:00'));
+
+        $this->assertSame(1, BookingModel::query()->count());
+    }
+
     public function test_an_event_already_booking_the_space_is_refused(): void
     {
         $event = $this->proposal();

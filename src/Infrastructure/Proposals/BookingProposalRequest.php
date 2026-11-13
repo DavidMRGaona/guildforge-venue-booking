@@ -12,6 +12,7 @@ use App\Domain\Entities\Event;
 use App\Domain\Proposals\Exceptions\ProposalRequestRefusedException;
 use App\Domain\Repositories\EventRepositoryInterface;
 use App\Domain\ValueObjects\EventId;
+use Carbon\CarbonImmutable;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use LogicException;
@@ -20,6 +21,7 @@ use Modules\VenueBookings\Application\Services\BookingMailSubjects;
 use Modules\VenueBookings\Application\Services\BookingServiceInterface;
 use Modules\VenueBookings\Application\Services\SlotAvailabilityServiceInterface;
 use Modules\VenueBookings\Domain\Entities\BookableResource;
+use Modules\VenueBookings\Domain\Entities\Booking;
 use Modules\VenueBookings\Domain\Entities\OperatingSchedule;
 use Modules\VenueBookings\Domain\Exceptions\BookableResourceUnavailableException;
 use Modules\VenueBookings\Domain\Exceptions\BookingAlreadyStartedException;
@@ -199,6 +201,13 @@ final readonly class BookingProposalRequest implements ChecksProposalRequestEarl
 
         if (! $this->isOneDay($start, $end)) {
             return [__(self::MESSAGES.'warnings.multi_day', $replacements)];
+        }
+
+        // Booked from the date and the minute, as apply() does, so both agree on the boundary
+        $startsAt = new DateTimeImmutable($date.' '.$replacements['start'], $timezone);
+
+        if (Booking::startHasPassed($startsAt, CarbonImmutable::now($timezone))) {
+            return [__(self::MESSAGES.'warnings.already_started', $replacements)];
         }
 
         $range = new TimeRange($replacements['start'], $replacements['end']);
