@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Calendar, Clock } from '@lucide/vue';
 import LoadingSpinner from '@/components/ui/LoadingSpinner.vue';
+import { FormCheckbox, FormNumberInput, FormSelect } from '@/components/form';
 import { ref, computed, useId } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Link, useForm } from '@inertiajs/vue3';
@@ -46,9 +47,12 @@ const gate = useVerificationGate();
 const verificationBlockedId = useId();
 const verificationBlocked = computed(() => gate.blocked.value || props.verificationRequired);
 
+// A number field left empty is null: optional fields accept it, required ones say so
+type FieldValue = string | number | boolean | null;
+
 // Build initial form data from field definitions
-function buildInitialData(): Record<string, string | number | boolean> {
-    const data: Record<string, string | number | boolean> = {};
+function buildInitialData(): Record<string, FieldValue> {
+    const data: Record<string, FieldValue> = {};
     props.fieldDefinitions.forEach((field) => {
         switch (field.type) {
             case 'number':
@@ -133,7 +137,7 @@ function onBackdropClick(event: MouseEvent): void {
     }
 }
 
-function updateField(key: string, value: string | number | boolean): void {
+function updateField(key: string, value: FieldValue): void {
     form.field_values[key] = value;
 }
 </script>
@@ -211,7 +215,9 @@ function updateField(key: string, value: string | number | boolean): void {
             <!-- Dynamic fields -->
             <form v-if="canBook" class="space-y-4" @submit.prevent="handleSubmit">
                 <div v-for="field in fieldDefinitions" :key="field.key">
+                    <!-- A yes/no field carries its label next to the box -->
                     <label
+                        v-if="field.type !== 'toggle'"
                         :for="`field-${field.key}`"
                         class="mb-1 block text-sm font-medium text-base-secondary"
                     >
@@ -244,54 +250,37 @@ function updateField(key: string, value: string | number | boolean): void {
                     ></textarea>
 
                     <!-- Number input -->
-                    <input
+                    <FormNumberInput
                         v-else-if="field.type === 'number'"
                         :id="`field-${field.key}`"
-                        type="number"
+                        :model-value="form.field_values[field.key] as number | null"
                         :required="field.required"
-                        :value="form.field_values[field.key]"
-                        min="0"
+                        :min="0"
                         :max="field.max ?? undefined"
-                        class="w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-base-primary focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                        @input="
-                            updateField(
-                                field.key,
-                                Number(($event.target as HTMLInputElement).value)
-                            )
-                        "
+                        @update:model-value="updateField(field.key, $event)"
                     />
 
                     <!-- Select -->
-                    <select
+                    <FormSelect
                         v-else-if="field.type === 'select'"
                         :id="`field-${field.key}`"
-                        :required="field.required"
-                        :value="form.field_values[field.key] as string"
-                        class="w-full rounded-lg border border-default bg-surface px-3 py-2 text-sm text-base-primary focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                        @change="updateField(field.key, ($event.target as HTMLSelectElement).value)"
-                    >
-                        <option value="" disabled></option>
-                        <option
-                            v-for="option in field.options ?? []"
-                            :key="option.value"
-                            :value="option.value"
-                        >
-                            {{ option.label }}
-                        </option>
-                    </select>
+                        :model-value="form.field_values[field.key] as string"
+                        :options="field.options ?? []"
+                        :placeholder="t('booking_calendar.select_option')"
+                        @update:model-value="updateField(field.key, $event ?? '')"
+                    />
 
                     <!-- Toggle -->
-                    <div v-else-if="field.type === 'toggle'" class="flex items-center gap-2">
-                        <input
-                            :id="`field-${field.key}`"
-                            type="checkbox"
-                            :checked="!!form.field_values[field.key]"
-                            class="h-4 w-4 rounded border-default text-primary-600 focus:ring-primary-500"
-                            @change="
-                                updateField(field.key, ($event.target as HTMLInputElement).checked)
-                            "
-                        />
-                    </div>
+                    <FormCheckbox
+                        v-else-if="field.type === 'toggle'"
+                        :id="`field-${field.key}`"
+                        :model-value="!!form.field_values[field.key]"
+                        class="min-h-11 py-3"
+                        @update:model-value="updateField(field.key, $event)"
+                    >
+                        {{ field.label }}
+                        <span v-if="field.required" class="text-error">*</span>
+                    </FormCheckbox>
                 </div>
 
                 <!-- Buttons -->

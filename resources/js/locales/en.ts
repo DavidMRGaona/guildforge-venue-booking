@@ -41,6 +41,7 @@ export default {
         field_required: 'Required field',
         resource: 'Resource',
         select_resource: 'Select a resource',
+        select_option: 'Select an option',
         resource_details: 'About {name}',
         capacity: 'Capacity: up to {count} person | Capacity: up to {count} people',
         date: 'Date',
