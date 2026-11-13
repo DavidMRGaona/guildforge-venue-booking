@@ -7,6 +7,9 @@ namespace Modules\VenueBookings\Domain\Entities;
 use DateTimeImmutable;
 use DateTimeZone;
 use Modules\VenueBookings\Domain\Enums\SchedulingMode;
+use Modules\VenueBookings\Domain\Exceptions\MaximumSlotsExceededException;
+use Modules\VenueBookings\Domain\Exceptions\MinimumSlotsNotMetException;
+use Modules\VenueBookings\Domain\Exceptions\SlotOutsideScheduleException;
 use Modules\VenueBookings\Domain\ValueObjects\BookableResourceId;
 use Modules\VenueBookings\Domain\ValueObjects\BookingSlot;
 use Modules\VenueBookings\Domain\ValueObjects\DaySchedule;
@@ -105,6 +108,39 @@ final class OperatingSchedule
     public function slotsCoveredBy(string $date, TimeRange $range): ?int
     {
         return $this->findRun($date, $range)['count'] ?? null;
+    }
+
+    /**
+     * Whether a range starting on $startDate fits this schedule: made of its slots and, in
+     * slot mode, within the consecutive slots allowed. The one rule createBooking(), moving a
+     * booking and the early warning of an event proposal share.
+     *
+     * @throws SlotOutsideScheduleException
+     * @throws MinimumSlotsNotMetException
+     * @throws MaximumSlotsExceededException
+     */
+    public function assertFits(string $startDate, TimeRange $range): void
+    {
+        $slotCount = $this->slotsCoveredOn($startDate, $range);
+
+        if ($slotCount === null) {
+            throw SlotOutsideScheduleException::forTimeRange($startDate, $range->startTime, $range->endTime);
+        }
+
+        if ($this->schedulingMode !== SchedulingMode::TimeSlots) {
+            return;
+        }
+
+        if ($slotCount < $this->minConsecutiveSlots) {
+            throw MinimumSlotsNotMetException::forResource($this->minConsecutiveSlots, $slotCount);
+        }
+
+        // The picker lets at least one slot through even with a stored maximum below 1
+        $maximum = max(1, $this->maxConsecutiveSlots);
+
+        if ($slotCount > $maximum) {
+            throw MaximumSlotsExceededException::forResource($maximum, $slotCount);
+        }
     }
 
     /**

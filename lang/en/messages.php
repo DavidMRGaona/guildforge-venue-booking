@@ -33,6 +33,13 @@ return [
             'with_note' => 'Booking of :resource (note: :note)',
             'unknown_resource' => 'Booking of a space that no longer exists',
         ],
+        'warnings' => [
+            'no_resource' => 'The space asked for no longer exists: choose another one or untick the request.',
+            'resource_unavailable' => ':resource no longer takes bookings: choose another space or untick the request.',
+            'multi_day' => 'The event runs from :date to :end_date and the booking of :resource covers a single day: whoever reviews it will have to book by hand.',
+            'outside_schedule' => 'The event hours (:date, :start to :end) do not fit the slots or opening hours of :resource: whoever reviews it will have to book by hand.',
+            'slot_taken' => ':resource is already taken on :date between :start and :end: choose another space or other dates.',
+        ],
         'refusals' => [
             'no_resource' => 'The space asked for no longer exists. Choose another one or untick the request.',
             'no_author' => 'The proposal has no author: untick the request and book by hand in the panel.',

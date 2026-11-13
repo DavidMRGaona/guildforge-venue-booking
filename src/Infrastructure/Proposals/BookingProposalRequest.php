@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Infrastructure\Proposals;
 
+use App\Application\Proposals\Contracts\ChecksProposalRequestEarly;
 use App\Application\Proposals\Contracts\EventProposalRequestInterface;
 use App\Application\Proposals\DTOs\ProposalRequestFieldDTO;
+use App\Application\Proposals\DTOs\ProposedEventDTO;
 use App\Domain\Entities\Event;
 use App\Domain\Proposals\Exceptions\ProposalRequestRefusedException;
 use App\Domain\Repositories\EventRepositoryInterface;
@@ -16,7 +18,9 @@ use LogicException;
 use Modules\VenueBookings\Application\DTOs\CreateBookingDTO;
 use Modules\VenueBookings\Application\Services\BookingMailSubjects;
 use Modules\VenueBookings\Application\Services\BookingServiceInterface;
+use Modules\VenueBookings\Application\Services\SlotAvailabilityServiceInterface;
 use Modules\VenueBookings\Domain\Entities\BookableResource;
+use Modules\VenueBookings\Domain\Entities\OperatingSchedule;
 use Modules\VenueBookings\Domain\Exceptions\BookableResourceUnavailableException;
 use Modules\VenueBookings\Domain\Exceptions\BookingAlreadyStartedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingBusyException;
@@ -26,7 +30,9 @@ use Modules\VenueBookings\Domain\Exceptions\SlotOutsideScheduleException;
 use Modules\VenueBookings\Domain\Exceptions\SlotUnavailableException;
 use Modules\VenueBookings\Domain\Repositories\BookableResourceRepositoryInterface;
 use Modules\VenueBookings\Domain\Repositories\BookingRepositoryInterface;
+use Modules\VenueBookings\Domain\Repositories\OperatingScheduleRepositoryInterface;
 use Modules\VenueBookings\Domain\ValueObjects\BookableResourceId;
+use Modules\VenueBookings\Domain\ValueObjects\TimeRange;
 use Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader;
 
 /**
@@ -35,8 +41,12 @@ use Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader;
  * overlaps, the space's slots and its status apply; the settings rules and the approval of the
  * space do not, since approving the event is already the staff's review. The booking is
  * confirmed, in the name of whoever proposed the event and linked to it.
+ *
+ * It also warns the author early (core#612) when the booking would probably be refused, with the
+ * same rules apply() uses (the space's status, one day, its slots, overlaps), reading only: no
+ * lock, nothing reserved. apply() stays the real check.
  */
-final readonly class BookingProposalRequest implements EventProposalRequestInterface
+final readonly class BookingProposalRequest implements ChecksProposalRequestEarly, EventProposalRequestInterface
 {
     public const string KEY = 'venue-bookings.booking';
 
@@ -52,6 +62,8 @@ final readonly class BookingProposalRequest implements EventProposalRequestInter
         private BookableResourceRepositoryInterface $resources,
         private EventRepositoryInterface $events,
         private BookingSettingsReader $settings,
+        private SlotAvailabilityServiceInterface $availability,
+        private OperatingScheduleRepositoryInterface $schedules,
     ) {}
 
     public function key(): string
@@ -159,6 +171,54 @@ final readonly class BookingProposalRequest implements EventProposalRequestInter
         } catch (BookingBusyException) {
             throw ProposalRequestRefusedException::because(__(self::MESSAGES.'refusals.busy', $replacements));
         }
+    }
+
+    public function warnings(ProposedEventDTO $event, array $values): array
+    {
+        $resource = $this->resourceOf($values);
+
+        if (! $resource instanceof BookableResource) {
+            return [__(self::MESSAGES.'warnings.no_resource')];
+        }
+
+        $timezone = $this->settings->getDateTimeZone();
+        $start = $event->startDate->setTimezone($timezone);
+        $end = $event->endDate->setTimezone($timezone);
+        $date = $start->format('Y-m-d');
+        $replacements = [
+            'resource' => $resource->name,
+            'date' => BookingMailSubjects::displayDate($date),
+            'end_date' => BookingMailSubjects::displayDate($end->format('Y-m-d')),
+            'start' => $start->format('H:i'),
+            'end' => $end->format('H:i'),
+        ];
+
+        if (! $resource->isActive()) {
+            return [__(self::MESSAGES.'warnings.resource_unavailable', $replacements)];
+        }
+
+        if (! $this->isOneDay($start, $end)) {
+            return [__(self::MESSAGES.'warnings.multi_day', $replacements)];
+        }
+
+        $range = new TimeRange($replacements['start'], $replacements['end']);
+        $schedule = $this->schedules->findByResource($resource->id);
+
+        try {
+            if (! $schedule instanceof OperatingSchedule) {
+                throw SlotOutsideScheduleException::forTimeRange($date, $range->startTime, $range->endTime);
+            }
+
+            $schedule->assertFits($date, $range);
+        } catch (SlotOutsideScheduleException|MinimumSlotsNotMetException|MaximumSlotsExceededException) {
+            return [__(self::MESSAGES.'warnings.outside_schedule', $replacements)];
+        }
+
+        if (! $this->availability->isSlotAvailable($resource->id->value, $date, $range)) {
+            return [__(self::MESSAGES.'warnings.slot_taken', $replacements)];
+        }
+
+        return [];
     }
 
     public function describe(array $values): string

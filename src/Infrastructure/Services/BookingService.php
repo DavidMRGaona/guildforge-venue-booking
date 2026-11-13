@@ -18,7 +18,6 @@ use Modules\VenueBookings\Domain\Entities\BookableResource;
 use Modules\VenueBookings\Domain\Entities\Booking;
 use Modules\VenueBookings\Domain\Entities\OperatingSchedule;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
-use Modules\VenueBookings\Domain\Enums\SchedulingMode;
 use Modules\VenueBookings\Domain\Events\BookingCancelled;
 use Modules\VenueBookings\Domain\Events\BookingCompleted;
 use Modules\VenueBookings\Domain\Events\BookingConfirmed;
@@ -31,8 +30,6 @@ use Modules\VenueBookings\Domain\Exceptions\BookableResourceUnavailableException
 use Modules\VenueBookings\Domain\Exceptions\BookingAlreadyStartedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingCancellationNotAllowedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingNotCancellableException;
-use Modules\VenueBookings\Domain\Exceptions\MaximumSlotsExceededException;
-use Modules\VenueBookings\Domain\Exceptions\MinimumSlotsNotMetException;
 use Modules\VenueBookings\Domain\Exceptions\SlotOutsideScheduleException;
 use Modules\VenueBookings\Domain\Exceptions\SlotUnavailableException;
 use Modules\VenueBookings\Domain\Repositories\BookableResourceRepositoryInterface;
@@ -343,26 +340,12 @@ final readonly class BookingService implements BookingServiceInterface
     private function assertFitsSchedule(BookableResourceId $resourceId, string $date, TimeRange $timeRange): void
     {
         $schedule = $this->scheduleRepository->findByResource($resourceId);
-        $slotCount = $schedule?->slotsCoveredOn($date, $timeRange);
 
-        if (! $schedule instanceof OperatingSchedule || $slotCount === null) {
+        if (! $schedule instanceof OperatingSchedule) {
             throw SlotOutsideScheduleException::forTimeRange($date, $timeRange->startTime, $timeRange->endTime);
         }
 
-        if ($schedule->schedulingMode !== SchedulingMode::TimeSlots) {
-            return;
-        }
-
-        if ($slotCount < $schedule->minConsecutiveSlots) {
-            throw MinimumSlotsNotMetException::forResource($schedule->minConsecutiveSlots, $slotCount);
-        }
-
-        // The picker lets at least one slot through even with a stored maximum below 1
-        $maximum = max(1, $schedule->maxConsecutiveSlots);
-
-        if ($slotCount > $maximum) {
-            throw MaximumSlotsExceededException::forResource($maximum, $slotCount);
-        }
+        $schedule->assertFits($date, $timeRange);
     }
 
     /**
