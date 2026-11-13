@@ -31,7 +31,7 @@ Todas están en el menú **⋯** del final de la fila. Solo salen las que valen 
 | **No presentado** | Reserva **Confirmada** que ya ha empezado | Marca que la persona no vino. | **Gestionar reservas** |
 | **Editar** | Siempre | Abre la reserva. | **Gestionar reservas** |
 
-Cada acción pide confirmación. Según la configuración, la persona recibe el correo «Reserva confirmada», «Reserva rechazada» o «Reserva cancelada», con el motivo. **No presentado** no envía correo.
+Cada acción pide confirmación. Según la configuración, la persona recibe el correo «Reserva confirmada», «Reserva rechazada» o «Reserva cancelada», con el motivo; además le sale un aviso en la campana de la web. **No presentado** no envía nada.
 
 Desde el panel puedes cancelar una reserva aunque ya haya empezado.
 
@@ -51,7 +51,7 @@ Si mueves una reserva pendiente o confirmada, a la persona le llega el correo «
 
 ## Borrar una reserva
 
-Dentro de la reserva, pulsa **Borrar** y confirma. Desaparece del todo, sin correo. Para dejar constancia, mejor cancélala o recházala.
+Dentro de la reserva, pulsa **Borrar** y confirma. Desaparece del todo, sin correo, y los avisos de la campana sobre ella (para ti y para quien la hizo) desaparecen con ella. Para dejar constancia, mejor cancélala o recházala.
 
 ## Si algo no sale bien
 

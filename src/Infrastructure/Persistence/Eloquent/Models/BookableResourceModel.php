@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 use Modules\VenueBookings\Domain\Enums\BookableResourceStatus;
+use Modules\VenueBookings\Infrastructure\Services\BookingNoticesForgetter;
 
 /**
  * @property string $id
@@ -50,6 +51,14 @@ final class BookableResourceModel extends Model
         'sort_order',
         'field_config',
     ];
+
+    protected static function booted(): void
+    {
+        // Its bookings go with it (the database cascades), and so must their notices
+        self::deleting(function (BookableResourceModel $resource): void {
+            app(BookingNoticesForgetter::class)->forgetBookingsOfResource($resource->id);
+        });
+    }
 
     /**
      * @return array<string, mixed>

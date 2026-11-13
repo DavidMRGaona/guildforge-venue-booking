@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Casts\TimeOfDay;
+use Modules\VenueBookings\Infrastructure\Services\BookingNoticesForgetter;
 use Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader;
 
 /**
@@ -99,6 +100,11 @@ final class BookingModel extends Model
             if ($booking->isDirty('date') || $booking->getOriginal('start_time') !== $booking->getAttribute('start_time')) {
                 $booking->setAttribute('reminder_sent_at', null);
             }
+        });
+
+        // Its notices on the bell and the mutes about it go with it
+        self::deleted(function (BookingModel $booking): void {
+            app(BookingNoticesForgetter::class)->forgetBooking($booking->id);
         });
     }
 

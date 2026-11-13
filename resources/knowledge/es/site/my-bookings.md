@@ -35,9 +35,9 @@ Cada reserva muestra el espacio, su estado, el día, el horario y los datos que 
 | **No presentado** | La organización ha marcado que no fuiste. |
 | **Caducada** | Nadie la aprobó antes de que terminara. |
 
-## Correos que te llegan
+## Correos y avisos que te llegan
 
-Según la configuración de la web:
+Según la configuración de la web (cada uno sale también como aviso en la campana de la web, que lleva a esta página):
 
 - «Reserva recibida»: tu reserva está pendiente de aprobación.
 - «Reserva confirmada»: ya la tienes.
@@ -47,6 +47,6 @@ Según la configuración de la web:
 
 Cada correo trae el botón **Ver mis reservas**.
 
-Los correos sobre tu reserva (recibida, confirmada, rechazada, cancelada o modificada) siempre se envían. El recordatorio es optativo: puedes dejar de recibirlo en la pestaña **Correos** de tu perfil, en «Recordatorios de reservas», o con el enlace de baja del propio correo.
+Los correos y avisos sobre tu reserva (recibida, confirmada, rechazada, cancelada o modificada) siempre se envían. El recordatorio es optativo: puedes dejar de recibirlo, por correo o en la campana, en la pestaña **Avisos** y **Correos** de tu perfil, en «Recordatorios de reservas», o con el enlace de baja del propio correo. Si el personal borra una reserva, sus avisos desaparecen de la campana.
 
 [[action:bookings.my-bookings|Ver mis reservas]]

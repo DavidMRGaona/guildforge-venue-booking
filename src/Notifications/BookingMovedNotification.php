@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace Modules\VenueBookings\Notifications;
 
 use App\Application\Mail\Contracts\HasMailCategory;
+use App\Application\Mail\Contracts\HasMailSubject;
+use App\Application\SiteNotifications\Contracts\HasSiteNotification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Modules\VenueBookings\Notifications\Concerns\AnnouncesOnSite;
 use Modules\VenueBookings\Notifications\Concerns\FormatsBookingDate;
 use Modules\VenueBookings\VenueBookingsServiceProvider;
 
@@ -16,8 +19,9 @@ use Modules\VenueBookings\VenueBookingsServiceProvider;
  * Tells whoever made a booking that the staff moved it. Dates and times are the venue's
  * wall-clock values, as stored, so they are shown as they are.
  */
-final class BookingMovedNotification extends Notification implements HasMailCategory, ShouldQueue
+final class BookingMovedNotification extends Notification implements HasMailCategory, HasMailSubject, HasSiteNotification, ShouldQueue
 {
+    use AnnouncesOnSite;
     use FormatsBookingDate;
     use Queueable;
 
@@ -47,7 +51,7 @@ final class BookingMovedNotification extends Notification implements HasMailCate
      */
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', HasSiteNotification::CHANNEL];
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -68,6 +72,11 @@ final class BookingMovedNotification extends Notification implements HasMailCate
                 .$this->displayDate($this->previousDate).', '
                 .$this->range($this->previousStartTime, $this->previousEndTime))
             ->action(__("{$key}.view_bookings"), url('/reservas/mis-reservas'));
+    }
+
+    protected function siteTitle(): string
+    {
+        return __('venue-bookings::messages.notices.moved', $this->siteReplacements());
     }
 
     /**
