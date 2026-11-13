@@ -229,6 +229,15 @@ final class DayScheduleTest extends TestCase
         $this->assertTrue($schedule->crossesMidnight());
     }
 
+    public function test_a_trailing_newline_does_not_survive_the_normalisation(): void
+    {
+        // The pattern ends in $ on purpose: the time is rebuilt from its parts, so the newline goes
+        $schedule = new DaySchedule(dayOfWeek: 1, openTime: "9:30\n", closeTime: "17:00:00\n", isEnabled: true);
+
+        $this->assertSame('09:30', $schedule->openTime);
+        $this->assertSame('17:00', $schedule->closeTime);
+    }
+
     public function test_it_keeps_an_unreadable_time_as_it_is(): void
     {
         $schedule = new DaySchedule(dayOfWeek: 1, openTime: 'abc', closeTime: '25:99', isEnabled: false);
