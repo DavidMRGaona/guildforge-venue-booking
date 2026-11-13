@@ -69,6 +69,7 @@ final readonly class DaySchedule
      */
     private function normaliseTime(string $time): string
     {
+        // $, not \z, on purpose: the time is rebuilt from its parts, so a final "\n" is dropped
         if (preg_match('/^(\d{1,2}):(\d{2})(?::\d{2})?$/', $time, $parts) !== 1) {
             return $time;
         }
