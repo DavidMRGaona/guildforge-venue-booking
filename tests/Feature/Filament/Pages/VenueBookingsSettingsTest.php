@@ -7,6 +7,7 @@ namespace Modules\VenueBookings\Tests\Feature\Filament\Pages;
 use App\Application\Modules\Services\ModuleManagerServiceInterface;
 use App\Application\Services\SettingsServiceInterface;
 use App\Filament\Clusters\SettingsCluster;
+use App\Filament\Pages\ModuleSettingsPage;
 use App\Infrastructure\Persistence\Eloquent\Models\SettingModel;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Livewire\Livewire;
@@ -273,6 +274,19 @@ final class VenueBookingsSettingsTest extends ModuleTestCase
         $this->assertSame(9, (int) $decoded['max_active_bookings_per_user']);
         $this->assertSame(5, (int) $decoded['notifications']['reminder_hours_before']);
         $this->assertFalse($decoded['notifications']['notify_on_booking_created']);
+    }
+
+    public function test_the_generic_settings_page_hands_over_to_the_module_page(): void
+    {
+        // Since core#666 the generic page of «Módulos» no longer edits the module: it redirects here
+        $this->actingAs($this->admin);
+
+        Livewire::test(ModuleSettingsPage::class, ['module' => 'venue-bookings'])
+            ->assertRedirect(VenueBookingsSettings::getUrl());
+
+        $page = app(ModuleSettingsPage::class);
+        $page->module = 'venue-bookings';
+        $this->assertFalse($page->hasSettings());
     }
 
     /**
