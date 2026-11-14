@@ -1,9 +1,21 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { nextTick } from 'vue';
 import { mount, type VueWrapper } from '@vue/test-utils';
 import BookingForm from '../../resources/js/components/BookingForm.vue';
 import type { FieldDefinition } from '../../resources/js/types/bookings';
 import { focusedOpener } from './support/fixtures';
+
+// The display zone is read once at import in the core: the specs set it per test
+const venueZone = vi.hoisted(() => ({ current: 'Europe/Madrid' }));
+vi.mock('@/utils/datetime', async (importOriginal) => ({
+    ...(await importOriginal<typeof import('@/utils/datetime')>()),
+    get VENUE_TIMEZONE(): string {
+        return venueZone.current;
+    },
+}));
+
+// A booking date is a calendar date: it reads the same in every zone, UTC+13 and UTC+14 included
+const ZONES = ['Europe/Madrid', 'America/Los_Angeles', 'Pacific/Auckland', 'Pacific/Kiritimati'];
 
 const notesField = {
     key: 'notes',
@@ -12,7 +24,10 @@ const notesField = {
     required: false,
 } as FieldDefinition;
 
-function mountForm(fieldDefinitions: FieldDefinition[] = [notesField]): VueWrapper {
+function mountForm(
+    fieldDefinitions: FieldDefinition[] = [notesField],
+    extraProps: Record<string, unknown> = {}
+): VueWrapper {
     return mount(BookingForm, {
         props: {
             resourceId: 'resource-1',
@@ -21,6 +36,7 @@ function mountForm(fieldDefinitions: FieldDefinition[] = [notesField]): VueWrapp
             endTime: '21:00',
             fieldDefinitions,
             eligibility: { can_book: true, reasons: [] },
+            ...extraProps,
         },
         attachTo: document.body,
     });
@@ -201,5 +217,27 @@ describe('BookingForm', () => {
         wrapper.unmount();
 
         expect(document.activeElement).toBe(opener);
+    });
+});
+
+describe('BookingForm date', () => {
+    it.each(ZONES)('shows the picked day in %s', (zone) => {
+        venueZone.current = zone;
+
+        mountForm();
+
+        const text = dialog().textContent ?? '';
+        expect(text).toContain('sábado');
+        expect(text).toMatch(/\b7 de noviembre de 2026/);
+    });
+
+    it.each(ZONES)('shows the next day when the booking starts after midnight in %s', (zone) => {
+        venueZone.current = zone;
+
+        mountForm([notesField], { startsNextDay: true });
+
+        const text = dialog().textContent ?? '';
+        expect(text).toContain('domingo');
+        expect(text).toMatch(/\b8 de noviembre de 2026/);
     });
 });

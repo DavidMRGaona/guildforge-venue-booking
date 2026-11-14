@@ -5,7 +5,6 @@ import { useI18n } from 'vue-i18n';
 import { Link } from '@inertiajs/vue3';
 import type { BookingListItem } from '../types/bookings';
 import BookingStatusBadge from './BookingStatusBadge.vue';
-import { VENUE_TIMEZONE } from '@/utils/datetime';
 import { useVerificationGate } from '@/composables/useVerificationGate';
 
 interface Props {
@@ -38,7 +37,8 @@ const visibleFields = computed(() =>
 const formattedDate = computed(() => {
     const date = new Date(`${props.booking.date}T12:00:00Z`);
     return date.toLocaleDateString(locale.value, {
-        timeZone: VENUE_TIMEZONE,
+        // A calendar date, not an instant: UTC keeps its day in every zone
+        timeZone: 'UTC',
         weekday: 'short',
         day: 'numeric',
         month: 'short',

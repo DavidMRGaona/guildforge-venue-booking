@@ -6,7 +6,6 @@ import { ref, computed, useId } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { Link, useForm } from '@inertiajs/vue3';
 import type { FieldDefinition, BookingEligibility } from '../types/bookings';
-import { VENUE_TIMEZONE } from '@/utils/datetime';
 import { useVerificationGate } from '@/composables/useVerificationGate';
 import { useModalDialog } from '../composables/useModalDialog';
 
@@ -89,7 +88,8 @@ const formattedDate = computed(() => {
         date.setUTCDate(date.getUTCDate() + 1);
     }
     return date.toLocaleDateString(locale.value, {
-        timeZone: VENUE_TIMEZONE,
+        // A calendar date, not an instant: UTC keeps its day in every zone
+        timeZone: 'UTC',
         weekday: 'long',
         day: 'numeric',
         month: 'long',
