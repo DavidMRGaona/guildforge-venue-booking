@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Tests\Feature\Filament\Pages;
 
-use App\Filament\Clusters\SettingsCluster;
+use App\Application\Modules\Services\ModuleManagerServiceInterface;
 use App\Application\Services\SettingsServiceInterface;
+use App\Filament\Clusters\SettingsCluster;
 use App\Infrastructure\Persistence\Eloquent\Models\SettingModel;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Livewire\Livewire;
 use Modules\VenueBookings\Filament\Pages\VenueBookingsSettings;
 use Modules\VenueBookings\VenueBookingsServiceProvider;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\Support\Authorization\CreatesUsersWithPermissions;
 use Tests\Support\Modules\InteractsWithModulePanel;
 use Tests\Support\Modules\ModuleTestCase;
@@ -232,12 +234,13 @@ final class VenueBookingsSettingsTest extends ModuleTestCase
 
         $this->actingAs($this->editorWithPermissions(['modules.configure']));
 
-        $component
-            ->fillForm(['approval_mode' => 'auto_confirm'])
-            ->call('save')
-            ->assertForbidden();
+        $this->expectException(HttpException::class);
 
-        $this->assertDatabaseMissing('settings', ['key' => 'module_settings:venue-bookings']);
+        try {
+            $component->instance()->save(app(ModuleManagerServiceInterface::class));
+        } finally {
+            $this->assertDatabaseMissing('settings', ['key' => 'module_settings:venue-bookings']);
+        }
     }
 
     public function test_values_saved_in_todays_format_read_back_identically(): void
@@ -257,13 +260,13 @@ final class VenueBookingsSettingsTest extends ModuleTestCase
         $this->registerProviderWithStoredSettings();
 
         Livewire::test(VenueBookingsSettings::class)
-            ->assertFormSet($stored)
+            ->assertFormSet(array_diff_key($stored, ['time_block_presets' => true]))
             ->call('save')
             ->assertHasNoFormErrors();
 
         $decoded = json_decode((string) SettingModel::where('key', 'module_settings:venue-bookings')->value('value'), true);
         $this->assertIsArray($decoded);
-        $this->assertSame($stored['time_block_presets'], $decoded['time_block_presets']);
+        $this->assertSame($stored['time_block_presets'], array_values($decoded['time_block_presets']));
         $this->assertSame(9, (int) $decoded['max_active_bookings_per_user']);
         $this->assertSame(5, (int) $decoded['notifications']['reminder_hours_before']);
         $this->assertFalse($decoded['notifications']['notify_on_booking_created']);

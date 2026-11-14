@@ -290,7 +290,7 @@ final class VenueBookingsSettings extends Page implements HasForms
     public function save(ModuleManagerServiceInterface $modules): void
     {
         // Livewire methods can be called without the page's button
-        abort_unless(static::canAccess(), 403);
+        abort_unless(self::canAccess(), 403);
 
         $modules->updateSettings(new ModuleName('venue-bookings'), $this->form->getState());
 
