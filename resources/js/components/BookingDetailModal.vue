@@ -5,7 +5,6 @@ import { useI18n } from 'vue-i18n';
 import type { BookingDetail } from '../types/bookings';
 import BookingStatusBadge from './BookingStatusBadge.vue';
 import { useModalDialog } from '../composables/useModalDialog';
-import { VENUE_TIMEZONE } from '@/utils/datetime';
 
 interface Props {
     booking: BookingDetail;
@@ -32,7 +31,8 @@ function onBackdropClick(event: MouseEvent): void {
 const formattedDate = computed(() => {
     const date = new Date(`${props.booking.date}T12:00:00Z`);
     return date.toLocaleDateString(locale.value, {
-        timeZone: VENUE_TIMEZONE,
+        // A calendar date, not an instant: UTC keeps its day in every zone
+        timeZone: 'UTC',
         weekday: 'long',
         day: 'numeric',
         month: 'long',
