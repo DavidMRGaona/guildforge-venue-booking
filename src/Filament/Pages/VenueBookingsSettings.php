@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Filament\Pages;
 
-use App\Application\Modules\Services\ModuleContextServiceInterface;
-use App\Application\Modules\Services\ModuleSettingsStoreInterface;
-use App\Application\Services\SettingsServiceInterface;
+use App\Application\Modules\Services\ModuleManagerServiceInterface;
+use App\Domain\Modules\ValueObjects\ModuleName;
 use App\Filament\Clusters\SettingsCluster;
 use App\Filament\Concerns\ChecksPermissions;
 use App\Filament\Concerns\HasKnowledgeGuideAction;
@@ -77,11 +76,11 @@ final class VenueBookingsSettings extends Page implements HasForms
         return self::userCan('venuebookings:bookings.settings');
     }
 
-    public function mount(ModuleSettingsStoreInterface $settingsStore, ModuleContextServiceInterface $moduleContext): void
+    public function mount(ModuleManagerServiceInterface $modules): void
     {
         // The shipped defaults (config/settings.php) with the saved values on top, so keys
         // added by a release show their defaults instead of loading empty and being saved off
-        $this->form->fill($settingsStore->effective('venue-bookings', $moduleContext->modulePath('venue-bookings')));
+        $this->form->fill($modules->getSettings(new ModuleName('venue-bookings')));
     }
 
     /**
@@ -288,17 +287,12 @@ final class VenueBookingsSettings extends Page implements HasForms
             ->statePath('data');
     }
 
-    public function save(SettingsServiceInterface $settingsService): void
+    public function save(ModuleManagerServiceInterface $modules): void
     {
-        $formData = $this->form->getState();
+        // Livewire methods can be called without the page's button
+        abort_unless(self::canAccess(), 403);
 
-        $settingsService->set(
-            'module_settings:venue-bookings',
-            json_encode($formData, JSON_THROW_ON_ERROR),
-        );
-
-        // Update in-memory config for the current request
-        config()->set('modules.settings.venue-bookings', $formData);
+        $modules->updateSettings(new ModuleName('venue-bookings'), $this->form->getState());
 
         Notification::make()
             ->title(__('common.saved'))

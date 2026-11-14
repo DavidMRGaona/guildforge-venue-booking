@@ -17,7 +17,6 @@ use App\Filament\Support\PanelNavigationGroup;
 use App\Modules\ModuleServiceProvider;
 use Filament\Pages\Page;
 use Filament\Resources\Resource as FilamentResource;
-use Filament\Schemas\Components\Component;
 use Filament\Widgets\Widget;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Event;
@@ -389,11 +388,13 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
     }
 
     /**
-     * @return array<Component>
+     * The settings are edited on the module's own page in the settings cluster.
+     *
+     * @return class-string<Page>
      */
-    public function getSettingsSchema(): array
+    public function getSettingsPage(): string
     {
-        return VenueBookingsSettings::getFormSchemaComponents();
+        return VenueBookingsSettings::class;
     }
 
     /**

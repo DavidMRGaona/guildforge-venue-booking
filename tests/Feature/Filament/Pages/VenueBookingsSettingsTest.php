@@ -4,19 +4,22 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Tests\Feature\Filament\Pages;
 
-use App\Application\Modules\Services\ModuleSettingsStoreInterface;
+use App\Application\Modules\Services\ModuleManagerServiceInterface;
 use App\Application\Services\SettingsServiceInterface;
+use App\Filament\Clusters\SettingsCluster;
 use App\Infrastructure\Persistence\Eloquent\Models\SettingModel;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Livewire\Livewire;
-use Mockery;
 use Modules\VenueBookings\Filament\Pages\VenueBookingsSettings;
 use Modules\VenueBookings\VenueBookingsServiceProvider;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+use Tests\Support\Authorization\CreatesUsersWithPermissions;
 use Tests\Support\Modules\InteractsWithModulePanel;
 use Tests\Support\Modules\ModuleTestCase;
 
 final class VenueBookingsSettingsTest extends ModuleTestCase
 {
+    use CreatesUsersWithPermissions;
     use InteractsWithModulePanel;
 
     protected ?string $moduleName = 'venue-bookings';
@@ -79,8 +82,9 @@ final class VenueBookingsSettingsTest extends ModuleTestCase
             ]),
         ]);
 
-        // Clear cache so mount() reads fresh data
+        // Clear cache and register again, as the next production request does
         app(SettingsServiceInterface::class)->clearCache();
+        $this->registerProviderWithStoredSettings();
 
         $component = Livewire::test(VenueBookingsSettings::class);
 
@@ -196,23 +200,79 @@ final class VenueBookingsSettingsTest extends ModuleTestCase
         $this->assertFalse($decoded['auto_complete_enabled']);
     }
 
-    public function test_the_defaults_are_read_from_the_module_path_the_core_resolves(): void
+    public function test_the_provider_declares_the_cluster_page_and_leaves_the_generic_schema_empty(): void
+    {
+        $provider = $this->app->getProvider(VenueBookingsServiceProvider::class);
+        $this->assertInstanceOf(VenueBookingsServiceProvider::class, $provider);
+
+        $this->assertSame(VenueBookingsSettings::class, $provider->getSettingsPage());
+        $this->assertContains(VenueBookingsSettings::class, $provider->registerFilamentPages());
+        $this->assertSame([], $provider->getSettingsSchema());
+        $this->assertSame(SettingsCluster::class, (new \ReflectionProperty(VenueBookingsSettings::class, 'cluster'))->getValue());
+    }
+
+    public function test_modules_configure_alone_does_not_open_the_page_or_save(): void
+    {
+        $this->actingAs($this->editorWithPermissions(['modules.configure']));
+
+        $this->assertFalse(VenueBookingsSettings::canAccess());
+
+        Livewire::test(VenueBookingsSettings::class)->assertForbidden();
+    }
+
+    public function test_the_permission_of_the_module_opens_the_page(): void
+    {
+        $this->actingAs($this->editorWithPermissions(['venuebookings:bookings.settings']));
+
+        $this->assertTrue(VenueBookingsSettings::canAccess());
+    }
+
+    public function test_saving_without_the_permission_is_refused(): void
+    {
+        $this->actingAs($this->admin);
+        $component = Livewire::test(VenueBookingsSettings::class);
+
+        $this->actingAs($this->editorWithPermissions(['modules.configure']));
+
+        $this->expectException(HttpException::class);
+
+        try {
+            $page = $component->instance();
+            $this->assertInstanceOf(VenueBookingsSettings::class, $page);
+            $page->save(app(ModuleManagerServiceInterface::class));
+        } finally {
+            $this->assertDatabaseMissing('settings', ['key' => 'module_settings:venue-bookings']);
+        }
+    }
+
+    public function test_values_saved_in_todays_format_read_back_identically(): void
     {
         $this->actingAs($this->admin);
 
-        // Wherever the core keeps its modules, not where this file happens to be
-        $modulesPath = sys_get_temp_dir().'/venue-bookings-modules-'.uniqid();
-        config(['modules.path' => $modulesPath]);
-
-        $store = Mockery::mock(ModuleSettingsStoreInterface::class);
-        $store->shouldReceive('effective')
-            ->once()
-            ->with('venue-bookings', $modulesPath.'/venue-bookings')
-            ->andReturn(['approval_mode' => 'auto_confirm']);
-        $this->app->instance(ModuleSettingsStoreInterface::class, $store);
+        $stored = [
+            'approval_mode' => 'auto_confirm',
+            'max_active_bookings_per_user' => 9,
+            'min_advance_minutes' => 15,
+            'max_future_days' => 90,
+            'time_block_presets' => [['label' => 'Tarde', 'open_time' => '16:00', 'close_time' => '21:00']],
+            'notifications' => ['notify_on_booking_created' => false, 'reminder_hours_before' => 5],
+        ];
+        SettingModel::create(['key' => 'module_settings:venue-bookings', 'value' => json_encode($stored)]);
+        app(SettingsServiceInterface::class)->clearCache();
+        $this->registerProviderWithStoredSettings();
 
         Livewire::test(VenueBookingsSettings::class)
-            ->assertFormSet(['approval_mode' => 'auto_confirm']);
+            ->assertFormSet(['notifications.notify_on_booking_created' => false, 'notifications.reminder_hours_before' => 5])
+            ->assertFormSet(array_diff_key($stored, ['time_block_presets' => true, 'notifications' => true]))
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $decoded = json_decode((string) SettingModel::where('key', 'module_settings:venue-bookings')->value('value'), true);
+        $this->assertIsArray($decoded);
+        $this->assertSame($stored['time_block_presets'], array_values($decoded['time_block_presets']));
+        $this->assertSame(9, (int) $decoded['max_active_bookings_per_user']);
+        $this->assertSame(5, (int) $decoded['notifications']['reminder_hours_before']);
+        $this->assertFalse($decoded['notifications']['notify_on_booking_created']);
     }
 
     /**
