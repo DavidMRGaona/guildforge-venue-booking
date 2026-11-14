@@ -237,7 +237,9 @@ final class VenueBookingsSettingsTest extends ModuleTestCase
         $this->expectException(HttpException::class);
 
         try {
-            $component->instance()->save(app(ModuleManagerServiceInterface::class));
+            $page = $component->instance();
+            $this->assertInstanceOf(VenueBookingsSettings::class, $page);
+            $page->save(app(ModuleManagerServiceInterface::class));
         } finally {
             $this->assertDatabaseMissing('settings', ['key' => 'module_settings:venue-bookings']);
         }
@@ -260,7 +262,8 @@ final class VenueBookingsSettingsTest extends ModuleTestCase
         $this->registerProviderWithStoredSettings();
 
         Livewire::test(VenueBookingsSettings::class)
-            ->assertFormSet(array_diff_key($stored, ['time_block_presets' => true]))
+            ->assertFormSet(['notifications.notify_on_booking_created' => false, 'notifications.reminder_hours_before' => 5])
+            ->assertFormSet(array_diff_key($stored, ['time_block_presets' => true, 'notifications' => true]))
             ->call('save')
             ->assertHasNoFormErrors();
 
