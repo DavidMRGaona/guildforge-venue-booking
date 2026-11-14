@@ -231,7 +231,7 @@ Los administradores tienen todos los permisos. La columna **Rol sugerido** indic
 | `bookings.manage` | — | Confirmar, rechazar y marcar como no presentado desde el listado; editar (incluido el cambio de estado) y borrar reservas; gestionar espacios. En la web, ver quién reservó, las notas internas y los campos con visibilidad «Con permiso»; recibir el aviso de reserva nueva (si el rol está en pausa, no) |
 | `bookings.cancel_any` | — | Cancelar cualquier reserva: desde el listado del panel, pasando una reserva a «Cancelada» al editarla (también exige `bookings.manage`) y desde la web (`DELETE /reservas/{booking}`) |
 | `bookings.cancel_own` | member (concedido al actualizar) | Cancelar las propias reservas desde la web |
-| `bookings.settings` | — | Abrir y guardar la configuración del módulo. Es el único sitio donde se editan: el botón «Configurar» de **Módulos** lleva a la misma página, y `modules.configure` por sí solo no basta |
+| `bookings.settings` | — | Abrir y guardar la configuración del módulo. Es el único sitio donde se editan: el botón **Configuración** de **Módulos** lleva a la misma página a quien además puede entrar en **Módulos**, y `modules.configure` por sí solo no basta |
 
 Las acciones del panel se comprueban también en el servidor: si se fuerzan sin el permiso, la reserva no cambia. Para que un rol gestione reservas hay que darle `bookings.manage` y `bookings.cancel_any`; `bookings.view_any` solo deja verlas.
 
