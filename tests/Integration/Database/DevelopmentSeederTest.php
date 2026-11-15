@@ -31,7 +31,10 @@ final class DevelopmentSeederTest extends ModuleTestCase
         // Enabling the module in testing already ran the seeder: empty its tables first
         BookingModel::query()->delete();
         BookableResourceModel::query()->delete();
-        UserModel::where('email', 'like', '%@example.local')->forceDelete();
+        // One by one, so the model events run (the core releases the account's profile rows first)
+        foreach (UserModel::where('email', 'like', '%@example.local')->get() as $user) {
+            $user->forceDelete();
+        }
 
         $this->app['env'] = 'production';
         $this->assertTrue($this->app->environment('production'));
