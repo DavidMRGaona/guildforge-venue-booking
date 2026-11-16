@@ -5,21 +5,21 @@ summary: Dónde ver tus reservas del local, en qué estado está cada una y qué
 category: venue
 audience: site
 order: 30
-keywords: [mis reservas, ver reservas, mis reservas del local, estado de la reserva, pendiente, confirmada, rechazada, caducada, reservas pasadas, próximas reservas, perfil, correo de reserva, recordatorio, misreservas]
+keywords: [mis reservas, ver reservas, mis reservas del local, estado de la reserva, pendiente, confirmada, rechazada, caducada, reservas pasadas, próximas reservas, perfil, ajustes de la cuenta, correo de reserva, recordatorio, misreservas]
 related: [venue-bookings.overview, venue-bookings.book, venue-bookings.cancel-booking]
 ---
 Tus reservas están en dos sitios con la misma información.
 
 ## En la página Mis reservas
 
-1. Abre tu perfil, pestaña **Reservas**, y pulsa **Ver todas mis reservas**.
+1. Abre Ajustes de la cuenta, pestaña **Reservas**, y pulsa **Ver todas mis reservas**.
 2. Verás tus reservas en **Próximas** (de hoy en adelante) y **Anteriores**.
 
 Desde aquí, **Hacer una reserva** te lleva al calendario.
 
-## En tu perfil
+## En Ajustes de la cuenta
 
-En la pestaña **Reservas** del perfil ves **Próximas reservas** y, plegadas, **Reservas pasadas**. Pulsa sobre **Reservas pasadas** para abrirlas y **Ver … más** para cargar las siguientes.
+En la pestaña **Reservas** de Ajustes de la cuenta ves **Próximas reservas** y, plegadas, **Reservas pasadas**. Pulsa sobre **Reservas pasadas** para abrirlas y **Ver … más** para cargar las siguientes.
 
 ## Qué dice cada reserva
 
@@ -47,6 +47,6 @@ Según la configuración de la web (cada uno sale también como aviso en la camp
 
 Cada correo trae el botón **Ver mis reservas**.
 
-Los correos y avisos sobre tu reserva (recibida, confirmada, rechazada, cancelada o modificada) siempre se envían. El recordatorio es optativo: puedes dejar de recibirlo, por correo o en la campana, en la pestaña **Avisos** y **Correos** de tu perfil, en «Recordatorios de reservas», o con el enlace de baja del propio correo. Si el personal borra una reserva, sus avisos desaparecen de la campana.
+Los correos y avisos sobre tu reserva (recibida, confirmada, rechazada, cancelada o modificada) siempre se envían. El recordatorio es optativo: puedes dejar de recibirlo, por correo o en la campana, en la pestaña **Avisos** y **Correos** de Ajustes de la cuenta, en «Recordatorios de reservas», o con el enlace de baja del propio correo. Si el personal borra una reserva, sus avisos desaparecen de la campana.
 
 [[action:bookings.my-bookings|Ver mis reservas]]

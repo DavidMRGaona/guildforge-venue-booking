@@ -57,14 +57,14 @@ La organización decide estas reglas, que valen para todo el mundo que reserva d
 
 ## Correos
 
-Según la configuración, te llega un correo cuando tu reserva queda pendiente, cuando se confirma, se rechaza o se cancela, y un recordatorio unas horas antes de una reserva confirmada. Los avisos sobre tu reserva siempre se envían; el recordatorio puedes desactivarlo en la pestaña **Correos** de tu perfil.
+Según la configuración, te llega un correo cuando tu reserva queda pendiente, cuando se confirma, se rechaza o se cancela, y un recordatorio unas horas antes de una reserva confirmada. Los avisos sobre tu reserva siempre se envían; el recordatorio puedes desactivarlo en la pestaña **Correos** de Ajustes de la cuenta.
 
 ## Quién hace qué
 
 | Quién | Qué puede hacer |
 |---|---|
 | Cualquier visitante | Ver el calendario de reservas |
-| Con cuenta | Reservar, ver sus reservas en **Mis reservas** o en la pestaña **Reservas** del perfil y, si la web lo permite, cancelarlas |
+| Con cuenta | Reservar, ver sus reservas en **Mis reservas** o en la pestaña **Reservas** de Ajustes de la cuenta y, si la web lo permite, cancelarlas |
 | La organización | Aprobar, rechazar, cancelar y mover reservas, y crear reservas sin los límites de la web desde el panel |
 
 [[action:bookings.index|Ver las reservas del local]]

@@ -12,7 +12,7 @@ Reservas desde la página **Reservas del local**. Necesitas haber iniciado sesi�
 
 ## Paso a paso
 
-1. Abre **Reservas del local**. También llegas desde tu perfil, pestaña **Reservas**, con **Hacer una reserva**.
+1. Abre **Reservas del local**. También llegas desde Ajustes de la cuenta, pestaña **Reservas**, con **Hacer una reserva**.
 2. Si hay varios espacios, elige el tuyo encima del calendario. Debajo verás su descripción y cuántas personas caben, si la organización los ha puesto.
 3. Pulsa el día en el calendario. Con **Mes**, **Semana** y **Día** cambias la vista.
 4. Debajo salen los horarios de ese día:
