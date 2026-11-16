@@ -57,7 +57,7 @@ La organización decide estas reglas, que valen para todo el mundo que reserva d
 
 ## Correos
 
-Según la configuración, te llega un correo cuando tu reserva queda pendiente, cuando se confirma, se rechaza o se cancela, y un recordatorio unas horas antes de una reserva confirmada. Los avisos sobre tu reserva siempre se envían; el recordatorio puedes desactivarlo en la pestaña **Correos** de Ajustes de la cuenta.
+Según la configuración, te llega un correo cuando tu reserva queda pendiente, cuando se confirma, se rechaza o se cancela, y un recordatorio unas horas antes de una reserva confirmada. Los avisos sobre tu reserva siempre se envían; el recordatorio puedes desactivarlo en la pestaña **Avisos** de Ajustes de la cuenta.
 
 ## Quién hace qué
 
