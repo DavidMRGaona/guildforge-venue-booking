@@ -10,6 +10,7 @@ use Modules\VenueBookings\Application\Services\BookingFieldConfigServiceInterfac
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
 use Tests\Support\Authorization\CreatesUsersWithPermissions;
+use Tests\Support\Authorization\ManagesTwoFactorRoles;
 use Tests\Support\Modules\ModuleTestCase;
 
 /**
@@ -19,6 +20,7 @@ use Tests\Support\Modules\ModuleTestCase;
 final class BookingDetailsForManagersTest extends ModuleTestCase
 {
     use CreatesUsersWithPermissions;
+    use ManagesTwoFactorRoles;
 
     private const string MANAGE = 'venuebookings:bookings.manage';
 
@@ -80,6 +82,18 @@ final class BookingDetailsForManagersTest extends ModuleTestCase
     public function test_fields_for_administrators_only_stay_for_administrators(): void
     {
         $this->assertSame(['activity_name', 'contact_phone', 'notes'], $this->visibleFieldKeys(UserModel::factory()->admin()->create()));
+    }
+
+    public function test_an_administrator_whose_role_waits_for_two_factor_does_not_see_fields_for_administrators(): void
+    {
+        $this->roleRequiringTwoFactor('admin');
+        $administrator = $this->accountHolding(['admin']);
+
+        $this->assertSame(['activity_name'], $this->visibleFieldKeys($administrator));
+
+        $this->turnOnTwoFactor($administrator);
+
+        $this->assertSame(['activity_name', 'contact_phone', 'notes'], $this->visibleFieldKeys($administrator));
     }
 
     /**
