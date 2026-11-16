@@ -15,13 +15,13 @@ Si ya no necesitas el espacio, cancela la reserva cuanto antes: el horario queda
 
 ## Desde Mis reservas
 
-1. Abre tu perfil, pestaña **Reservas**, y pulsa **Ver todas mis reservas**.
+1. Abre Ajustes de la cuenta, pestaña **Reservas**, y pulsa **Ver todas mis reservas**.
 2. En la reserva, pulsa **Cancelar reserva**.
 3. Confirma con **Cancelar reserva**.
 
-## Desde tu perfil
+## Desde Ajustes de la cuenta
 
-1. En la pestaña **Reservas** del perfil, busca la reserva.
+1. En la pestaña **Reservas** de Ajustes de la cuenta, busca la reserva.
 2. Pulsa **Cancelar reserva**.
 3. En «¿Cancelar reserva?», pulsa **Sí, cancelar**.
 

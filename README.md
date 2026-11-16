@@ -10,7 +10,7 @@ Sistema de reservas del local para gestionar espacios y horarios, con calendario
 - **Modo de aprobación**: confirmación automática o aprobación manual en el panel
 - **Campos configurables**: campos predefinidos y personalizados con visibilidad configurable
 - **Reglas de reserva en el servidor**: límite de reservas activas, antelación mínima y máximo de días futuros se comprueban al reservar, para cualquier cuenta (también administradores); la franja debe estar hecha de los turnos del horario del espacio (o ser un bloque entero)
-- **Mis reservas**: cada usuario ve sus reservas en `/reservas/mis-reservas` y en la pestaña **Reservas** de su perfil, y las cancela si tiene el permiso `bookings.cancel_own`
+- **Mis reservas**: cada usuario ve sus reservas en `/reservas/mis-reservas` y en la pestaña **Reservas** de sus Ajustes de la cuenta, y las cancela si tiene el permiso `bookings.cancel_own`
 - **Cierre a la hora de inicio**: desde la web no se puede reservar un día pasado ni una franja que ya ha empezado, ni cancelar una reserva empezada. El panel no tiene ese límite
 - **Completado automático**: las reservas confirmadas pasan a completadas cuando ha pasado su hora de fin más un margen configurable
 - **Peticiones en las propuestas de evento**: quien propone un evento desde la web puede pedir un espacio («¿Necesitas reservar un espacio?», con el espacio y una nota opcional). Al aprobar la propuesta se reserva a nombre de quien la propuso, enlazada al evento y **Confirmada** aunque el modo de aprobación pida aprobar las reservas, con el día y las horas del evento en la zona del local. Valen el horario del espacio, los solapes y su estado, no las reglas de la configuración. Solo para eventos de un día; si el espacio está ocupado, la franja no encaja o el evento dura más, la aprobación no sigue y el panel dice por qué
@@ -196,7 +196,7 @@ Los dos widgets solo se muestran a quien puede ver el listado de reservas (`book
 | `BookingTooltip` | Tooltip con información de la reserva |
 | `ResourceSelector` | Selector de espacio reservable |
 | `ResourceDetails` | Descripción y capacidad del espacio elegido, encima del calendario; no se pinta si el espacio no tiene ninguna de las dos |
-| `ProfileBookingsSection` | Pestaña **Reservas** del perfil del usuario |
+| `ProfileBookingsSection` | Pestaña **Reservas** de Ajustes de la cuenta del usuario |
 
 ### Páginas
 
@@ -247,11 +247,11 @@ La concesión se aplica una sola vez, cuando corre la migración. Si un administ
 
 ## Verificación de email
 
-Cuando el core exige verificar el email (*Configuración del sitio → Autenticación*), sus reglas cierran a la cuenta que aún debe hacerlo las rutas con `auth` del módulo: la elegibilidad, crear una reserva, cancelarla y `/reservas/mis-reservas`. El calendario (`/reservas`) y el perfil siguen abiertos, y la interfaz lo anticipa con `useVerificationGate()` del core en vez de dejar que el servidor rechace lo enviado:
+Cuando el core exige verificar el email (*Configuración del sitio → Autenticación*), sus reglas cierran a la cuenta que aún debe hacerlo las rutas con `auth` del módulo: la elegibilidad, crear una reserva, cancelarla y `/reservas/mis-reservas`. El calendario (`/reservas`) y Ajustes de la cuenta siguen abiertos, y la interfaz lo anticipa con `useVerificationGate()` del core en vez de dejar que el servidor rechace lo enviado:
 
 - **Calendario**: no consulta la elegibilidad y el botón **Reservar** aparece desactivado, con el motivo («Para reservar, verifica tu email.») asociado por `aria-describedby` y el enlace «Ver cómo» a la página de verificación.
 - **Formulario de reserva**: no se envía ni muestra los campos; muestra el mismo motivo con el botón **Reservar** desactivado. Una elegibilidad que llega vacía (su endpoint falló) nunca deja el formulario activo a esa cuenta.
-- **Cancelar reserva** (pestaña **Reservas** del perfil): el botón aparece desactivado con «Para cancelar tu reserva, verifica tu email.» y el mismo enlace. `/reservas/mis-reservas` no llega a mostrarse: el servidor lleva al aviso.
+- **Cancelar reserva** (pestaña **Reservas** de Ajustes de la cuenta): el botón aparece desactivado con «Para cancelar tu reserva, verifica tu email.» y el mismo enlace. `/reservas/mis-reservas` no llega a mostrarse: el servidor lleva al aviso.
 - **Cambio inesperado** (por ejemplo, la verificación se activó con la página ya abierta): si la elegibilidad responde con el 403 de verificación, el formulario queda desactivado y la página va al aviso; una reserva o cancelación enviada de todos modos acaba en el aviso, sin mensaje de éxito.
 
 Los invitados, las cuentas verificadas, las creadas antes de que se empezara a exigir la verificación y todas cuando el ajuste está apagado reservan y cancelan exactamente igual que antes.
