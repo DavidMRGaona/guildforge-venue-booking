@@ -47,6 +47,6 @@ Según la configuración de la web (cada uno sale también como aviso en la camp
 
 Cada correo trae el botón **Ver mis reservas**.
 
-Los correos y avisos sobre tu reserva (recibida, confirmada, rechazada, cancelada o modificada) siempre se envían. El recordatorio es optativo: puedes dejar de recibirlo, por correo o en la campana, en la pestaña **Avisos** y **Correos** de Ajustes de la cuenta, en «Recordatorios de reservas», o con el enlace de baja del propio correo. Si el personal borra una reserva, sus avisos desaparecen de la campana.
+Los correos y avisos sobre tu reserva (recibida, confirmada, rechazada, cancelada o modificada) siempre se envían. El recordatorio es optativo: puedes dejar de recibirlo, por correo o en la campana, en la pestaña **Avisos** de Ajustes de la cuenta, en «Recordatorios de reservas», o con el enlace de baja del propio correo. Si el personal borra una reserva, sus avisos desaparecen de la campana.
 
 [[action:bookings.my-bookings|Ver mis reservas]]
