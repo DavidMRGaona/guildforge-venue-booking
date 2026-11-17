@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\VenueBookings\Infrastructure\Services;
 
 use App\Application\Authorization\Services\AuthorizationServiceInterface;
+use App\Domain\Enums\UserRole;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Illuminate\Validation\Rule;
 use Modules\VenueBookings\Application\Services\BookingFieldConfigServiceInterface;
@@ -276,7 +277,7 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
             FieldVisibility::Public => true,
             FieldVisibility::Authenticated => $user instanceof UserModel,
             FieldVisibility::Permission => $user instanceof UserModel && $this->authorization->can($user, self::MANAGE_PERMISSION),
-            FieldVisibility::AdminOnly => $user instanceof UserModel && $user->isAdmin(),
+            FieldVisibility::AdminOnly => $user instanceof UserModel && $this->authorization->hasRole($user, UserRole::Admin->value),
         };
     }
 }
