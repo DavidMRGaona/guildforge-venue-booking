@@ -30,6 +30,7 @@ use Modules\VenueBookings\Domain\Exceptions\BookingAlreadyStartedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingBusyException;
 use Modules\VenueBookings\Domain\Exceptions\BookingCancellationNotAllowedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingLimitExceededException;
+use Modules\VenueBookings\Domain\Exceptions\BookingNotEndedException;
 use Modules\VenueBookings\Domain\Exceptions\BookingNotStartedException;
 use Modules\VenueBookings\Domain\Exceptions\MaximumSlotsExceededException;
 use Modules\VenueBookings\Domain\Exceptions\MinimumSlotsNotMetException;
@@ -323,9 +324,39 @@ final class BookingServiceTest extends TestCase
             && $event->reason === 'Resource not suitable');
     }
 
+    public function test_a_booking_cannot_be_completed_before_it_ends(): void
+    {
+        Event::fake();
+
+        $bookingId = (string) Str::uuid();
+        BookingModel::create([
+            'id' => $bookingId,
+            'resource_id' => $this->resource->id,
+            'user_id' => $this->user->id,
+            'date' => '2026-03-16',
+            'start_time' => '10:00',
+            'end_time' => '12:00',
+            'status' => 'confirmed',
+        ]);
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 11, 59, 59, self::VENUE_TIMEZONE));
+
+        try {
+            $this->service->markCompleted($bookingId);
+            $this->fail('A booking under way must not be completed');
+        } catch (BookingNotEndedException) {
+            $this->assertDatabaseHas('venuebookings_bookings', ['id' => $bookingId, 'status' => 'confirmed']);
+            Event::assertNotDispatched(BookingCompleted::class);
+        }
+
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 12, 0, 0, self::VENUE_TIMEZONE));
+        $this->assertEquals(BookingStatus::Completed, $this->service->markCompleted($bookingId)->status);
+    }
+
     public function test_it_marks_booking_as_completed(): void
     {
         Event::fake();
+        // The fixture ended at 12:00 on the 16th
+        $this->travelTo(CarbonImmutable::create(2026, 3, 16, 12, 30, 0, self::VENUE_TIMEZONE));
 
         $bookingId = (string) Str::uuid();
         BookingModel::create([

@@ -6,6 +6,7 @@ namespace Modules\VenueBookings\Infrastructure\Activity;
 
 use App\Application\Activity\Services\ActivityPublisherInterface;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
+use DateTimeInterface;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
 
@@ -26,9 +27,6 @@ use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingMode
  */
 final readonly class AnnouncesActivityChanges
 {
-    /** What the facts of a booking are made of: the person and the moment it ended */
-    private const array FACT_FIELDS = ['user_id', 'date', 'start_time', 'end_time'];
-
     public function __construct(
         private CompletedBookings $completed,
         private ActivityPublisherInterface $activity,
@@ -36,7 +34,7 @@ final readonly class AnnouncesActivityChanges
 
     /**
      * Inside `saved` the model still holds the values it had before the save (a new one has none),
-     * and `isDirty()` tells what this save changed.
+     * and `getOriginal()` what it was before this save.
      */
     public function bookingSaved(BookingModel $booking): void
     {
@@ -48,7 +46,7 @@ final readonly class AnnouncesActivityChanges
         }
 
         // Still completed, and nothing the facts use moved
-        if ($was && $is && ! $booking->isDirty(self::FACT_FIELDS)) {
+        if ($was && $is && ! $this->factsMoved($booking)) {
             return;
         }
 
@@ -96,6 +94,24 @@ final readonly class AnnouncesActivityChanges
         foreach ($bookingIds as $bookingId) {
             $this->activity->recorded(BookingActivitySource::TYPE, $bookingId);
         }
+    }
+
+    /**
+     * Whether this save changed the person or the moment the booking ended. The values are compared
+     * as the model reads them, not through `isDirty()`: PostgreSQL stores times as `HH:MM:SS` and
+     * the model keeps `HH:MM`, so the same time reads as changed there.
+     */
+    private function factsMoved(BookingModel $booking): bool
+    {
+        return (string) $booking->getOriginal('user_id') !== (string) $booking->getAttribute('user_id')
+            || $this->day($booking->getOriginal('date')) !== $this->day($booking->getAttribute('date'))
+            || (string) $booking->getOriginal('start_time') !== (string) $booking->getAttribute('start_time')
+            || (string) $booking->getOriginal('end_time') !== (string) $booking->getAttribute('end_time');
+    }
+
+    private function day(mixed $date): string
+    {
+        return $date instanceof DateTimeInterface ? $date->format('Y-m-d') : (string) $date;
     }
 
     /**

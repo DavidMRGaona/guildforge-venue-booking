@@ -57,8 +57,17 @@ final class Booking
         $this->cancellationReason = $reason;
     }
 
-    public function markCompleted(): void
+    /**
+     * A booking can only be completed once it has ended: $now is compared with the end read in the
+     * venue timezone the caller passes. Completed is final and counts as something that happened
+     * (the activity contract reads it), so it cannot be recorded ahead of time.
+     */
+    public function markCompleted(DateTimeImmutable $now, DateTimeZone $timezone): void
     {
+        if ($this->status->canTransitionTo(BookingStatus::Completed) && $now < $this->endsAt($timezone)) {
+            throw BookingNotEndedException::forSlot($this->date, $this->timeRange->endTime);
+        }
+
         $this->transitionTo(BookingStatus::Completed);
     }
 

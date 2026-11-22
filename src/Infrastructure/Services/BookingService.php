@@ -299,7 +299,8 @@ final readonly class BookingService implements BookingServiceInterface
     public function markCompleted(string $bookingId): BookingResponseDTO
     {
         $booking = $this->bookingRepository->findOrFail(BookingId::fromString($bookingId));
-        $booking->markCompleted();
+        $timezone = $this->settingsReader->getDateTimeZone();
+        $booking->markCompleted(CarbonImmutable::now($timezone), $timezone);
         $this->bookingRepository->save($booking);
 
         BookingCompleted::dispatch($booking->id->value, $booking->userId);

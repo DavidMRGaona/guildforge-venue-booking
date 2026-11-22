@@ -154,6 +154,30 @@ final class CompletePastBookingsCommandTest extends ModuleTestCase
         $this->assertSame('cancelled', $booking->fresh()?->status->value);
     }
 
+    public function test_a_booking_moved_to_the_future_after_the_query_is_skipped_not_failed(): void
+    {
+        // The domain refuses to complete it anyway; the command skips it before that, so it is not an error
+        $log = Log::spy();
+        $booking = $this->booking('2026-11-01', '10:00', '12:00');
+        $real = $this->app->make(BookingRepositoryInterface::class);
+        $stale = $real->find(BookingId::fromString($booking->id));
+        $this->assertNotNull($stale);
+
+        // Staff move it to next week between the query and the update: it is still confirmed
+        $booking->update(['date' => '2026-11-19']);
+
+        $this->mock(BookingRepositoryInterface::class, function (MockInterface $mock) use ($real, $stale): void {
+            $mock->shouldReceive('getConfirmedEndedBy')->andReturn([$stale]);
+            $mock->shouldReceive('find')->andReturnUsing(fn (BookingId $id) => $real->find($id));
+        });
+
+        $this->completePast('Completed 0 booking(s).');
+
+        $this->assertSame('confirmed', $booking->fresh()?->status->value);
+        $log->shouldHaveReceived('info')->once();
+        $log->shouldNotHaveReceived('error');
+    }
+
     public function test_a_failing_booking_is_logged_and_does_not_stop_the_others(): void
     {
         $log = Log::spy();

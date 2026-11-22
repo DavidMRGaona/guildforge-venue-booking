@@ -12,7 +12,9 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use Modules\VenueBookings\Domain\Entities\Booking;
 use Modules\VenueBookings\Domain\Enums\BookingStatus;
+use Modules\VenueBookings\Domain\ValueObjects\TimeRange;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Casts\TimeOfDay;
 use Modules\VenueBookings\Infrastructure\Services\BookingNoticesForgetter;
 use Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader;
@@ -116,6 +118,21 @@ final class BookingModel extends Model
         $timezone = app(BookingSettingsReader::class)->getDateTimeZone();
 
         return CarbonImmutable::now($timezone) >= new DateTimeImmutable("{$this->date->format('Y-m-d')} {$this->start_time}", $timezone);
+    }
+
+    /**
+     * Whether the booking has ended now, read in the venue timezone (same rule as the entity: a
+     * range that crosses midnight ends the next day).
+     */
+    public function hasEnded(): bool
+    {
+        $timezone = app(BookingSettingsReader::class)->getDateTimeZone();
+
+        return CarbonImmutable::now($timezone) >= Booking::endOf(
+            $this->date->format('Y-m-d'),
+            new TimeRange($this->start_time, $this->end_time),
+            $timezone,
+        );
     }
 
     /**

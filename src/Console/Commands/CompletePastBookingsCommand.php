@@ -39,10 +39,12 @@ final class CompletePastBookingsCommand extends Command
 
         foreach ($bookingRepository->getConfirmedEndedBy($endedBy) as $candidate) {
             try {
-                // Read it again: staff may have changed it since the query
+                // Read it again: staff may have changed it since the query, or moved it to a later time
                 $current = $bookingRepository->find($candidate->id);
 
-                if (! $current instanceof Booking || $current->status !== BookingStatus::Confirmed) {
+                if (! $current instanceof Booking
+                    || $current->status !== BookingStatus::Confirmed
+                    || $current->endsAt($settingsReader->getDateTimeZone()) > $endedBy) {
                     Log::info('venue-bookings:complete-past skipped a booking that changed meanwhile', [
                         'booking_id' => $candidate->id->value,
                     ]);

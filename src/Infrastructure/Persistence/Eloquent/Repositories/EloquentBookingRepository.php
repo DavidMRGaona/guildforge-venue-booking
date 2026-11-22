@@ -17,7 +17,6 @@ use Modules\VenueBookings\Domain\ValueObjects\BookingFieldValue;
 use Modules\VenueBookings\Domain\ValueObjects\BookingId;
 use Modules\VenueBookings\Domain\ValueObjects\TimeRange;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
-use Modules\VenueBookings\Infrastructure\Services\BookingNoticesForgetter;
 use Modules\VenueBookings\Infrastructure\Services\BookingSettingsReader;
 
 final readonly class EloquentBookingRepository implements BookingRepositoryInterface
@@ -50,8 +49,8 @@ final readonly class EloquentBookingRepository implements BookingRepositoryInter
 
     public function delete(BookingId $id): void
     {
-        app(BookingNoticesForgetter::class)->forgetBooking($id->value);
-        // Through the model, so its `deleted` event runs (a query delete fires none)
+        // Through the model, so its `deleted` event runs (a query delete fires none): it forgets the
+        // booking's notices and announces the change to the activity contract
         BookingModel::query()->find($id->value)?->delete();
     }
 

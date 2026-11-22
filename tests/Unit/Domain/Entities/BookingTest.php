@@ -77,7 +77,7 @@ final class BookingTest extends TestCase
     {
         $booking = $this->createBooking();
         $booking->confirm();
-        $booking->markCompleted();
+        $booking->markCompleted($this->afterTheEnd(), $this->madrid());
 
         $this->expectException(InvalidStatusTransitionException::class);
 
@@ -109,7 +109,7 @@ final class BookingTest extends TestCase
         $booking = $this->createBooking();
         $booking->confirm();
 
-        $booking->markCompleted();
+        $booking->markCompleted($this->afterTheEnd(), $this->madrid());
 
         $this->assertEquals(BookingStatus::Completed, $booking->status);
     }
@@ -120,7 +120,77 @@ final class BookingTest extends TestCase
 
         $this->expectException(InvalidStatusTransitionException::class);
 
-        $booking->markCompleted();
+        $booking->markCompleted($this->afterTheEnd(), $this->madrid());
+    }
+
+    public function test_a_confirmed_booking_cannot_be_completed_before_it_ends(): void
+    {
+        $booking = $this->createBooking();
+        $booking->confirm();
+
+        try {
+            $booking->markCompleted(new DateTimeImmutable('2026-03-15 11:59:59', $this->madrid()), $this->madrid());
+            $this->fail('A booking under way must not be completed');
+        } catch (BookingNotEndedException) {
+            $this->assertSame(BookingStatus::Confirmed, $booking->status);
+        }
+    }
+
+    public function test_a_confirmed_booking_is_completed_from_the_moment_it_ends(): void
+    {
+        $booking = $this->createBooking();
+        $booking->confirm();
+
+        $booking->markCompleted(new DateTimeImmutable('2026-03-15 12:00:00', $this->madrid()), $this->madrid());
+
+        $this->assertSame(BookingStatus::Completed, $booking->status);
+    }
+
+    public function test_a_future_booking_cannot_be_completed(): void
+    {
+        $booking = $this->createBooking(date: '2026-03-20');
+        $booking->confirm();
+
+        $this->expectException(BookingNotEndedException::class);
+
+        $booking->markCompleted(new DateTimeImmutable('2026-03-15 13:00', $this->madrid()), $this->madrid());
+    }
+
+    public function test_the_end_is_read_in_the_venue_timezone_when_completing(): void
+    {
+        $booking = $this->createBooking();
+        $booking->confirm();
+
+        // 11:30 UTC is 12:30 in Madrid (UTC+1: the clocks go forward on 29 March): it has ended
+        $booking->markCompleted(new DateTimeImmutable('2026-03-15 11:30', new DateTimeZone('UTC')), $this->madrid());
+
+        $this->assertSame(BookingStatus::Completed, $booking->status);
+    }
+
+    public function test_a_booking_that_crosses_midnight_is_completed_the_next_day(): void
+    {
+        $booking = $this->createBooking(date: '2026-03-15', startTime: '22:00', endTime: '02:00');
+        $booking->confirm();
+
+        try {
+            $booking->markCompleted(new DateTimeImmutable('2026-03-16 01:00', $this->madrid()), $this->madrid());
+            $this->fail('The booking runs until 02:00 the next day');
+        } catch (BookingNotEndedException) {
+            // Still under way
+        }
+
+        $booking->markCompleted(new DateTimeImmutable('2026-03-16 02:00', $this->madrid()), $this->madrid());
+        $this->assertSame(BookingStatus::Completed, $booking->status);
+    }
+
+    public function test_the_wrong_status_is_refused_before_the_end_is_checked(): void
+    {
+        $booking = $this->createBooking(date: '2026-03-20');
+
+        // A pending booking is refused for its status, not for the time
+        $this->expectException(InvalidStatusTransitionException::class);
+
+        $booking->markCompleted(new DateTimeImmutable('2026-03-15 13:00', $this->madrid()), $this->madrid());
     }
 
     public function test_it_marks_confirmed_booking_no_show(): void
@@ -192,7 +262,7 @@ final class BookingTest extends TestCase
     {
         $completed = $this->createBooking();
         $completed->confirm();
-        $completed->markCompleted();
+        $completed->markCompleted($this->afterTheEnd(), $this->madrid());
         $this->assertFalse($completed->isCancellable());
 
         $cancelled = $this->createBooking();
@@ -489,6 +559,16 @@ final class BookingTest extends TestCase
         $this->assertTrue($booking->movedTo($booking->resourceId, '2026-03-16', new TimeRange('10:00', '12:00'))->takesPlaceElsewhereOrAtAnotherTimeThan($booking));
         $this->assertTrue($booking->movedTo($booking->resourceId, '2026-03-15', new TimeRange('09:00', '12:00'))->takesPlaceElsewhereOrAtAnotherTimeThan($booking));
         $this->assertTrue($booking->movedTo($booking->resourceId, '2026-03-15', new TimeRange('10:00', '13:00'))->takesPlaceElsewhereOrAtAnotherTimeThan($booking));
+    }
+
+    private function madrid(): DateTimeZone
+    {
+        return new DateTimeZone('Europe/Madrid');
+    }
+
+    private function afterTheEnd(): DateTimeImmutable
+    {
+        return new DateTimeImmutable('2026-03-16 09:00', $this->madrid());
     }
 
     private function createBooking(

@@ -139,7 +139,7 @@ Dos avisos más pueden aparecer al reservar:
 ### Transiciones válidas
 
 - **Pendiente** → Confirmada, Cancelada, Rechazada, Caducada
-- **Confirmada** → Completada, Cancelada, No presentado
+- **Confirmada** → Completada (solo cuando ya ha terminado: el panel no ofrece la opción antes y el dominio lo rechaza), Cancelada, No presentado (solo cuando ya ha empezado)
 
 Los estados Completada, Cancelada, No presentado, Rechazada y Caducada son finales.
 
@@ -230,7 +230,7 @@ El módulo registra la fuente `venue-bookings.booking` en el contrato de activid
 | Cuenta | Cada reserva en estado **Completada** (`completed`), con un hecho `booker` para quien reservó, en el momento en que terminó la reserva (día y hora de fin en la zona del local; al día siguiente si cruza la medianoche) |
 | No cuenta nunca | Pendiente, Confirmada (aunque ya haya pasado), Cancelada, Rechazada, No presentado y Caducada. Una confirmada ya pasada cuenta cuando se completa: el personal la completa o `venue-bookings:complete-past` lo hace solo con el ajuste de completado automático. Con ese ajuste desactivado, las confirmadas no se cuentan hasta que el personal las complete |
 | Quién reservó | El hecho lleva la cuenta de quien figura en la reserva (también cuando la creó el personal o salió de una propuesta de evento). Cuentas desactivadas conservan sus hechos; las anonimizadas las quita el core |
-| Descripción | `describe()` usa la política del módulo (`BookingPolicy::view`): quien reservó ve su reserva, con enlace a «Mis reservas»; quien puede listar todas en el panel (`bookings.view_any`) ve cualquiera, con enlace a su página en el panel; un invitado u otro miembro no ven ninguna. El título nombra el espacio y el día, nunca a la persona |
+| Descripción | `describe()` solo describe reservas completadas, con la política del módulo (`BookingPolicy::view`): quien reservó ve su reserva, con enlace a «Mis reservas»; quien puede listar todas en el panel (`bookings.view_any`) ve cualquiera, con enlace a su página en el panel; un invitado u otro miembro no ven ninguna. El título nombra el espacio y el día (`16/03/2026`, como en los correos), nunca a la persona |
 | Historial | `history()` pagina por id con un cursor opaco y como mucho 500 reservas por llamada, con los hechos ya incluidos en la misma consulta |
 
 ### Privacidad
@@ -239,7 +239,9 @@ Quién reservó **no** lo ve ningún otro miembro: el calendario público dice �
 
 ### Cuándo se avisa
 
-Cada cambio que toca los hechos de una reserva se publica con `ActivityRecorded` (el módulo de logros relee la reserva): pasar a completada o dejar de serlo, cambiar quién reservó, el día o las horas de una completada, borrarla, borrar su espacio (el borrado en cascada lo avisa antes de ir) o borrar la cuenta. Se escucha en los modelos, así que vale cualquier camino (panel, servicio, repositorio, tarea horaria). El borrado desde el repositorio pasa por el modelo para que se dispare el evento.
+Cada cambio que toca los hechos de una reserva se publica con `ActivityRecorded` (el módulo de logros relee la reserva): pasar a completada o dejar de serlo, cambiar quién reservó, el día o las horas de una completada, borrarla, borrar su espacio (el borrado en cascada lo avisa antes de ir) o borrar la cuenta. Se escucha en los modelos, así que vale cualquier camino (panel, servicio, repositorio, tarea horaria). El borrado desde los repositorios pasa por el modelo para que se dispare el evento (y olvide los avisos de la reserva). «Cambia el día o las horas» se compara por valor, no con `isDirty()`: PostgreSQL guarda las horas como `HH:MM:SS` y el modelo las lee como `HH:MM`.
+
+**Zona horaria del local.** El instante de cada hecho es el fin de la reserva leído en la zona del local (el ajuste *Zona horaria* o, si está vacío, la de visualización del sitio). Si se cambia esa zona, los instantes ya leídos no se mueven solos: **tras cambiarla, recalcula los logros** desde el módulo de logros. Solo cambia la hora de cada hecho, no cuántas reservas hay. No se republica automáticamente porque la zona de visualización se cambia en los ajustes del sitio, fuera de este módulo, y un aviso desde la página de ajustes del módulo no cubriría ese caso.
 
 No hay anunciador diario: nada pasa a completada solo por el paso del tiempo, es la tarea horaria la que escribe el estado y esa escritura es la que se avisa.
 

@@ -17,6 +17,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use Modules\VenueBookings\Application\Services\BookingMailSubjects;
 use Modules\VenueBookings\Filament\Resources\BookingResource;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookingModel;
 use Throwable;
@@ -109,7 +110,8 @@ final readonly class BookingActivitySource implements ActivitySourceInterface
     }
 
     /**
-     * With the module's own rule, `BookingPolicy::view()`: the person who booked sees their own
+     * Only bookings that count (completed), as the other sources do, and with the module's own
+     * rule, `BookingPolicy::view()`: the person who booked sees their own
      * booking, and whoever may list every booking in the panel sees any. A guest and any other
      * member see none, and no title ever names the person who booked.
      */
@@ -132,7 +134,7 @@ final readonly class BookingActivitySource implements ActivitySourceInterface
         $seesEvery = $gate->allows('viewAny', BookingModel::class);
         $described = [];
 
-        foreach (BookingModel::query()->with('resource:id,name')->whereIn('id', $ids)->get(['id', 'user_id', 'resource_id', 'date']) as $booking) {
+        foreach ($this->completed->query()->with('resource:id,name')->whereIn('id', $ids)->get(['id', 'user_id', 'resource_id', 'date']) as $booking) {
             if (! $gate->allows('view', $booking)) {
                 continue;
             }
@@ -141,7 +143,7 @@ final readonly class BookingActivitySource implements ActivitySourceInterface
                 $booking->id,
                 __('venue-bookings::messages.activity.booking_title', [
                     'resource' => $booking->resource->name,
-                    'date' => $booking->date->format('d/m/Y'),
+                    'date' => BookingMailSubjects::displayDate($booking->date->format('Y-m-d')),
                 ]),
                 $seesEvery ? $this->panelPath($booking) : route('bookings.my-bookings', [], false),
             );

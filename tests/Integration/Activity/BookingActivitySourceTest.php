@@ -326,6 +326,40 @@ final class BookingActivitySourceTest extends ActivitySourceTestCase
         $this->assertStringNotContainsString('Secreto', $title);
     }
 
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function bookingsThatAreNotDescribed(): array
+    {
+        return [
+            'pending' => ['pending'],
+            'confirmed' => ['confirmed'],
+            'cancelled' => ['cancelled'],
+        ];
+    }
+
+    #[DataProvider('bookingsThatAreNotDescribed')]
+    public function test_only_bookings_that_count_are_described(string $status): void
+    {
+        $owner = UserModel::factory()->create();
+        $this->makeBooking($status, $owner);
+        $booking = $this->makeBooking($status, $owner, date: '2026-11-12');
+        $staff = $this->editorWithPermissions(['venuebookings:bookings.view_any']);
+
+        $this->assertSame([], $this->activitySource()->describe([$booking->id], $owner));
+        $this->assertSame([], $this->activitySource()->describe([$booking->id], $staff));
+    }
+
+    public function test_the_day_in_the_title_is_written_the_way_the_module_writes_it_everywhere_else(): void
+    {
+        $owner = UserModel::factory()->create();
+        $booking = $this->makeBooking(user: $owner, date: '2026-03-16');
+
+        $title = $this->activitySource()->describe([$booking->id], $owner)[$booking->id]->title;
+
+        $this->assertSame('Reserva de Sala grande el 16/03/2026', $title);
+    }
+
     public function test_describe_answers_only_for_valid_ids_asked(): void
     {
         $booking = $this->makeBooking();

@@ -180,6 +180,18 @@ final class ActivityChangePublishingTest extends ModuleTestCase
         $this->assertNothingPublished();
     }
 
+    public function test_the_same_hours_stored_with_seconds_are_not_a_change(): void
+    {
+        $booking = $this->makeBooking('completed', start: '18:00', end: '20:00');
+        // PostgreSQL stores times with seconds while the model keeps `HH:MM`: the same hours read as changed there
+        DB::table('venuebookings_bookings')->where('id', $booking->id)->update(['start_time' => '18:00:00', 'end_time' => '20:00:00']);
+        $this->listen();
+
+        BookingModel::query()->findOrFail($booking->id)->update(['start_time' => '18:00', 'end_time' => '20:00', 'admin_notes' => 'Nota']);
+
+        $this->assertNothingPublished();
+    }
+
     public function test_a_completed_booking_deleted_is_published(): void
     {
         $booking = $this->makeBooking('completed');

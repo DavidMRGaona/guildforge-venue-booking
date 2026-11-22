@@ -136,6 +136,11 @@ final class BookingResource extends BaseResource
                                 continue;
                             }
 
+                            // Completed is final and counts as something that happened: only once it has ended
+                            if ($case === BookingStatus::Completed && ! $record->hasEnded()) {
+                                continue;
+                            }
+
                             // A no-show only makes sense once the booking has started
                             if ($case === BookingStatus::NoShow && ! $record->hasStarted()) {
                                 continue;
