@@ -19,9 +19,11 @@ interface BookingQueryServiceInterface
     public function getBookingsForDate(string $resourceId, string $date): array;
 
     /**
+     * The events never say who booked: with a viewer, each one only says whether it is theirs.
+     *
      * @return array<BookingCalendarEventDTO>
      */
-    public function getCalendarEvents(string $resourceId, string $fromDate, string $toDate): array;
+    public function getCalendarEvents(string $resourceId, string $fromDate, string $toDate, ?string $viewerId = null): array;
 
     /**
      * @return array<BookingListDTO>

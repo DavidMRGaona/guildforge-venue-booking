@@ -19,7 +19,6 @@ final readonly class BookingListDTO
         public string $endTime,
         public BookingStatus $status,
         public string $resourceName = '',
-        public string $userName = '',
         /** @var array<array{field_key: string, field_label: string, value: mixed, visibility: string}> */
         public array $fieldValues = [],
         public ?string $cancellationReason = null,
@@ -31,7 +30,6 @@ final readonly class BookingListDTO
         Booking $booking,
         bool $hasStarted,
         string $resourceName = '',
-        string $userName = '',
     ): self {
         return new self(
             id: $booking->id->value,
@@ -42,7 +40,6 @@ final readonly class BookingListDTO
             endTime: $booking->timeRange->endTime,
             status: $booking->status,
             resourceName: $resourceName,
-            userName: $userName,
             fieldValues: array_map(
                 fn (BookingFieldValue $fv): array => $fv->toArray(),
                 $booking->fieldValues,
@@ -61,8 +58,6 @@ final readonly class BookingListDTO
             'id' => $this->id,
             'resource_id' => $this->resourceId,
             'resource_name' => $this->resourceName,
-            'user_id' => $this->userId,
-            'user_name' => $this->userName,
             'date' => $this->date,
             'start_time' => $this->startTime,
             'end_time' => $this->endTime,

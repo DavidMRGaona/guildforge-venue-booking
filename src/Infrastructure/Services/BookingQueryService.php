@@ -56,7 +56,7 @@ final readonly class BookingQueryService implements BookingQueryServiceInterface
     /**
      * @return array<BookingCalendarEventDTO>
      */
-    public function getCalendarEvents(string $resourceId, string $fromDate, string $toDate): array
+    public function getCalendarEvents(string $resourceId, string $fromDate, string $toDate, ?string $viewerId = null): array
     {
         $bookings = $this->bookingRepository->getByResourceInDateRange(
             BookableResourceId::fromString($resourceId),
@@ -65,7 +65,7 @@ final readonly class BookingQueryService implements BookingQueryServiceInterface
         );
 
         return array_map(
-            fn (Booking $booking): BookingCalendarEventDTO => BookingCalendarEventDTO::fromEntity($booking),
+            fn (Booking $booking): BookingCalendarEventDTO => BookingCalendarEventDTO::fromEntity($booking, $viewerId),
             $bookings,
         );
     }

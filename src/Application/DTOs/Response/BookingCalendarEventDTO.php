@@ -17,23 +17,22 @@ final readonly class BookingCalendarEventDTO
         public string $color,
         public string $status,
         public string $statusLabel,
-        public ?string $userId = null,
+        // Whether the person looking booked it; the calendar never says who did
+        public bool $isMine = false,
     ) {}
 
-    public static function fromEntity(Booking $booking, string $userName = ''): self
+    public static function fromEntity(Booking $booking, ?string $viewerId = null): self
     {
-        $title = $userName !== '' ? $userName : __('venue-bookings::messages.calendar.reserved');
-
         return new self(
             id: $booking->id->value,
-            title: $title,
+            title: __('venue-bookings::messages.calendar.reserved'),
             start: $booking->date.'T'.$booking->timeRange->startTime,
             // A range that crosses midnight ends on the next day; times are wall clock, so UTC only picks the date
             end: $booking->endsAt(new DateTimeZone('UTC'))->format('Y-m-d').'T'.$booking->timeRange->endTime,
             color: $booking->status->calendarCssColor(),
             status: $booking->status->value,
             statusLabel: $booking->status->label(),
-            userId: $booking->userId,
+            isMine: $viewerId !== null && strtolower($viewerId) === strtolower($booking->userId),
         );
     }
 
@@ -50,7 +49,7 @@ final readonly class BookingCalendarEventDTO
             'color' => $this->color,
             'status' => $this->status,
             'status_label' => $this->statusLabel,
-            'user_id' => $this->userId,
+            'is_mine' => $this->isMine,
         ];
     }
 }
