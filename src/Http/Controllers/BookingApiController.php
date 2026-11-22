@@ -17,6 +17,7 @@ use Modules\VenueBookings\Application\Services\BookingQueryServiceInterface;
 use Modules\VenueBookings\Application\Services\ModuleIntegrationServiceInterface;
 use Modules\VenueBookings\Domain\Repositories\BookableResourceRepositoryInterface;
 use Modules\VenueBookings\Domain\ValueObjects\BookableResourceId;
+use Modules\VenueBookings\Domain\ValueObjects\BookingFieldConfig;
 
 final class BookingApiController extends Controller
 {
@@ -107,6 +108,7 @@ final class BookingApiController extends Controller
         $user = $request->user();
         // Who manages bookings sees who booked and the internal notes, whatever role grants it
         $canManage = $user !== null && $this->authorization->can($user, self::MANAGE_PERMISSION);
+        $isBooker = $user !== null && strtolower((string) $user->id) === strtolower($dto->userId);
 
         $resource = $this->resourceRepository->find(
             BookableResourceId::fromString($dto->resourceId),
@@ -136,15 +138,29 @@ final class BookingApiController extends Controller
             'status_label' => $dto->status->label(),
             'status_color' => $dto->status->color(),
             'field_values' => $filteredFieldValues,
-            'cancellation_reason' => $dto->cancellationReason,
         ];
 
-        if ($dto->gameTableId !== null) {
-            $data['game_table_name'] = $this->moduleIntegration->getGameTableName($dto->gameTableId);
+        // Free text written by whoever booked or by the team: only those two read it back
+        if ($canManage || $isBooker) {
+            $data['cancellation_reason'] = $dto->cancellationReason;
         }
 
-        if ($dto->campaignId !== null) {
-            $data['campaign_name'] = $this->moduleIntegration->getCampaignName($dto->campaignId);
+        // The association is named only when its setting shows it to this viewer (the field is
+        // among the visible ones) and the module that owns it shows the record to this viewer
+        $gameTableName = $dto->gameTableId !== null && in_array(BookingFieldConfig::GAME_TABLE_KEY, $visibleFieldKeys, true)
+            ? $this->moduleIntegration->getGameTableNameVisibleTo($dto->gameTableId, $user)
+            : null;
+
+        if ($gameTableName !== null) {
+            $data['game_table_name'] = $gameTableName;
+        }
+
+        $campaignName = $dto->campaignId !== null && in_array(BookingFieldConfig::CAMPAIGN_KEY, $visibleFieldKeys, true)
+            ? $this->moduleIntegration->getCampaignNameVisibleTo($dto->campaignId, $user)
+            : null;
+
+        if ($campaignName !== null) {
+            $data['campaign_name'] = $campaignName;
         }
 
         if ($canManage) {
