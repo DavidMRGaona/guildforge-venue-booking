@@ -153,6 +153,7 @@ return [
         'booking_no_show' => 'Reserva marcada como no presentado',
         'invalid_transition' => 'Transición de estado no permitida',
         'booking_not_started' => 'Solo se puede marcar como no presentada una reserva que ya ha empezado',
+        'booking_not_ended' => 'Solo se puede completar una reserva que ya ha terminado',
     ],
 
     // Why the panel refused to create or move a booking
@@ -394,6 +395,12 @@ return [
         'cancel_confirm_message' => 'Esta acción no se puede deshacer.',
         'cancel_confirm_button' => 'Sí, cancelar',
         'cancel_success' => 'Reserva cancelada correctamente.',
+    ],
+
+    // Activity contract (core#774): what the achievements module reads
+    'activity' => [
+        'booking_label' => 'Reservas del local',
+        'booking_title' => 'Reserva de :resource el :date',
     ],
 
     // Server-rendered page metadata (link previews and search engines)

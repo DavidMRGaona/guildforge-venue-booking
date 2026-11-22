@@ -57,8 +57,17 @@ final class Booking
         $this->cancellationReason = $reason;
     }
 
-    public function markCompleted(): void
+    /**
+     * A booking can only be completed once it has ended: $now is compared with the end read in the
+     * venue timezone the caller passes. Completed is final and counts as something that happened
+     * (the activity contract reads it), so it cannot be recorded ahead of time.
+     */
+    public function markCompleted(DateTimeImmutable $now, DateTimeZone $timezone): void
     {
+        if ($this->status->canTransitionTo(BookingStatus::Completed) && $now < $this->endsAt($timezone)) {
+            throw BookingNotEndedException::forSlot($this->date, $this->timeRange->endTime);
+        }
+
         $this->transitionTo(BookingStatus::Completed);
     }
 
@@ -112,11 +121,20 @@ final class Booking
      */
     public function endsAt(DateTimeZone $timezone): DateTimeImmutable
     {
-        $date = $this->timeRange->crossesMidnight()
-            ? (new DateTimeImmutable($this->date, new DateTimeZone('UTC')))->modify('+1 day')->format('Y-m-d')
-            : $this->date;
+        return self::endOf($this->date, $this->timeRange, $timezone);
+    }
 
-        return new DateTimeImmutable("{$date} {$this->timeRange->endTime}", $timezone);
+    /**
+     * The end of a booking that starts on $date (`Y-m-d`) in the given range, for callers that hold
+     * a stored row and not an entity (the activity source), so the rule is written once.
+     */
+    public static function endOf(string $date, TimeRange $timeRange, DateTimeZone $timezone): DateTimeImmutable
+    {
+        $endDate = $timeRange->crossesMidnight()
+            ? (new DateTimeImmutable($date, new DateTimeZone('UTC')))->modify('+1 day')->format('Y-m-d')
+            : $date;
+
+        return new DateTimeImmutable("{$endDate} {$timeRange->endTime}", $timezone);
     }
 
     /**

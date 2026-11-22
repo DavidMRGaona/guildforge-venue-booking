@@ -19,6 +19,12 @@ return [
         ],
     ],
 
+    // Activity contract (core#774): what the achievements module reads
+    'activity' => [
+        'booking_label' => 'Venue bookings',
+        'booking_title' => 'Booking of :resource on :date',
+    ],
+
     // The space booking an event proposal may ask for (core#581)
     'proposal_request' => [
         'label' => 'Space booking',
