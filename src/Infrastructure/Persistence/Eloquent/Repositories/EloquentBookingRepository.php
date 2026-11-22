@@ -51,7 +51,8 @@ final readonly class EloquentBookingRepository implements BookingRepositoryInter
     public function delete(BookingId $id): void
     {
         app(BookingNoticesForgetter::class)->forgetBooking($id->value);
-        BookingModel::query()->where('id', $id->value)->delete();
+        // Through the model, so its `deleted` event runs (a query delete fires none)
+        BookingModel::query()->find($id->value)?->delete();
     }
 
     /**

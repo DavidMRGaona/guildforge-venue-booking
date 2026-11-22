@@ -112,11 +112,20 @@ final class Booking
      */
     public function endsAt(DateTimeZone $timezone): DateTimeImmutable
     {
-        $date = $this->timeRange->crossesMidnight()
-            ? (new DateTimeImmutable($this->date, new DateTimeZone('UTC')))->modify('+1 day')->format('Y-m-d')
-            : $this->date;
+        return self::endOf($this->date, $this->timeRange, $timezone);
+    }
 
-        return new DateTimeImmutable("{$date} {$this->timeRange->endTime}", $timezone);
+    /**
+     * The end of a booking that starts on $date (`Y-m-d`) in the given range, for callers that hold
+     * a stored row and not an entity (the activity source), so the rule is written once.
+     */
+    public static function endOf(string $date, TimeRange $timeRange, DateTimeZone $timezone): DateTimeImmutable
+    {
+        $endDate = $timeRange->crossesMidnight()
+            ? (new DateTimeImmutable($date, new DateTimeZone('UTC')))->modify('+1 day')->format('Y-m-d')
+            : $date;
+
+        return new DateTimeImmutable("{$endDate} {$timeRange->endTime}", $timezone);
     }
 
     /**

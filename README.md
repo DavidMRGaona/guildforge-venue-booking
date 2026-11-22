@@ -16,13 +16,14 @@ Sistema de reservas del local para gestionar espacios y horarios, con calendario
 - **Peticiones en las propuestas de evento**: quien propone un evento desde la web puede pedir un espacio («¿Necesitas reservar un espacio?», con el espacio y una nota opcional). Al aprobar la propuesta se reserva a nombre de quien la propuso, enlazada al evento y **Confirmada** aunque el modo de aprobación pida aprobar las reservas, con el día y las horas del evento en la zona del local. Valen el horario del espacio, los solapes y su estado, no las reglas de la configuración. Solo para eventos de un día; si el espacio está ocupado, la franja no encaja o el evento dura más, la aprobación no sigue y el panel dice por qué
 - **Integración con módulos**: asociación de la reserva con una mesa de rol, una campaña o un torneo (configurable en el panel). En la web se elige entre las que se le ofrecen al usuario y se guarda su id; en el panel cada una tiene su propio selector
 - **Notificaciones por email**: creación, confirmación, cancelación, rechazo, cambio de espacio, fecha u horario desde el panel y recordatorio antes del inicio. Los mismos avisos salen en la campana de la web (centro de avisos del core): a quien reservó, con enlace a «Mis reservas», y a quien gestiona, un solo aviso agrupado de reservas nuevas mientras no se lea, con enlace a la reserva en el panel; se comprueba al entregarlos, y desaparecen si se borra la reserva
+- **Fuente de actividad**: cada reserva completada se ofrece, con quien reservó, al contrato de actividad del core (lo lee el módulo de logros), solo para contar (ver [Actividad para los logros](#actividad-para-los-logros))
 - **Panel de administración**: espacios, reservas, configuración y dos widgets para el escritorio
 - **Ayuda**: guías del sitio y del panel en la base de conocimiento, con el botón «?» en sus páginas
 - **Zonas horarias**: los instantes (confirmación, cancelación, recordatorio) se guardan en la zona de almacenamiento del sitio (UTC cuando el sitio lo usa) y se muestran en su zona de visualización (por defecto Europe/Madrid). El día, la hora de inicio y la de fin de cada reserva son la hora del local y no se convierten; la zona del local es el ajuste *Zona horaria* o, si está vacío, la de visualización del sitio
 
 ## Requisitos
 
-- GuildForge core `^3.74.0` (ajustes del módulo solo en su página del clúster «Configuración»; peticiones de módulos en las propuestas de evento; centro de avisos con `forgetActor()` al anonimizar; base de conocimiento con guías y botones con parámetros; almacenamiento de fechas en UTC y zona horaria de visualización; avisos solo a cargos activos)
+- GuildForge core `^3.86.0` (contrato de actividad para los logros; ajustes del módulo solo en su página del clúster «Configuración»; peticiones de módulos en las propuestas de evento; centro de avisos con `forgetActor()` al anonimizar; base de conocimiento con guías y botones con parámetros; almacenamiento de fechas en UTC y zona horaria de visualización; avisos solo a cargos activos)
 - PHP >= 8.5, Laravel >= 13, Filament 5
 
 El core rechaza el módulo si no se cumplen (`module.json` → `requires`).
@@ -220,6 +221,28 @@ Los dos widgets solo se muestran a quien puede ver el listado de reservas (`book
 
 `BookingReminder` está definido pero no se emite: el recordatorio se envía directamente como notificación.
 
+## Actividad para los logros
+
+El módulo registra la fuente `venue-bookings.booking` en el contrato de actividad del core (core#774, `registerActivitySources()`; por eso `requires.core` es `^3.86.0`). El módulo de logros la lee a través del core, sin depender de este.
+
+| Qué | Cómo |
+|-----|------|
+| Cuenta | Cada reserva en estado **Completada** (`completed`), con un hecho `booker` para quien reservó, en el momento en que terminó la reserva (día y hora de fin en la zona del local; al día siguiente si cruza la medianoche) |
+| No cuenta nunca | Pendiente, Confirmada (aunque ya haya pasado), Cancelada, Rechazada, No presentado y Caducada. Una confirmada ya pasada cuenta cuando se completa: el personal la completa o `venue-bookings:complete-past` lo hace solo con el ajuste de completado automático. Con ese ajuste desactivado, las confirmadas no se cuentan hasta que el personal las complete |
+| Quién reservó | El hecho lleva la cuenta de quien figura en la reserva (también cuando la creó el personal o salió de una propuesta de evento). Cuentas desactivadas conservan sus hechos; las anonimizadas las quita el core |
+| Descripción | `describe()` usa la política del módulo (`BookingPolicy::view`): quien reservó ve su reserva, con enlace a «Mis reservas»; quien puede listar todas en el panel (`bookings.view_any`) ve cualquiera, con enlace a su página en el panel; un invitado u otro miembro no ven ninguna. El título nombra el espacio y el día, nunca a la persona |
+| Historial | `history()` pagina por id con un cursor opaco y como mucho 500 reservas por llamada, con los hechos ya incluidos en la misma consulta |
+
+### Privacidad
+
+Quién reservó **no** lo ve ningún otro miembro: el calendario público dice «Reservado», el detalle nombra a la persona solo con `bookings.manage` y `/perfil` solo lista las reservas propias. Por eso la fuente es una **excepción aceptada «solo en totales»**, igual que la de quienes juegan o asisten: quien la consuma solo debe mostrar totales («8 reservas») y nunca nombrar una reserva concreta ante alguien a quien `describe()` no se la mostraría. Cada persona puede ocultar sus logros.
+
+### Cuándo se avisa
+
+Cada cambio que toca los hechos de una reserva se publica con `ActivityRecorded` (el módulo de logros relee la reserva): pasar a completada o dejar de serlo, cambiar quién reservó, el día o las horas de una completada, borrarla, borrar su espacio (el borrado en cascada lo avisa antes de ir) o borrar la cuenta. Se escucha en los modelos, así que vale cualquier camino (panel, servicio, repositorio, tarea horaria). El borrado desde el repositorio pasa por el modelo para que se dispare el evento.
+
+No hay anunciador diario: nada pasa a completada solo por el paso del tiempo, es la tarea horaria la que escribe el estado y esa escritura es la que se avisa.
+
 ## Permisos
 
 Los administradores tienen todos los permisos. La columna **Rol sugerido** indica a quién propone el módulo cada permiso; ninguno va a `editor`, que es el rol de contenido: se dan a los roles de función que cree la asociación (por ejemplo, gestión del local). El único que el módulo concede por su cuenta es `bookings.cancel_own` al rol `member` (ver abajo).
@@ -303,6 +326,7 @@ src/modules/venue-bookings/
 │   │   ├── Controllers/       # Controladores
 │   │   └── Requests/          # Form Requests
 │   ├── Infrastructure/
+│   │   ├── Activity/          # Fuente de actividad de los logros y su publicación de cambios
 │   │   ├── Listeners/         # Listeners de eventos (notificaciones)
 │   │   ├── Persistence/       # Modelos y repositorios Eloquent
 │   │   └── Services/          # Implementaciones de servicios

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings;
 
+use App\Application\Activity\Contracts\ActivitySourceInterface;
 use App\Application\Authorization\Services\AuthorizationServiceInterface;
 use App\Application\Knowledge\Contracts\KnowledgeCapabilityInterface;
 use App\Application\Mail\DTOs\MailCategoryDTO;
@@ -14,6 +15,7 @@ use App\Application\Modules\DTOs\PermissionDTO;
 use App\Application\Modules\DTOs\SlotRegistrationDTO;
 use App\Application\Proposals\Contracts\EventProposalRequestInterface;
 use App\Filament\Support\PanelNavigationGroup;
+use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use App\Modules\ModuleServiceProvider;
 use Filament\Pages\Page;
 use Filament\Resources\Resource as FilamentResource;
@@ -45,6 +47,8 @@ use Modules\VenueBookings\Filament\Resources\BookableResourceResource;
 use Modules\VenueBookings\Filament\Resources\BookingResource;
 use Modules\VenueBookings\Filament\Widgets\TodayBookingsWidget;
 use Modules\VenueBookings\Filament\Widgets\UpcomingBookingsWidget;
+use Modules\VenueBookings\Infrastructure\Activity\AnnouncesActivityChanges;
+use Modules\VenueBookings\Infrastructure\Activity\BookingActivitySource;
 use Modules\VenueBookings\Infrastructure\Knowledge\CancelsOwnBookingsCapability;
 use Modules\VenueBookings\Infrastructure\Listeners\NotifyMemberOnBookingReceived;
 use Modules\VenueBookings\Infrastructure\Listeners\NotifyOnBookingCancelled;
@@ -69,6 +73,7 @@ use Modules\VenueBookings\Infrastructure\Services\ProfileBookingsDataProvider;
 use Modules\VenueBookings\Infrastructure\Services\SlotAvailabilityService;
 use Modules\VenueBookings\Policies\BookableResourcePolicy;
 use Modules\VenueBookings\Policies\BookingPolicy;
+use WeakMap;
 
 final class VenueBookingsServiceProvider extends ModuleServiceProvider
 {
@@ -113,6 +118,7 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
         parent::boot();
 
         $this->registerEventListeners();
+        $this->registerActivityPublishing();
         $this->registerCommands();
         $this->registerSchedule();
         $this->shareProfileBookings();
@@ -149,6 +155,51 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
             BookingMoved::class,
             [NotifyOnBookingMoved::class, 'handle']
         );
+    }
+
+    /**
+     * What changes the facts of a booking is published again for the activity contract. Bookings
+     * are saved from many places (panel, repository, service, the hourly task), so this listens to
+     * the models. A space and an account take their bookings with them through the database, so
+     * their completed bookings are asked before and published after.
+     */
+    private function registerActivityPublishing(): void
+    {
+        BookingModel::saved(fn (BookingModel $booking) => $this->app->make(AnnouncesActivityChanges::class)->bookingSaved($booking));
+        BookingModel::deleted(fn (BookingModel $booking) => $this->app->make(AnnouncesActivityChanges::class)->bookingDeleted($booking));
+
+        /** @var WeakMap<BookableResourceModel, list<string>> $ofSpaces */
+        $ofSpaces = new WeakMap;
+        BookableResourceModel::deleting(function (BookableResourceModel $space) use ($ofSpaces): void {
+            $ofSpaces[$space] = $this->app->make(AnnouncesActivityChanges::class)->completedIdsOfSpace($space);
+        });
+        BookableResourceModel::deleted(function (BookableResourceModel $space) use ($ofSpaces): void {
+            $bookingIds = $ofSpaces[$space] ?? [];
+            unset($ofSpaces[$space]);
+            $this->app->make(AnnouncesActivityChanges::class)->removed($bookingIds);
+        });
+
+        /** @var WeakMap<UserModel, list<string>> $ofAccounts */
+        $ofAccounts = new WeakMap;
+        UserModel::forceDeleting(function (UserModel $user) use ($ofAccounts): void {
+            $ofAccounts[$user] = $this->app->make(AnnouncesActivityChanges::class)->completedIdsOfAccount($user);
+        });
+        UserModel::forceDeleted(function (UserModel $user) use ($ofAccounts): void {
+            $bookingIds = $ofAccounts[$user] ?? [];
+            unset($ofAccounts[$user]);
+            $this->app->make(AnnouncesActivityChanges::class)->removed($bookingIds);
+        });
+    }
+
+    /**
+     * «Reservas del local»: the bookings that were completed and who made them (core >= 3.86,
+     * core#774).
+     *
+     * @return array<class-string<ActivitySourceInterface>>
+     */
+    public function registerActivitySources(): array
+    {
+        return [BookingActivitySource::class];
     }
 
     private function registerCommands(): void

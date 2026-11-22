@@ -396,6 +396,12 @@ return [
         'cancel_success' => 'Reserva cancelada correctamente.',
     ],
 
+    // Activity contract (core#774): what the achievements module reads
+    'activity' => [
+        'booking_label' => 'Reservas del local',
+        'booking_title' => 'Reserva de :resource el :date',
+    ],
+
     // Server-rendered page metadata (link previews and search engines)
     'seo' => [
         'calendar_title' => 'Reservas del local',

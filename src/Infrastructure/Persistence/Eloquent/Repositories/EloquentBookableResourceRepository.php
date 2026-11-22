@@ -44,7 +44,8 @@ final readonly class EloquentBookableResourceRepository implements BookableResou
     public function delete(BookableResourceId $id): void
     {
         app(BookingNoticesForgetter::class)->forgetBookingsOfResource($id->value);
-        BookableResourceModel::query()->where('id', $id->value)->delete();
+        // Through the model, so its `deleting` and `deleted` events run (a query delete fires none)
+        BookableResourceModel::query()->find($id->value)?->delete();
     }
 
     /**
