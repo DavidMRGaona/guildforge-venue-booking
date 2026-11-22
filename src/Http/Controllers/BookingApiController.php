@@ -108,7 +108,7 @@ final class BookingApiController extends Controller
         $user = $request->user();
         // Who manages bookings sees who booked and the internal notes, whatever role grants it
         $canManage = $user !== null && $this->authorization->can($user, self::MANAGE_PERMISSION);
-        $isBooker = $user !== null && (string) $user->id === $dto->userId;
+        $isBooker = $user !== null && strtolower((string) $user->id) === strtolower($dto->userId);
 
         $resource = $this->resourceRepository->find(
             BookableResourceId::fromString($dto->resourceId),

@@ -188,8 +188,8 @@ El detalle de una reserva (`/reservas/api/bookings/{booking}`) es público, porq
 
 | Dato | Quién lo ve |
 |------|-------------|
-| Espacio, fecha, hora, estado y campos con visibilidad «Público» | Cualquiera, con o sin sesión; los demás campos siguen su visibilidad |
-| `game_table_name` y `campaign_name` | Solo si el ajuste `associations.game_tables_visibility` / `campaigns_visibility` lo permite a quien mira (la misma visibilidad que el campo del formulario, con la asociación activada) **y** el módulo de mesas muestra esa mesa o campaña a esa persona, por el contrato de actividad del core. Una mesa o campaña en borrador o privada no se nombra nunca; si el módulo no responde, tampoco |
+| Espacio, fecha, hora, estado y campos con visibilidad «Público» | Cualquiera, con o sin sesión; los demás campos siguen su visibilidad. **Ojo:** un campo como `contact_phone` o `notes` configurado como «Público» sale a los invitados en `field_values`; déjalo en «Autenticado» o «Con permiso» si no debe verlo cualquiera |
+| `game_table_name` y `campaign_name` | Solo si el ajuste `associations.game_tables_visibility` / `campaigns_visibility` lo permite a quien mira (la misma visibilidad que el campo del formulario, con la asociación activada) **y** el módulo de mesas muestra esa mesa o campaña a esa persona, por el contrato de actividad del core. Una mesa o campaña en borrador o privada no se nombra nunca; si el módulo no responde, tampoco. **Necesita game-tables 2.47.0 o posterior**, que es cuando salieron sus fuentes de actividad: con una versión anterior el lector responde «no existe» y los nombres desaparecen para todo el mundo, también para el equipo; con game-tables deshabilitado tampoco salen |
 | `cancellation_reason` (motivo de cancelación o rechazo, texto libre) | Quien reservó y `bookings.manage` |
 | `user_name` y `admin_notes` | Solo `bookings.manage` |
 

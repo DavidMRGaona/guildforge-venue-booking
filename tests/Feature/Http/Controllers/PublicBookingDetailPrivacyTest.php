@@ -216,6 +216,34 @@ final class PublicBookingDetailPrivacyTest extends ModuleTestCase
         $response->assertJsonMissingPath('game_table_name')->assertJsonMissingPath('campaign_name');
     }
 
+    #[DataProvider('everyViewer')]
+    public function test_nothing_is_named_and_the_module_is_not_asked_while_game_tables_is_disabled(string $viewer): void
+    {
+        $modules = $this->createStub(ModuleContextServiceInterface::class);
+        $modules->method('isEnabled')->willReturnCallback(fn (string $name): bool => $name === 'venue-bookings');
+        $this->app->instance(ModuleContextServiceInterface::class, $modules);
+
+        $booking = $this->booking(['game_table_id' => self::TABLE_ID, 'campaign_id' => self::CAMPAIGN_ID]);
+        $this->actAs($viewer);
+
+        $response = $this->detail($booking)->assertOk();
+
+        $response->assertJsonMissingPath('game_table_name')->assertJsonMissingPath('campaign_name');
+        $this->assertSame([], $this->describedTypes);
+    }
+
+    public function test_a_reader_that_throws_gives_no_name_and_does_not_break_the_detail(): void
+    {
+        $reader = $this->createStub(ActivityReaderInterface::class);
+        $reader->method('describe')->willThrowException(new \RuntimeException('Reader unavailable'));
+        $this->app->instance(ActivityReaderInterface::class, $reader);
+
+        $response = $this->detail($this->booking(['game_table_id' => self::TABLE_ID, 'campaign_id' => self::CAMPAIGN_ID]))->assertOk();
+
+        $response->assertJsonMissingPath('game_table_name')->assertJsonMissingPath('campaign_name');
+        $this->assertStringNotContainsString('Reader unavailable', (string) $response->getContent());
+    }
+
     /**
      * @return iterable<string, array{string}>
      */
