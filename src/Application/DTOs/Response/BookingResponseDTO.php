@@ -67,6 +67,10 @@ final readonly class BookingResponseDTO
     }
 
     /**
+     * What an answer meant for any viewer may carry: nothing about who booked, no internal notes and
+     * no cancellation reason (free text from the person or the team). The team's own answers add
+     * those with toStaffArray().
+     *
      * @return array<string, mixed>
      */
     public function toArray(): array
@@ -77,8 +81,6 @@ final readonly class BookingResponseDTO
             'id' => $this->id,
             'resource_id' => $this->resourceId,
             'resource_name' => $this->resourceName,
-            'user_id' => $this->userId,
-            'user_name' => $this->userName,
             'date' => $this->date,
             'start_time' => $this->startTime,
             'end_time' => $this->endTime,
@@ -91,10 +93,25 @@ final readonly class BookingResponseDTO
             'game_table_id' => $this->gameTableId,
             'tournament_id' => $this->tournamentId,
             'campaign_id' => $this->campaignId,
-            'cancellation_reason' => $this->cancellationReason,
-            'admin_notes' => $this->adminNotes,
             'confirmed_at' => $timezone->iso($this->confirmedAt),
             'cancelled_at' => $timezone->iso($this->cancelledAt),
+        ];
+    }
+
+    /**
+     * Only for the booking team (bookings.manage): who booked, the internal notes and the
+     * cancellation reason on top of toArray(). Never hand it to a public or member answer.
+     *
+     * @return array<string, mixed>
+     */
+    public function toStaffArray(): array
+    {
+        return [
+            ...$this->toArray(),
+            'user_id' => $this->userId,
+            'user_name' => $this->userName,
+            'cancellation_reason' => $this->cancellationReason,
+            'admin_notes' => $this->adminNotes,
         ];
     }
 }

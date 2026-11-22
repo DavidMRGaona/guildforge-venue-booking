@@ -184,6 +184,17 @@ Los dos widgets solo se muestran a quien puede ver el listado de reservas (`book
 
 Quién hizo una reserva solo lo ven el equipo y la propia persona. Ninguna respuesta de la web lleva el id, el nombre ni el correo de quien reservó: cada franja del calendario se titula «Reservado» y trae `is_mine`, que solo es verdadero para quien la hizo. «Mis reservas» y la pestaña del perfil tampoco llevan el id de la cuenta. El nombre de quien reservó solo sale en el detalle (`/reservas/api/bookings/{booking}`) para `bookings.manage`.
 
+El detalle de una reserva (`/reservas/api/bookings/{booking}`) es público, porque el calendario da el id de cada franja, y lo que lleva se decide en el servidor:
+
+| Dato | Quién lo ve |
+|------|-------------|
+| Espacio, fecha, hora, estado y campos con visibilidad «Público» | Cualquiera, con o sin sesión; los demás campos siguen su visibilidad |
+| `game_table_name` y `campaign_name` | Solo si el ajuste `associations.game_tables_visibility` / `campaigns_visibility` lo permite a quien mira (la misma visibilidad que el campo del formulario, con la asociación activada) **y** el módulo de mesas muestra esa mesa o campaña a esa persona, por el contrato de actividad del core. Una mesa o campaña en borrador o privada no se nombra nunca; si el módulo no responde, tampoco |
+| `cancellation_reason` (motivo de cancelación o rechazo, texto libre) | Quien reservó y `bookings.manage` |
+| `user_name` y `admin_notes` | Solo `bookings.manage` |
+
+La respuesta nunca lleva `user_id`. `BookingResponseDTO::toArray()` tampoco lleva quién reservó, las notas internas ni el motivo; `toStaffArray()` los añade y solo es para el equipo.
+
 ## Componentes Vue
 
 ### Componentes

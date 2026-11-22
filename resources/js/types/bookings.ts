@@ -112,7 +112,8 @@ export interface BookingDetail {
         value: string | number | boolean | null;
         visibility: string;
     }>;
-    cancellation_reason: string | null;
+    /** Only for whoever booked and the booking team */
+    cancellation_reason?: string | null;
     game_table_name?: string | null;
     campaign_name?: string | null;
     user_name?: string;

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Infrastructure\Services;
 
+use App\Application\Activity\Services\ActivityReaderInterface;
 use App\Application\Services\TimezoneServiceInterface;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Log;
 use Modules\GameTables\Application\DTOs\CampaignResponseDTO;
 use Modules\GameTables\Application\DTOs\GameTableListDTO;
@@ -21,6 +23,11 @@ use Modules\VenueBookings\Application\Services\ModuleIntegrationServiceInterface
  */
 final readonly class ModuleIntegrationService implements ModuleIntegrationServiceInterface
 {
+    /** Activity source types of game-tables (a table, whatever its kind, is a «session») */
+    private const string GAME_TABLE_SOURCE = 'game-tables.session';
+
+    private const string CAMPAIGN_SOURCE = 'game-tables.campaign';
+
     public function isGameTablesModuleAvailable(): bool
     {
         return function_exists('module_enabled') && module_enabled('game-tables');
@@ -150,37 +157,33 @@ final readonly class ModuleIntegrationService implements ModuleIntegrationServic
         }
     }
 
-    public function getGameTableName(string $id): ?string
+    public function getGameTableNameVisibleTo(string $id, ?Authenticatable $viewer): ?string
     {
-        if (! $this->isGameTablesModuleAvailable()) {
-            return null;
-        }
-
-        try {
-            $model = app(GameTableModel::class); // @phpstan-ignore class.notFound (game-tables is optional)
-            $table = $model->newQuery()->find($id); // @phpstan-ignore class.notFound (game-tables is optional)
-
-            return $table?->title;
-        } catch (\Throwable $e) {
-            $this->logFailure(__FUNCTION__, $e);
-
-            return null;
-        }
+        return $this->titleVisibleTo(self::GAME_TABLE_SOURCE, $id, $viewer, __FUNCTION__);
     }
 
-    public function getCampaignName(string $id): ?string
+    public function getCampaignNameVisibleTo(string $id, ?Authenticatable $viewer): ?string
+    {
+        return $this->titleVisibleTo(self::CAMPAIGN_SOURCE, $id, $viewer, __FUNCTION__);
+    }
+
+    /**
+     * Asks the module that owns the record, through the core's activity reader, how it shows the
+     * record to this viewer: it answers with its own access rule (published, not private), so
+     * nothing here reads the module's tables. Whatever is not a clear answer is no name.
+     */
+    private function titleVisibleTo(string $sourceType, string $id, ?Authenticatable $viewer, string $method): ?string
     {
         if (! $this->isGameTablesModuleAvailable()) {
             return null;
         }
 
         try {
-            $model = app(CampaignModel::class); // @phpstan-ignore class.notFound (game-tables is optional)
-            $campaign = $model->newQuery()->find($id); // @phpstan-ignore class.notFound (game-tables is optional)
+            $described = app(ActivityReaderInterface::class)->describe($sourceType, [$id], $viewer);
 
-            return $campaign?->title;
+            return $described->isRead() ? $described->find(strtolower($id))?->title : null;
         } catch (\Throwable $e) {
-            $this->logFailure(__FUNCTION__, $e);
+            $this->logFailure($method, $e);
 
             return null;
         }

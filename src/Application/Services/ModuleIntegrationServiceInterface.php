@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Application\Services;
 
+use Illuminate\Contracts\Auth\Authenticatable;
+
 interface ModuleIntegrationServiceInterface
 {
     public function isGameTablesModuleAvailable(): bool;
@@ -35,7 +37,14 @@ interface ModuleIntegrationServiceInterface
      */
     public function getUserCampaigns(string $userId): array;
 
-    public function getGameTableName(string $id): ?string;
+    /**
+     * The title of a game table, only when the game-tables module shows it to this viewer (through
+     * the core's activity contract): a draft, a private or an unknown one has no name.
+     */
+    public function getGameTableNameVisibleTo(string $id, ?Authenticatable $viewer): ?string;
 
-    public function getCampaignName(string $id): ?string;
+    /**
+     * The title of a campaign, under the same rule as getGameTableNameVisibleTo().
+     */
+    public function getCampaignNameVisibleTo(string $id, ?Authenticatable $viewer): ?string;
 }
