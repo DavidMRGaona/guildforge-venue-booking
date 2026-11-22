@@ -181,6 +181,8 @@ Los dos widgets solo se muestran a quien puede ver el listado de reservas (`book
 | `GET` | `/reservas/mis-reservas` | Mis reservas (auth) |
 | `DELETE` | `/reservas/{booking}` | Cancelar una reserva (auth; propia con `bookings.cancel_own` o cualquiera con `bookings.cancel_any`) |
 
+Quién hizo una reserva solo lo ven el equipo y la propia persona. Ninguna respuesta de la web lleva el id, el nombre ni el correo de quien reservó: cada franja del calendario se titula «Reservado» y trae `is_mine`, que solo es verdadero para quien la hizo. «Mis reservas» y la pestaña del perfil tampoco llevan el id de la cuenta. El nombre de quien reservó solo sale en el detalle (`/reservas/api/bookings/{booking}`) para `bookings.manage`.
+
 ## Componentes Vue
 
 ### Componentes

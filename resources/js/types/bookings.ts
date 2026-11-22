@@ -19,8 +19,6 @@ export interface BookingListItem {
     id: string;
     resource_id: string;
     resource_name: string;
-    user_id: string;
-    user_name: string;
     date: string;
     start_time: string;
     end_time: string;
@@ -54,7 +52,8 @@ export interface BookingCalendarEvent {
     color: string;
     status: string;
     status_label: string;
-    user_id: string | null;
+    /** Whether the person looking booked it; who booked is never sent. */
+    is_mine: boolean;
 }
 
 export interface BookingTooltipData {

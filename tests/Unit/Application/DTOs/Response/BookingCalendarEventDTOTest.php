@@ -37,6 +37,19 @@ final class BookingCalendarEventDTOTest extends TestCase
         $this->assertSame('2027-01-01T02:00', $dto->end);
     }
 
+    public function test_it_only_says_whether_the_viewer_booked_it(): void
+    {
+        $booking = $this->createBooking('2026-10-22', '14:00', '20:00');
+
+        $this->assertFalse(BookingCalendarEventDTO::fromEntity($booking)->isMine);
+        $this->assertFalse(BookingCalendarEventDTO::fromEntity($booking, Uuid::uuid4()->toString())->isMine);
+        $this->assertTrue(BookingCalendarEventDTO::fromEntity($booking, strtoupper($booking->userId))->isMine);
+        $this->assertSame(
+            ['id', 'title', 'start', 'end', 'color', 'status', 'status_label', 'is_mine'],
+            array_keys(BookingCalendarEventDTO::fromEntity($booking, $booking->userId)->toArray()),
+        );
+    }
+
     private function createBooking(string $date, string $startTime, string $endTime): Booking
     {
         return new Booking(

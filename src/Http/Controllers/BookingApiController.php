@@ -76,10 +76,14 @@ final class BookingApiController extends Controller
             'end' => ['required', 'date'],
         ]);
 
+        /** @var UserModel|null $user */
+        $user = $request->user();
+
         $events = $this->queryService->getCalendarEvents(
             $request->query('resource_id'),
             $request->query('start'),
             $request->query('end'),
+            $user !== null ? (string) $user->id : null,
         );
 
         return response()->json(

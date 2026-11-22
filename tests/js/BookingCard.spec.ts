@@ -20,8 +20,6 @@ function booking(): BookingListItem {
         id: 'booking-1',
         resource_id: 'resource-1',
         resource_name: 'Mesa grande',
-        user_id: 'user-1',
-        user_name: 'Ana',
         date: '2026-11-07',
         start_time: '17:00:00',
         end_time: '21:00:00',
