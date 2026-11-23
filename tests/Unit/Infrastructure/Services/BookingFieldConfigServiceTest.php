@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\VenueBookings\Tests\Unit\Infrastructure\Services;
 
 use App\Application\Authorization\Services\AuthorizationServiceInterface;
+use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Modules\VenueBookings\Application\Services\ModuleIntegrationServiceInterface;
 use Modules\VenueBookings\Domain\Entities\BookableResource;
 use Modules\VenueBookings\Domain\Enums\BookableResourceStatus;
@@ -214,16 +215,69 @@ final class BookingFieldConfigServiceTest extends TestCase
 
         $integration = $this->createStub(ModuleIntegrationServiceInterface::class);
         $integration->method('isGameTablesModuleAvailable')->willReturn(true);
-        $integration->method('getAvailableGameTables')->willReturn([['id' => 'table-1', 'label' => 'Kill Team, liga']]);
-        $integration->method('getAvailableCampaigns')->willReturn([['id' => 'campaign-1', 'label' => 'La maldición de Strahd']]);
+        $integration->method('offersGameTables')->willReturn(true);
+        $integration->method('offersCampaigns')->willReturn(true);
+        $integration->method('getUserGameTables')->willReturn([['id' => 'table-1', 'label' => 'Kill Team, liga']]);
+        $integration->method('getUserCampaigns')->willReturn([['id' => 'campaign-1', 'label' => 'La maldición de Strahd']]);
         $this->resourceRepository->method('find')->willReturn(null);
         $service = new BookingFieldConfigService($integration, $this->resourceRepository, app(AuthorizationServiceInterface::class));
+        $member = new UserModel;
+        $member->id = 'aaaaaaaa-0000-7000-8000-000000000001';
 
-        $fields = $service->getEnabledFields($this->resourceId);
+        $fields = $service->getEnabledFields($this->resourceId, $member);
 
         $this->assertSame(['game_table_id', 'campaign_id'], array_map(fn ($field): string => $field->key, $fields));
         $this->assertSame([['value' => 'table-1', 'label' => 'Kill Team, liga']], $fields[0]->options);
         $this->assertSame([['value' => 'campaign-1', 'label' => 'La maldición de Strahd']], $fields[1]->options);
+        // A visitor cannot book: nothing is listed for them
+        $this->assertSame([[], []], array_map(fn ($field): ?array => $field->options, $service->getEnabledFields($this->resourceId)));
+    }
+
+    public function test_the_visible_field_keys_follow_the_visible_fields_without_listing_any_option(): void
+    {
+        config()->set('modules.settings.venue-bookings.associations.game_tables_enabled', true);
+        config()->set('modules.settings.venue-bookings.associations.game_tables_visibility', 'public');
+        config()->set('modules.settings.venue-bookings.associations.campaigns_enabled', true);
+        config()->set('modules.settings.venue-bookings.associations.campaigns_visibility', 'authenticated');
+        $this->mockResourceWithFieldConfig([
+            'predefined_fields' => [
+                'activity_name' => ['enabled' => true, 'required' => true, 'visibility' => 'public'],
+                'notes' => ['enabled' => true, 'required' => false, 'visibility' => 'authenticated'],
+            ],
+            'custom_fields' => [],
+        ]);
+
+        $integration = $this->createMock(ModuleIntegrationServiceInterface::class);
+        $integration->method('isGameTablesModuleAvailable')->willReturn(true);
+        $integration->method('offersGameTables')->willReturn(true);
+        $integration->method('offersCampaigns')->willReturn(true);
+        $integration->method('isTournamentsModuleAvailable')->willReturn(false);
+        foreach (['getAvailableGameTables', 'getAvailableCampaigns', 'getAvailableTournaments', 'getUserGameTables', 'getUserCampaigns'] as $listing) {
+            $integration->expects($this->never())->method($listing);
+        }
+        $service = new BookingFieldConfigService($integration, $this->resourceRepository, app(AuthorizationServiceInterface::class));
+
+        $this->assertSame(['activity_name', 'game_table_id'], $service->getVisibleFieldKeys($this->resourceId, null));
+    }
+
+    public function test_a_required_association_nobody_offers_is_no_field(): void
+    {
+        // game-tables disabled, or older than its linkable records: decided by the type
+        config()->set('modules.settings.venue-bookings.associations.game_tables_enabled', true);
+        config()->set('modules.settings.venue-bookings.associations.game_tables_required', true);
+        config()->set('modules.settings.venue-bookings.associations.campaigns_enabled', true);
+        config()->set('modules.settings.venue-bookings.associations.campaigns_required', true);
+        config()->set('modules.settings.venue-bookings.predefined_fields', []);
+        config()->set('modules.settings.venue-bookings.custom_fields', []);
+        $integration = $this->createStub(ModuleIntegrationServiceInterface::class);
+        $integration->method('isGameTablesModuleAvailable')->willReturn(true);
+        $integration->method('offersGameTables')->willReturn(false);
+        $integration->method('offersCampaigns')->willReturn(false);
+        $this->resourceRepository->method('find')->willReturn(null);
+        $service = new BookingFieldConfigService($integration, $this->resourceRepository, app(AuthorizationServiceInterface::class));
+
+        $this->assertSame([], $service->getEnabledFields($this->resourceId));
+        $this->assertSame([], $service->getValidationRules($this->resourceId, null));
     }
 
     public function test_the_capacity_of_the_space_caps_the_number_of_participants(): void

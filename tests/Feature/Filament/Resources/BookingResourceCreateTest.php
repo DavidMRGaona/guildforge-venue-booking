@@ -7,6 +7,7 @@ namespace Modules\VenueBookings\Tests\Feature\Filament\Resources;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Carbon\CarbonImmutable;
 use Closure;
+use Filament\Forms\Components\Select;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
@@ -246,8 +247,12 @@ final class BookingResourceCreateTest extends ModuleTestCase
         $tournamentId = (string) Str::uuid();
         $integration = $this->createStub(ModuleIntegrationServiceInterface::class);
         $integration->method('isGameTablesModuleAvailable')->willReturn(true);
+        $integration->method('offersGameTables')->willReturn(true);
+        $integration->method('offersCampaigns')->willReturn(true);
         $integration->method('getAvailableGameTables')->willReturn([['id' => $tableId, 'label' => 'La tumba de los horrores']]);
         $integration->method('getAvailableCampaigns')->willReturn([['id' => $campaignId, 'label' => 'La maldición de Strahd']]);
+        $integration->method('getGameTableLabel')->willReturnCallback(fn (string $id): ?string => $id === $tableId ? 'La tumba de los horrores' : null);
+        $integration->method('getCampaignLabel')->willReturnCallback(fn (string $id): ?string => $id === $campaignId ? 'La maldición de Strahd' : null);
         $integration->method('isTournamentsModuleAvailable')->willReturn(true);
         $integration->method('getAvailableTournaments')->willReturn([['id' => $tournamentId, 'label' => 'Torneo de primavera']]);
         $this->app->instance(ModuleIntegrationServiceInterface::class, $integration);
@@ -270,6 +275,56 @@ final class BookingResourceCreateTest extends ModuleTestCase
         $this->assertSame($campaignId, $booking->campaign_id);
         $this->assertSame($tournamentId, $booking->tournament_id);
         $this->assertSame([], $booking->field_values ?? []);
+    }
+
+    public function test_a_table_beyond_the_ones_offered_is_searched_on_the_server_and_chosen(): void
+    {
+        config()->set('modules.settings.venue-bookings.associations.game_tables_enabled', true);
+
+        $rare = (string) Str::uuid();
+        $first = array_map(static fn (int $index): array => ['id' => (string) Str::uuid(), 'label' => "Mesa {$index}"], range(1, 50));
+        $integration = $this->createStub(ModuleIntegrationServiceInterface::class);
+        $integration->method('offersGameTables')->willReturn(true);
+        $integration->method('getAvailableGameTables')->willReturnCallback(
+            static fn (mixed $viewer = null, string $query = ''): array => $query === 'rara' ? [['id' => $rare, 'label' => 'La mesa rara']] : $first,
+        );
+        $integration->method('getGameTableLabel')->willReturnCallback(static fn (string $id): ?string => $id === $rare ? 'La mesa rara' : null);
+        $this->app->instance(ModuleIntegrationServiceInterface::class, $integration);
+        $this->actingAs($this->admin);
+
+        Livewire::test(CreateBooking::class)
+            ->assertFormFieldExists('game_table_id', checkFieldUsing: static fn (Select $field): bool => ! array_key_exists($rare, $field->getOptions())
+                && $field->getSearchResults('rara') === [$rare => 'La mesa rara']
+                && $field->getOptionLabel() === null)
+            ->fillForm($this->formFor('2026-03-16', '10:00', '12:00') + ['game_table_id' => $rare])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame($rare, BookingModel::query()->sole()->game_table_id);
+    }
+
+    public function test_a_game_table_or_campaign_the_team_may_not_see_is_refused(): void
+    {
+        config()->set('modules.settings.venue-bookings.associations.game_tables_enabled', true);
+        config()->set('modules.settings.venue-bookings.associations.campaigns_enabled', true);
+
+        // A forged id, or one the lookup does not show this person (a draft, another module's)
+        $integration = $this->createStub(ModuleIntegrationServiceInterface::class);
+        $integration->method('isGameTablesModuleAvailable')->willReturn(true);
+        $integration->method('offersGameTables')->willReturn(true);
+        $integration->method('offersCampaigns')->willReturn(true);
+        $integration->method('getGameTableLabel')->willReturn(null);
+        $integration->method('getCampaignLabel')->willReturn(null);
+        $this->app->instance(ModuleIntegrationServiceInterface::class, $integration);
+
+        $this->actingAs($this->admin);
+
+        Livewire::test(CreateBooking::class)
+            ->fillForm($this->formFor('2026-03-16', '10:00', '12:00') + ['game_table_id' => (string) Str::uuid(), 'campaign_id' => (string) Str::uuid()])
+            ->call('create')
+            ->assertHasFormErrors(['game_table_id', 'campaign_id']);
+
+        $this->assertSame(0, BookingModel::query()->count());
     }
 
     public function test_the_number_of_participants_cannot_exceed_the_capacity_of_the_space(): void

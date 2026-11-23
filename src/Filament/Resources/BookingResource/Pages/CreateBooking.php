@@ -47,7 +47,7 @@ final class CreateBooking extends CreateRecord
         $flatValues = $data['field_values'] ?? [];
         $resourceId = $data['resource_id'] ?? '';
         $fieldConfigService = app(BookingFieldConfigServiceInterface::class);
-        $configs = $fieldConfigService->getEnabledFields($resourceId);
+        $configs = $fieldConfigService->getFieldsWithoutOptions($resourceId);
         $configsByKey = [];
         foreach ($configs as $config) {
             $configsByKey[$config->key] = $config;

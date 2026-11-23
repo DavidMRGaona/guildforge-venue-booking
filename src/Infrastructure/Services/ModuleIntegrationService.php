@@ -5,32 +5,61 @@ declare(strict_types=1);
 namespace Modules\VenueBookings\Infrastructure\Services;
 
 use App\Application\Activity\Services\ActivityReaderInterface;
-use App\Application\Services\TimezoneServiceInterface;
+use App\Application\Linking\Contracts\LinkableRecordSourceInterface;
+use App\Application\Linking\DTOs\LinkableRecordDTO;
+use App\Application\Linking\Services\LinkableRecordLookupInterface;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Log;
-use Modules\GameTables\Application\DTOs\CampaignResponseDTO;
-use Modules\GameTables\Application\DTOs\GameTableListDTO;
-use Modules\GameTables\Application\Services\CampaignQueryServiceInterface;
-use Modules\GameTables\Application\Services\GameTableQueryServiceInterface;
-use Modules\GameTables\Infrastructure\Persistence\Eloquent\Models\CampaignModel;
-use Modules\GameTables\Infrastructure\Persistence\Eloquent\Models\GameTableModel;
 use Modules\VenueBookings\Application\Services\ModuleIntegrationServiceInterface;
 
 /**
- * Optional integration with game-tables: every call checks the module is enabled first.
- * Its classes are absent when this module is analysed on its own (the CI's quality job),
- * hence the class.notFound ignores on the lines that use them.
+ * Optional integration with game-tables, only through the core's contracts: the linkable record
+ * lookup offers and checks the tables and campaigns (types `game-table` and `campaign`), the
+ * activity reader names them on the public detail. Both fail closed, so with game-tables
+ * disabled, missing or failing nothing is offered and nothing is named.
+ *
+ * Bound scoped: the types offered and what each person organizes are read once per request or
+ * job (the booking form asks for every space, and saving builds the fields twice).
  */
-final readonly class ModuleIntegrationService implements ModuleIntegrationServiceInterface
+final class ModuleIntegrationService implements ModuleIntegrationServiceInterface
 {
+    /** Linkable record types game-tables offers */
+    private const string GAME_TABLE_TYPE = 'game-table';
+
+    private const string CAMPAIGN_TYPE = 'campaign';
+
     /** Activity source types of game-tables (a table, whatever its kind, is a «session») */
     private const string GAME_TABLE_SOURCE = 'game-tables.session';
 
     private const string CAMPAIGN_SOURCE = 'game-tables.campaign';
 
+    /** How many tables or campaigns a select offers at most */
+    private const int OFFERED = LinkableRecordLookupInterface::MAX_SEARCH_LIMIT;
+
+    /** @var array<string, string>|null Linkable record types offered right now, read once */
+    private ?array $types = null;
+
+    /** @var array<string, list<array{id: string, label: string}>> What each person organizes, by type and account */
+    private array $organized = [];
+
+    public function __construct(
+        private readonly LinkableRecordLookupInterface $linkableRecords,
+        private readonly ActivityReaderInterface $activity,
+    ) {}
+
     public function isGameTablesModuleAvailable(): bool
     {
         return function_exists('module_enabled') && module_enabled('game-tables');
+    }
+
+    public function offersGameTables(): bool
+    {
+        return $this->offers(self::GAME_TABLE_TYPE);
+    }
+
+    public function offersCampaigns(): bool
+    {
+        return $this->offers(self::CAMPAIGN_TYPE);
     }
 
     public function isTournamentsModuleAvailable(): bool
@@ -38,36 +67,13 @@ final readonly class ModuleIntegrationService implements ModuleIntegrationServic
         return function_exists('module_enabled') && module_enabled('tournaments');
     }
 
-    /**
-     * @return array<array{id: string, label: string}>
-     */
-    public function getAvailableGameTables(): array
+    public function getAvailableGameTables(?Authenticatable $viewer = null, string $query = ''): array
     {
-        if (! $this->isGameTablesModuleAvailable()) {
-            return [];
-        }
-
-        try {
-            $timezone = app(TimezoneServiceInterface::class);
-            $queryService = app(GameTableQueryServiceInterface::class); // @phpstan-ignore class.notFound (game-tables is optional)
-            $tables = $queryService->getUpcomingTables( // @phpstan-ignore class.notFound (game-tables is optional)
-                new \DateTimeImmutable,
-                $timezone->toDisplay(new \DateTimeImmutable)->modify('+30 days'),
-            );
-
-            return array_map(fn (GameTableListDTO $table): array => [ // @phpstan-ignore class.notFound (game-tables is optional)
-                'id' => $table->id, // @phpstan-ignore class.notFound (game-tables is optional)
-                'label' => $table->title, // @phpstan-ignore class.notFound (game-tables is optional)
-            ], $tables);
-        } catch (\Throwable $e) {
-            $this->logFailure(__FUNCTION__, $e);
-
-            return [];
-        }
+        return $this->search(self::GAME_TABLE_TYPE, $query, $viewer);
     }
 
     /**
-     * @return array<array{id: string, label: string}>
+     * @return list<array{id: string, label: string}>
      */
     public function getAvailableTournaments(): array
     {
@@ -79,82 +85,29 @@ final readonly class ModuleIntegrationService implements ModuleIntegrationServic
         return [];
     }
 
-    /**
-     * @return array<array{id: string, label: string}>
-     */
-    public function getAvailableCampaigns(): array
+    public function getAvailableCampaigns(?Authenticatable $viewer = null, string $query = ''): array
     {
-        if (! $this->isGameTablesModuleAvailable()) {
-            return [];
-        }
-
-        try {
-            $queryService = app(CampaignQueryServiceInterface::class); // @phpstan-ignore class.notFound (game-tables is optional)
-            $campaigns = $queryService->getPublishedCampaignsPaginated(1, 100); // @phpstan-ignore class.notFound (game-tables is optional)
-
-            return array_map(fn (CampaignResponseDTO $c): array => [ // @phpstan-ignore class.notFound (game-tables is optional)
-                'id' => $c->id, // @phpstan-ignore class.notFound (game-tables is optional)
-                'label' => $c->title, // @phpstan-ignore class.notFound (game-tables is optional)
-            ], $campaigns);
-        } catch (\Throwable $e) {
-            $this->logFailure(__FUNCTION__, $e);
-
-            return [];
-        }
+        return $this->search(self::CAMPAIGN_TYPE, $query, $viewer);
     }
 
-    /**
-     * @return array<array{id: string, label: string}>
-     */
-    public function getUserGameTables(string $userId): array
+    public function getUserGameTables(Authenticatable $organizer): array
     {
-        if (! $this->isGameTablesModuleAvailable()) {
-            return [];
-        }
-
-        try {
-            $model = app(GameTableModel::class); // @phpstan-ignore class.notFound (game-tables is optional)
-
-            return $model->newQuery() // @phpstan-ignore class.notFound (game-tables is optional)
-                ->where('created_by', $userId)
-                ->where('is_published', true)
-                ->orderByDesc('created_at')
-                ->limit(50)
-                ->get()
-                ->map(fn ($t): array => ['id' => $t->id, 'label' => $t->title])
-                ->all();
-        } catch (\Throwable $e) {
-            $this->logFailure(__FUNCTION__, $e);
-
-            return [];
-        }
+        return $this->organizedBy(self::GAME_TABLE_TYPE, $organizer);
     }
 
-    /**
-     * @return array<array{id: string, label: string}>
-     */
-    public function getUserCampaigns(string $userId): array
+    public function getUserCampaigns(Authenticatable $organizer): array
     {
-        if (! $this->isGameTablesModuleAvailable()) {
-            return [];
-        }
+        return $this->organizedBy(self::CAMPAIGN_TYPE, $organizer);
+    }
 
-        try {
-            $model = app(CampaignModel::class); // @phpstan-ignore class.notFound (game-tables is optional)
+    public function getGameTableLabel(string $id, ?Authenticatable $viewer): ?string
+    {
+        return $this->label(self::GAME_TABLE_TYPE, $id, $viewer);
+    }
 
-            return $model->newQuery() // @phpstan-ignore class.notFound (game-tables is optional)
-                ->where('created_by', $userId)
-                ->where('is_published', true)
-                ->orderByDesc('created_at')
-                ->limit(50)
-                ->get()
-                ->map(fn ($c): array => ['id' => $c->id, 'label' => $c->title])
-                ->all();
-        } catch (\Throwable $e) {
-            $this->logFailure(__FUNCTION__, $e);
-
-            return [];
-        }
+    public function getCampaignLabel(string $id, ?Authenticatable $viewer): ?string
+    {
+        return $this->label(self::CAMPAIGN_TYPE, $id, $viewer);
     }
 
     public function getGameTableNameVisibleTo(string $id, ?Authenticatable $viewer): ?string
@@ -165,6 +118,67 @@ final readonly class ModuleIntegrationService implements ModuleIntegrationServic
     public function getCampaignNameVisibleTo(string $id, ?Authenticatable $viewer): ?string
     {
         return $this->titleVisibleTo(self::CAMPAIGN_SOURCE, $id, $viewer, __FUNCTION__);
+    }
+
+    /**
+     * @return list<array{id: string, label: string}>
+     */
+    private function search(string $type, string $query, ?Authenticatable $viewer): array
+    {
+        if (! $this->offers($type)) {
+            return [];
+        }
+
+        return $this->options($this->linkableRecords->search($type, $query, $this->viewerId($viewer), self::OFFERED));
+    }
+
+    /**
+     * @return list<array{id: string, label: string}>
+     */
+    private function organizedBy(string $type, Authenticatable $organizer): array
+    {
+        if (! $this->offers($type)) {
+            return [];
+        }
+
+        $key = $type.'|'.$this->viewerId($organizer);
+
+        return $this->organized[$key] ??= $this->options($this->linkableRecords->organizedBy($type, $organizer, self::OFFERED));
+    }
+
+    private function label(string $type, string $id, ?Authenticatable $viewer): ?string
+    {
+        if (! $this->offers($type)) {
+            return null;
+        }
+
+        return $this->linkableRecords->find($type, $id, $this->viewerId($viewer))?->title;
+    }
+
+    /**
+     * @param  list<LinkableRecordDTO>  $records
+     * @return list<array{id: string, label: string}>
+     */
+    private function options(array $records): array
+    {
+        return array_map(
+            static fn (LinkableRecordDTO $record): array => ['id' => $record->id, 'label' => $record->title],
+            $records,
+        );
+    }
+
+    private function offers(string $type): bool
+    {
+        $this->types ??= $this->linkableRecords->types();
+
+        return isset($this->types[$type]);
+    }
+
+    private function viewerId(?Authenticatable $viewer): string
+    {
+        $id = $viewer?->getAuthIdentifier();
+
+        return is_string($id) ? $id : LinkableRecordSourceInterface::VISITOR;
     }
 
     /**
@@ -179,25 +193,16 @@ final readonly class ModuleIntegrationService implements ModuleIntegrationServic
         }
 
         try {
-            $described = app(ActivityReaderInterface::class)->describe($sourceType, [$id], $viewer);
+            $described = $this->activity->describe($sourceType, [$id], $viewer);
 
             return $described->isRead() ? $described->find(strtolower($id))?->title : null;
         } catch (\Throwable $e) {
-            $this->logFailure($method, $e);
+            Log::warning("[venue-bookings] game-tables integration failed in {$method}", [
+                'exception' => $e::class,
+                'message' => $e->getMessage(),
+            ]);
 
             return null;
         }
-    }
-
-    /**
-     * A failure leaves the selector empty, so it is logged: a change in game-tables would
-     * otherwise go unnoticed.
-     */
-    private function logFailure(string $method, \Throwable $e): void
-    {
-        Log::warning("[venue-bookings] game-tables integration failed in {$method}", [
-            'exception' => $e::class,
-            'message' => $e->getMessage(),
-        ]);
     }
 }

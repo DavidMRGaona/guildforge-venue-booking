@@ -34,13 +34,15 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
      */
     public function getEnabledFields(string $resourceId, ?UserModel $user = null): array
     {
-        $resource = $this->findResource($resourceId);
-        $config = $resource->fieldConfig ?? $this->getDefaultFieldConfig();
+        return $this->fieldsFor($resourceId, $user, withOptions: true);
+    }
 
-        $fields = $this->getPredefinedFieldsForConfig($config, $resource?->capacity);
-        $fields = array_merge($fields, $this->getCustomFieldsForConfig($config));
-
-        return array_merge($fields, $this->getAssociationFields($user));
+    /**
+     * @return array<BookingFieldConfig>
+     */
+    public function getFieldsWithoutOptions(string $resourceId): array
+    {
+        return $this->fieldsFor($resourceId, null, withOptions: false);
     }
 
     /**
@@ -48,12 +50,18 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
      */
     public function getVisibleFields(string $resourceId, ?UserModel $user): array
     {
-        $fields = $this->getEnabledFields($resourceId, $user);
+        return $this->onlyVisibleTo($this->getEnabledFields($resourceId, $user), $user);
+    }
 
-        return array_values(array_filter(
-            $fields,
-            fn (BookingFieldConfig $field): bool => $this->isVisibleToUser($field, $user),
-        ));
+    /**
+     * @return list<string>
+     */
+    public function getVisibleFieldKeys(string $resourceId, ?UserModel $user): array
+    {
+        return array_map(
+            static fn (BookingFieldConfig $field): string => $field->key,
+            $this->onlyVisibleTo($this->fieldsFor($resourceId, $user, withOptions: false), $user),
+        );
     }
 
     /**
@@ -86,77 +94,7 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
      */
     public function getAssociationFields(?UserModel $user = null): array
     {
-        $fields = [];
-
-        if ($this->moduleIntegration->isGameTablesModuleAvailable()) {
-            $enabled = (bool) $this->settings->get('associations.game_tables_enabled');
-
-            if ($enabled) {
-                $visibility = FieldVisibility::from(
-                    (string) $this->settings->get('associations.game_tables_visibility'),
-                );
-                $required = (bool) $this->settings->get('associations.game_tables_required');
-
-                $gameTables = $user instanceof UserModel
-                    ? $this->moduleIntegration->getUserGameTables((string) $user->id)
-                    : $this->moduleIntegration->getAvailableGameTables();
-
-                $fields[] = new BookingFieldConfig(
-                    key: BookingFieldConfig::GAME_TABLE_KEY,
-                    label: __('venue-bookings::messages.fields.game_table'),
-                    type: BookingFieldType::Select->value,
-                    required: $required,
-                    visibility: $visibility->value,
-                    options: $this->associationOptions($gameTables),
-                );
-            }
-        }
-
-        if ($this->moduleIntegration->isGameTablesModuleAvailable()) {
-            $enabled = (bool) $this->settings->get('associations.campaigns_enabled');
-
-            if ($enabled) {
-                $visibility = FieldVisibility::from(
-                    (string) $this->settings->get('associations.campaigns_visibility'),
-                );
-                $required = (bool) $this->settings->get('associations.campaigns_required');
-
-                $campaigns = $user instanceof UserModel
-                    ? $this->moduleIntegration->getUserCampaigns((string) $user->id)
-                    : $this->moduleIntegration->getAvailableCampaigns();
-
-                $fields[] = new BookingFieldConfig(
-                    key: BookingFieldConfig::CAMPAIGN_KEY,
-                    label: __('venue-bookings::messages.fields.campaign'),
-                    type: BookingFieldType::Select->value,
-                    required: $required,
-                    visibility: $visibility->value,
-                    options: $this->associationOptions($campaigns),
-                );
-            }
-        }
-
-        if ($this->moduleIntegration->isTournamentsModuleAvailable()) {
-            $enabled = (bool) $this->settings->get('associations.tournaments_enabled');
-
-            if ($enabled) {
-                $visibility = FieldVisibility::from(
-                    (string) $this->settings->get('associations.tournaments_visibility'),
-                );
-                $required = (bool) $this->settings->get('associations.tournaments_required');
-
-                $fields[] = new BookingFieldConfig(
-                    key: BookingFieldConfig::TOURNAMENT_KEY,
-                    label: __('venue-bookings::messages.fields.tournament'),
-                    type: BookingFieldType::Select->value,
-                    required: $required,
-                    visibility: $visibility->value,
-                    options: $this->associationOptions($this->moduleIntegration->getAvailableTournaments()),
-                );
-            }
-        }
-
-        return $fields;
+        return $this->associationFields($user, withOptions: true);
     }
 
     public function getDefaultFieldConfig(): ResourceFieldConfig
@@ -165,6 +103,80 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
         $customFields = (array) $this->settings->get('custom_fields');
 
         return ResourceFieldConfig::fromGlobalConfig($predefinedFields, $customFields);
+    }
+
+    /**
+     * The resource's fields plus the associations on offer. Without options an association
+     * field carries none: deciding what is shown needs only the settings, never the lists
+     * of game tables or campaigns.
+     *
+     * @return array<BookingFieldConfig>
+     */
+    private function fieldsFor(string $resourceId, ?UserModel $user, bool $withOptions): array
+    {
+        $resource = $this->findResource($resourceId);
+        $config = $resource->fieldConfig ?? $this->getDefaultFieldConfig();
+
+        return [
+            ...$this->getPredefinedFieldsForConfig($config, $resource?->capacity),
+            ...$this->getCustomFieldsForConfig($config),
+            ...$this->associationFields($user, $withOptions),
+        ];
+    }
+
+    /**
+     * @param  array<BookingFieldConfig>  $fields
+     * @return list<BookingFieldConfig>
+     */
+    private function onlyVisibleTo(array $fields, ?UserModel $user): array
+    {
+        return array_values(array_filter(
+            $fields,
+            fn (BookingFieldConfig $field): bool => $this->isVisibleToUser($field, $user),
+        ));
+    }
+
+    /**
+     * Every association turned on in the settings that some module offers right now (decided by
+     * the linkable record type, so a required one never blocks bookings when nobody offers it),
+     * in a fixed order. Its options are only listed when asked for: a signed-in user is offered
+     * the game tables and campaigns they organize, and nothing else (the validation rules are
+     * built from these very options, so a forged id is refused when saving); a visitor, none.
+     *
+     * @return list<BookingFieldConfig>
+     */
+    private function associationFields(?UserModel $user, bool $withOptions): array
+    {
+        // A visitor cannot book: the select is drawn, but nothing is listed for them
+        $associations = [
+            [BookingFieldConfig::GAME_TABLE_KEY, 'game_tables', 'game_table', $this->moduleIntegration->offersGameTables(), fn (): array => $user instanceof UserModel
+                ? $this->moduleIntegration->getUserGameTables($user)
+                : []],
+            [BookingFieldConfig::CAMPAIGN_KEY, 'campaigns', 'campaign', $this->moduleIntegration->offersCampaigns(), fn (): array => $user instanceof UserModel
+                ? $this->moduleIntegration->getUserCampaigns($user)
+                : []],
+            [BookingFieldConfig::TOURNAMENT_KEY, 'tournaments', 'tournament', $this->moduleIntegration->isTournamentsModuleAvailable(),
+                $this->moduleIntegration->getAvailableTournaments(...)],
+        ];
+
+        $fields = [];
+
+        foreach ($associations as [$key, $setting, $label, $available, $options]) {
+            if (! $available || ! (bool) $this->settings->get("associations.{$setting}_enabled")) {
+                continue;
+            }
+
+            $fields[] = new BookingFieldConfig(
+                key: $key,
+                label: __("venue-bookings::messages.fields.{$label}"),
+                type: BookingFieldType::Select->value,
+                required: (bool) $this->settings->get("associations.{$setting}_required"),
+                visibility: FieldVisibility::from((string) $this->settings->get("associations.{$setting}_visibility"))->value,
+                options: $withOptions ? $this->associationOptions($options()) : null,
+            );
+        }
+
+        return $fields;
     }
 
     private function findResource(string $resourceId): ?BookableResource

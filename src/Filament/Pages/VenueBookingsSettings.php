@@ -276,7 +276,7 @@ final class VenueBookingsSettings extends Page implements HasForms
                 ])
                 ->columns(2)
                 ->collapsible()
-                ->visible(fn (): bool => app(ModuleIntegrationServiceInterface::class)->isGameTablesModuleAvailable()),
+                ->visible(fn (): bool => app(ModuleIntegrationServiceInterface::class)->offersGameTables() || app(ModuleIntegrationServiceInterface::class)->offersCampaigns()),
         ];
     }
 

@@ -96,7 +96,7 @@ final class EditBooking extends EditRecord
         /** @var BookingModel $record */
         $record = $this->record;
         $fieldConfigService = app(BookingFieldConfigServiceInterface::class);
-        $configs = $fieldConfigService->getEnabledFields($record->resource_id);
+        $configs = $fieldConfigService->getFieldsWithoutOptions($record->resource_id);
         $configsByKey = [];
         foreach ($configs as $config) {
             $configsByKey[$config->key] = $config;

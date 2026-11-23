@@ -115,10 +115,7 @@ final class BookingApiController extends Controller
         );
         $resourceName = $resource->name ?? '';
 
-        $visibleFieldKeys = array_column(
-            $this->fieldConfigService->getVisibleFields($dto->resourceId, $user),
-            'key',
-        );
+        $visibleFieldKeys = $this->fieldConfigService->getVisibleFieldKeys($dto->resourceId, $user);
 
         $associationKeys = ['game_table_id', 'campaign_id', 'tournament_id'];
 

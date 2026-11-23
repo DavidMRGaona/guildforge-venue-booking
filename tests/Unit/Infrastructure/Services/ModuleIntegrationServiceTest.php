@@ -4,64 +4,148 @@ declare(strict_types=1);
 
 namespace Modules\VenueBookings\Tests\Unit\Infrastructure\Services;
 
+use App\Application\Activity\Services\ActivityReaderInterface;
+use App\Application\Linking\Contracts\LinkableRecordSourceInterface;
+use App\Application\Linking\DTOs\LinkableRecordDTO;
+use App\Application\Linking\Services\LinkableRecordLookupInterface;
 use App\Application\Modules\Services\ModuleContextServiceInterface;
-use Modules\GameTables\Application\DTOs\GameTableListDTO;
-use Modules\GameTables\Application\Services\GameTableQueryServiceInterface;
-use Modules\GameTables\Domain\Enums\TableFormat;
-use Modules\GameTables\Domain\Enums\TableStatus;
-use Modules\GameTables\Domain\Enums\TableType;
+use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Modules\VenueBookings\Infrastructure\Services\ModuleIntegrationService;
+use PHPUnit\Framework\MockObject\MockObject;
 use Tests\TestCase;
 
+/**
+ * Game tables and campaigns are read only through the core's linkable record lookup (types
+ * `game-table` and `campaign`): nothing here knows the game-tables module's classes.
+ */
 final class ModuleIntegrationServiceTest extends TestCase
 {
-    public function test_available_game_tables_lists_the_upcoming_tables(): void
+    private const string VIEWER = '0199f0a0-0000-7000-8000-0000000000aa';
+
+    private LinkableRecordLookupInterface&MockObject $lookup;
+
+    protected function setUp(): void
     {
-        // The game-tables module is optional: it is not installed next to this one in CI
-        if (! interface_exists(GameTableQueryServiceInterface::class)) {
-            $this->markTestSkipped('The game-tables module is not installed.');
-        }
+        parent::setUp();
 
-        $modules = $this->createStub(ModuleContextServiceInterface::class);
-        $modules->method('isEnabled')->willReturnCallback(fn (string $name): bool => $name === 'game-tables');
-        $this->app->instance(ModuleContextServiceInterface::class, $modules);
-
-        $queryService = $this->createStub(GameTableQueryServiceInterface::class);
-        $queryService->method('getUpcomingTables')->willReturn([
-            $this->gameTable('table-1', 'La tumba de los horrores'),
-            $this->gameTable('table-2', 'Kill Team'),
-        ]);
-        $this->app->instance(GameTableQueryServiceInterface::class, $queryService);
-
-        $this->assertSame([
-            ['id' => 'table-1', 'label' => 'La tumba de los horrores'],
-            ['id' => 'table-2', 'label' => 'Kill Team'],
-        ], (new ModuleIntegrationService)->getAvailableGameTables());
+        $this->enableGameTables(true);
+        $this->lookup = $this->createMock(LinkableRecordLookupInterface::class);
     }
 
-    private function gameTable(string $id, string $title): GameTableListDTO // @phpstan-ignore class.notFound (game-tables is optional)
+    /**
+     * @param  array<string, string>  $types
+     */
+    private function offering(array $types = ['game-table' => 'Mesa de rol', 'campaign' => 'Campaña']): void
     {
-        return new GameTableListDTO( // @phpstan-ignore class.notFound (game-tables is optional)
-            id: $id,
-            title: $title,
-            slug: null,
-            gameSystemName: 'D&D 5e',
-            startsAt: null,
-            durationMinutes: 180,
-            tableFormat: TableFormat::cases()[0], // @phpstan-ignore class.notFound (game-tables is optional)
-            tableType: TableType::cases()[0], // @phpstan-ignore class.notFound (game-tables is optional)
-            status: TableStatus::cases()[0], // @phpstan-ignore class.notFound (game-tables is optional)
-            location: null,
-            onlineUrl: null,
-            minPlayers: 2,
-            maxPlayers: 5,
-            currentPlayers: 0,
-            isPublished: true,
-            creatorName: 'John Doe',
-            mainGameMasterName: 'John Doe',
-            eventId: null,
-            eventTitle: null,
-            imagePublicId: null,
+        $this->lookup->method('types')->willReturn($types);
+    }
+
+    public function test_the_team_is_offered_the_tables_and_campaigns_it_may_see(): void
+    {
+        $this->offering();
+        $viewer = $this->account(self::VIEWER);
+        $this->lookup->expects($this->exactly(2))->method('search')->willReturnCallback(
+            fn (string $type, string $query, string $viewerId, int $limit): array => match ([$type, $query, $viewerId, $limit]) {
+                ['game-table', 'tumba', self::VIEWER, LinkableRecordLookupInterface::MAX_SEARCH_LIMIT] => [$this->record('game-table', 'table-1', 'La tumba de los horrores')],
+                ['campaign', '', self::VIEWER, LinkableRecordLookupInterface::MAX_SEARCH_LIMIT] => [$this->record('campaign', 'campaign-1', 'La maldición de Strahd')],
+                default => $this->fail("Unexpected search for {$type}"),
+            },
         );
+
+        $this->assertSame([['id' => 'table-1', 'label' => 'La tumba de los horrores']], $this->service()->getAvailableGameTables($viewer, 'tumba'));
+        $this->assertSame([['id' => 'campaign-1', 'label' => 'La maldición de Strahd']], $this->service()->getAvailableCampaigns($viewer));
+    }
+
+    public function test_a_visitor_is_asked_for_as_one(): void
+    {
+        $this->offering();
+        $this->lookup->expects($this->once())->method('search')
+            ->with('game-table', '', LinkableRecordSourceInterface::VISITOR, LinkableRecordLookupInterface::MAX_SEARCH_LIMIT)
+            ->willReturn([]);
+
+        $this->assertSame([], $this->service()->getAvailableGameTables());
+    }
+
+    public function test_a_person_is_offered_only_what_they_organize_asked_with_their_own_account(): void
+    {
+        $this->offering();
+        $organizer = $this->account(self::VIEWER);
+        $this->lookup->expects($this->exactly(2))->method('organizedBy')->willReturnCallback(
+            fn (string $type, UserModel $who, int $limit): array => $who === $organizer && $limit === LinkableRecordLookupInterface::MAX_SEARCH_LIMIT
+                ? [$this->record($type, "{$type}-mine", "Lo mío ({$type})")]
+                : $this->fail('Asked about another account'),
+        );
+        $this->lookup->expects($this->never())->method('search');
+
+        $this->assertSame([['id' => 'game-table-mine', 'label' => 'Lo mío (game-table)']], $this->service()->getUserGameTables($organizer));
+        $this->assertSame([['id' => 'campaign-mine', 'label' => 'Lo mío (campaign)']], $this->service()->getUserCampaigns($organizer));
+    }
+
+    public function test_a_chosen_table_or_campaign_is_named_as_the_viewer_may_see_it(): void
+    {
+        $this->offering();
+        $this->lookup->expects($this->exactly(4))->method('find')->willReturnCallback(
+            fn (string $type, string $id, string $viewerId): ?LinkableRecordDTO => $viewerId === self::VIEWER && $id === 'seen'
+                ? $this->record($type, $id, "Título de {$type}")
+                : null,
+        );
+
+        $this->assertSame('Título de game-table', $this->service()->getGameTableLabel('seen', $this->account(self::VIEWER)));
+        $this->assertSame('Título de campaign', $this->service()->getCampaignLabel('seen', $this->account(self::VIEWER)));
+        $this->assertNull($this->service()->getGameTableLabel('seen', null));
+        $this->assertNull($this->service()->getCampaignLabel('hidden', $this->account(self::VIEWER)));
+    }
+
+    public function test_nothing_is_listed_while_nobody_offers_the_types(): void
+    {
+        // game-tables disabled or older than its linkable records: decided by the type
+        $this->lookup->expects($this->once())->method('types')->willReturn(['event' => 'Evento']);
+        $this->lookup->expects($this->never())->method('search');
+        $this->lookup->expects($this->never())->method('organizedBy');
+        $this->lookup->expects($this->never())->method('find');
+        $service = $this->service();
+
+        $this->assertFalse($service->offersGameTables());
+        $this->assertFalse($service->offersCampaigns());
+        $this->assertSame([], $service->getAvailableGameTables($this->account(self::VIEWER)));
+        $this->assertSame([], $service->getUserCampaigns($this->account(self::VIEWER)));
+        $this->assertNull($service->getGameTableLabel('any', null));
+    }
+
+    public function test_what_a_person_organizes_is_asked_once_per_request(): void
+    {
+        $this->lookup->expects($this->once())->method('types')->willReturn(['game-table' => 'Mesa de rol']);
+        $this->lookup->expects($this->once())->method('organizedBy')->willReturn([$this->record('game-table', 'mine', 'Mi mesa')]);
+        $organizer = $this->account(self::VIEWER);
+        $service = $this->service();
+
+        $service->getUserGameTables($organizer);
+
+        $this->assertSame([['id' => 'mine', 'label' => 'Mi mesa']], $service->getUserGameTables($organizer));
+    }
+
+    private function service(): ModuleIntegrationService
+    {
+        return new ModuleIntegrationService($this->lookup, $this->createStub(ActivityReaderInterface::class));
+    }
+
+    private function enableGameTables(bool $enabled): void
+    {
+        $modules = $this->createStub(ModuleContextServiceInterface::class);
+        $modules->method('isEnabled')->willReturnCallback(fn (string $name): bool => $enabled && $name === 'game-tables');
+        $this->app->instance(ModuleContextServiceInterface::class, $modules);
+    }
+
+    private function account(string $id): UserModel
+    {
+        $account = new UserModel;
+        $account->id = $id;
+
+        return $account;
+    }
+
+    private function record(string $type, string $id, string $title): LinkableRecordDTO
+    {
+        return new LinkableRecordDTO(type: $type, id: $id, title: $title);
     }
 }

@@ -7,6 +7,7 @@ namespace Modules\VenueBookings\Tests\Feature\Http\Controllers;
 use App\Application\Activity\DTOs\ActivityDescriptionsResultDTO;
 use App\Application\Activity\DTOs\ActivitySubjectDTO;
 use App\Application\Activity\Services\ActivityReaderInterface;
+use App\Application\Linking\Services\LinkableRecordLookupInterface;
 use App\Application\Modules\Services\ModuleContextServiceInterface;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -76,6 +77,11 @@ final class PublicBookingDetailPrivacyTest extends ModuleTestCase
             'game-tables.session' => [self::TABLE_ID => self::TABLE_TITLE],
             'game-tables.campaign' => [self::CAMPAIGN_ID => self::CAMPAIGN_TITLE],
         ]));
+
+        // game-tables offers its tables and campaigns as linkable records
+        $lookup = $this->createStub(LinkableRecordLookupInterface::class);
+        $lookup->method('types')->willReturn(['game-table' => 'Mesa de rol', 'campaign' => 'Campaña']);
+        $this->app->instance(LinkableRecordLookupInterface::class, $lookup);
 
         foreach (['game_tables', 'campaigns'] as $association) {
             config()->set("modules.settings.venue-bookings.associations.{$association}_enabled", true);
@@ -181,6 +187,28 @@ final class PublicBookingDetailPrivacyTest extends ModuleTestCase
         $this->detail($this->booking(['game_table_id' => self::TABLE_ID, 'campaign_id' => self::CAMPAIGN_ID]))->assertOk();
 
         $this->assertSame(['game-tables.campaign'], $this->describedTypes);
+    }
+
+    /**
+     * Deciding which fields the viewer sees needs only the settings: the game tables and
+     * campaigns a booking form would offer are never listed for a detail.
+     */
+    #[DataProvider('everyViewer')]
+    public function test_the_detail_never_lists_the_tables_or_campaigns_a_form_would_offer(string $viewer): void
+    {
+        // Listing goes through the core's linkable record lookup: the detail never asks it
+        $lookup = $this->createMock(LinkableRecordLookupInterface::class);
+        $lookup->method('types')->willReturn(['game-table' => 'Mesa de rol', 'campaign' => 'Campaña']);
+        $lookup->expects($this->never())->method('search');
+        $lookup->expects($this->never())->method('organizedBy');
+        $this->app->instance(LinkableRecordLookupInterface::class, $lookup);
+        $this->actAs($viewer);
+
+        $this->detail($this->booking(['game_table_id' => self::TABLE_ID, 'campaign_id' => self::CAMPAIGN_ID]))
+            ->assertOk()
+            ->assertJsonPath('game_table_name', self::TABLE_TITLE)
+            ->assertJsonPath('campaign_name', self::CAMPAIGN_TITLE);
+
     }
 
     public function test_the_viewer_is_the_one_the_module_is_asked_about(): void
