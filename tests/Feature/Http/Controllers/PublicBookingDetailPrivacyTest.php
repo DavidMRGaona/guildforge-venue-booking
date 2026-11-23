@@ -13,6 +13,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Modules\VenueBookings\Application\DTOs\Response\BookingResponseDTO;
+use Modules\VenueBookings\Application\Services\ModuleIntegrationServiceInterface;
 use Modules\VenueBookings\Domain\Repositories\BookingRepositoryInterface;
 use Modules\VenueBookings\Domain\ValueObjects\BookingId;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
@@ -181,6 +182,85 @@ final class PublicBookingDetailPrivacyTest extends ModuleTestCase
         $this->detail($this->booking(['game_table_id' => self::TABLE_ID, 'campaign_id' => self::CAMPAIGN_ID]))->assertOk();
 
         $this->assertSame(['game-tables.campaign'], $this->describedTypes);
+    }
+
+    /**
+     * Deciding which fields the viewer sees needs only the settings: the game tables and
+     * campaigns a booking form would offer are never listed for a detail.
+     */
+    #[DataProvider('everyViewer')]
+    public function test_the_detail_never_lists_the_tables_or_campaigns_a_form_would_offer(string $viewer): void
+    {
+        $listed = new \ArrayObject;
+        $real = $this->app->make(ModuleIntegrationServiceInterface::class);
+        $this->app->instance(ModuleIntegrationServiceInterface::class, new readonly class($real, $listed) implements ModuleIntegrationServiceInterface
+        {
+            /** @param \ArrayObject<int, string> $listed */
+            public function __construct(private ModuleIntegrationServiceInterface $real, private \ArrayObject $listed) {}
+
+            public function isGameTablesModuleAvailable(): bool
+            {
+                return $this->real->isGameTablesModuleAvailable();
+            }
+
+            public function isTournamentsModuleAvailable(): bool
+            {
+                return $this->real->isTournamentsModuleAvailable();
+            }
+
+            public function getAvailableGameTables(): array
+            {
+                $this->listed->append(__FUNCTION__);
+
+                return [];
+            }
+
+            public function getAvailableTournaments(): array
+            {
+                $this->listed->append(__FUNCTION__);
+
+                return [];
+            }
+
+            public function getAvailableCampaigns(): array
+            {
+                $this->listed->append(__FUNCTION__);
+
+                return [];
+            }
+
+            public function getUserGameTables(string $userId): array
+            {
+                $this->listed->append(__FUNCTION__);
+
+                return [];
+            }
+
+            public function getUserCampaigns(string $userId): array
+            {
+                $this->listed->append(__FUNCTION__);
+
+                return [];
+            }
+
+            public function getGameTableNameVisibleTo(string $id, ?Authenticatable $viewer): ?string
+            {
+                return $this->real->getGameTableNameVisibleTo($id, $viewer);
+            }
+
+            public function getCampaignNameVisibleTo(string $id, ?Authenticatable $viewer): ?string
+            {
+                return $this->real->getCampaignNameVisibleTo($id, $viewer);
+            }
+        });
+        $this->actAs($viewer);
+
+        $this->detail($this->booking(['game_table_id' => self::TABLE_ID, 'campaign_id' => self::CAMPAIGN_ID]))
+            ->assertOk()
+            ->assertJsonPath('game_table_name', self::TABLE_TITLE)
+            ->assertJsonPath('campaign_name', self::CAMPAIGN_TITLE);
+
+        $this->assertCount(0, $listed, implode(', ', $listed->getArrayCopy()));
     }
 
     public function test_the_viewer_is_the_one_the_module_is_asked_about(): void

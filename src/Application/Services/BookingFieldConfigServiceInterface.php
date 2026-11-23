@@ -21,6 +21,14 @@ interface BookingFieldConfigServiceInterface
     public function getVisibleFields(string $resourceId, ?UserModel $user): array;
 
     /**
+     * Keys of the fields getVisibleFields() would return, decided from the settings alone:
+     * the game tables, campaigns and tournaments a form would offer are never listed.
+     *
+     * @return list<string>
+     */
+    public function getVisibleFieldKeys(string $resourceId, ?UserModel $user): array;
+
+    /**
      * @return array<string, mixed>
      */
     public function getValidationRules(string $resourceId, ?UserModel $user): array;

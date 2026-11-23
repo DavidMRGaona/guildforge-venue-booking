@@ -226,6 +226,31 @@ final class BookingFieldConfigServiceTest extends TestCase
         $this->assertSame([['value' => 'campaign-1', 'label' => 'La maldición de Strahd']], $fields[1]->options);
     }
 
+    public function test_the_visible_field_keys_follow_the_visible_fields_without_listing_any_option(): void
+    {
+        config()->set('modules.settings.venue-bookings.associations.game_tables_enabled', true);
+        config()->set('modules.settings.venue-bookings.associations.game_tables_visibility', 'public');
+        config()->set('modules.settings.venue-bookings.associations.campaigns_enabled', true);
+        config()->set('modules.settings.venue-bookings.associations.campaigns_visibility', 'authenticated');
+        $this->mockResourceWithFieldConfig([
+            'predefined_fields' => [
+                'activity_name' => ['enabled' => true, 'required' => true, 'visibility' => 'public'],
+                'notes' => ['enabled' => true, 'required' => false, 'visibility' => 'authenticated'],
+            ],
+            'custom_fields' => [],
+        ]);
+
+        $integration = $this->createMock(ModuleIntegrationServiceInterface::class);
+        $integration->method('isGameTablesModuleAvailable')->willReturn(true);
+        $integration->method('isTournamentsModuleAvailable')->willReturn(false);
+        foreach (['getAvailableGameTables', 'getAvailableCampaigns', 'getAvailableTournaments', 'getUserGameTables', 'getUserCampaigns'] as $listing) {
+            $integration->expects($this->never())->method($listing);
+        }
+        $service = new BookingFieldConfigService($integration, $this->resourceRepository, app(AuthorizationServiceInterface::class));
+
+        $this->assertSame(['activity_name', 'game_table_id'], $service->getVisibleFieldKeys($this->resourceId, null));
+    }
+
     public function test_the_capacity_of_the_space_caps_the_number_of_participants(): void
     {
         $this->mockResourceWithFieldConfig(self::PARTICIPANTS_AND_A_CUSTOM_NUMBER, capacity: 8);
