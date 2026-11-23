@@ -276,6 +276,8 @@ final class BookingResourceMoveTest extends ModuleTestCase
         $other = (string) Str::uuid();
         $integration = $this->createStub(ModuleIntegrationServiceInterface::class);
         $integration->method('isGameTablesModuleAvailable')->willReturn(true);
+        $integration->method('offersGameTables')->willReturn(true);
+        $integration->method('offersCampaigns')->willReturn(true);
         $integration->method('getGameTableLabel')->willReturn(null);
         $this->app->instance(ModuleIntegrationServiceInterface::class, $integration);
         $booking = $this->createBookingOf($this->member, '2026-03-16', '10:00', '12:00');

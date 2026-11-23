@@ -67,6 +67,8 @@ final class BookingAssociationsTest extends ModuleTestCase
         // The game-tables module is optional: what it offers to the user is stubbed
         $integration = $this->createStub(ModuleIntegrationServiceInterface::class);
         $integration->method('isGameTablesModuleAvailable')->willReturn(true);
+        $integration->method('offersGameTables')->willReturn(true);
+        $integration->method('offersCampaigns')->willReturn(true);
         $integration->method('getUserGameTables')->willReturn([
             ['id' => self::TABLE_ID, 'label' => 'La tumba de los horrores'],
         ]);

@@ -116,6 +116,19 @@ final class BookingOrganizedAssociationsTest extends ModuleTestCase
         $this->assertSame(0, BookingModel::query()->count());
     }
 
+    public function test_a_required_association_nobody_offers_never_blocks_a_booking(): void
+    {
+        // game-tables enabled but older than its linkable records: no field, nothing required
+        config()->set('modules.settings.venue-bookings.associations.game_tables_required', true);
+        config()->set('modules.settings.venue-bookings.associations.campaigns_required', true);
+        $this->app->instance(LinkableRecordLookupInterface::class, $this->lookupOrganizedBy($this->booker, offered: false));
+        $this->actingAs($this->booker);
+
+        $this->book([])->assertRedirect(route('bookings.my-bookings'));
+
+        $this->assertNull(BookingModel::query()->sole()->game_table_id);
+    }
+
     public function test_while_impersonating_the_form_offers_what_the_impersonated_account_organizes(): void
     {
         $admin = UserModel::factory()->admin()->create();
@@ -165,11 +178,11 @@ final class BookingOrganizedAssociationsTest extends ModuleTestCase
      * What game-tables would answer through the core: the booker organizes one table and one
      * campaign; another table is published, so anybody finds it.
      */
-    private function lookupOrganizedBy(UserModel $booker): LinkableRecordLookupInterface
+    private function lookupOrganizedBy(UserModel $booker, bool $offered = true): LinkableRecordLookupInterface
     {
-        return new readonly class($booker->id) implements LinkableRecordLookupInterface
+        return new readonly class($booker->id, $offered) implements LinkableRecordLookupInterface
         {
-            public function __construct(private string $bookerId) {}
+            public function __construct(private string $bookerId, private bool $offered) {}
 
             public function find(string $type, string $id, string $viewerId): ?LinkableRecordDTO
             {
@@ -201,7 +214,7 @@ final class BookingOrganizedAssociationsTest extends ModuleTestCase
 
             public function types(): array
             {
-                return ['game-table' => 'Mesa de rol', 'campaign' => 'Campaña'];
+                return $this->offered ? ['game-table' => 'Mesa de rol', 'campaign' => 'Campaña'] : ['event' => 'Evento'];
             }
         };
     }

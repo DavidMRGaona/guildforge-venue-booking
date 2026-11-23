@@ -70,14 +70,18 @@ final class BookingResource extends BaseResource
     }
 
     /**
-     * The team links a booking to any game table or campaign it may see (the core's linkable record
-     * lookup, the next ones offered first), checked again on the server when saving, since a form
-     * can be forged. The one already stored stays as it is, whoever may see it now, and is named
-     * by its title or as not available: it is kept, but cannot be chosen again once gone.
+     * The team links a booking to any game table or campaign it may see, searched on the server
+     * through the core's linkable record lookup (the next ones offered before typing), and checked
+     * again when saving, since a form can be forged. The one already stored stays as it is,
+     * whoever may see it now, and is named by its title or as not available: it is kept, but
+     * cannot be chosen again once gone.
      */
     private static function associationSelect(string $name, string $label, bool $campaign): Select
     {
         $integration = static fn (): ModuleIntegrationServiceInterface => app(ModuleIntegrationServiceInterface::class);
+        $found = static fn (string $query): array => array_column($campaign
+            ? $integration()->getAvailableCampaigns(Auth::user(), $query)
+            : $integration()->getAvailableGameTables(Auth::user(), $query), 'label', 'id');
         $titleFor = static fn (string $id): ?string => $campaign
             ? $integration()->getCampaignLabel($id, Auth::user())
             : $integration()->getGameTableLabel($id, Auth::user());
@@ -85,18 +89,16 @@ final class BookingResource extends BaseResource
 
         return Select::make($name)
             ->label($label)
-            ->options(static function (?BookingModel $record) use ($integration, $campaign, $titleFor, $stored): array {
-                $offered = $campaign
-                    ? $integration()->getAvailableCampaigns(Auth::user())
-                    : $integration()->getAvailableGameTables(Auth::user());
-                $options = array_column($offered, 'label', 'id');
-                $current = $stored($record);
-
-                if ($current !== null && ! isset($options[$current])) {
-                    $options[$current] = $titleFor($current) ?? __('venue-bookings::messages.fields.association_unavailable');
+            ->options(static fn (): array => $found(''))
+            ->getSearchResultsUsing(static fn (?string $search): array => $found((string) $search))
+            ->getOptionLabelUsing(static function (mixed $value) use ($titleFor): ?string {
+                if (! is_string($value) || $value === '') {
+                    return null;
                 }
 
-                return $options;
+                $unavailable = __('venue-bookings::messages.fields.association_unavailable');
+
+                return $titleFor($value) ?? (is_string($unavailable) ? $unavailable : null);
             })
             ->rule(static fn (?BookingModel $record): \Closure => static function (string $attribute, mixed $value, \Closure $fail) use ($titleFor, $stored, $record): void {
                 if ($value === null || $value === '' || $value === $stored($record)) {
@@ -109,7 +111,7 @@ final class BookingResource extends BaseResource
             })
             ->searchable()
             ->native(false)
-            ->visible(static fn (): bool => $integration()->isGameTablesModuleAvailable());
+            ->visible(static fn (): bool => $campaign ? $integration()->offersCampaigns() : $integration()->offersGameTables());
     }
 
     public static function form(Schema $schema): Schema
@@ -237,7 +239,7 @@ final class BookingResource extends BaseResource
                         $fieldConfigService = app(BookingFieldConfigServiceInterface::class);
                         // The game table, campaign and tournament have their own selects above
                         $fields = array_values(array_filter(
-                            $fieldConfigService->getEnabledFields($resourceId),
+                            $fieldConfigService->getFieldsWithoutOptions($resourceId),
                             static fn (BookingFieldConfig $field): bool => ! $field->isAssociation(),
                         ));
 
@@ -272,7 +274,7 @@ final class BookingResource extends BaseResource
                         }
 
                         return ! empty(
-                            app(BookingFieldConfigServiceInterface::class)->getEnabledFields($resourceId)
+                            app(BookingFieldConfigServiceInterface::class)->getFieldsWithoutOptions($resourceId)
                         );
                     })
                     ->columnSpanFull(),

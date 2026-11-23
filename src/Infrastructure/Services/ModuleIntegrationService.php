@@ -17,8 +17,11 @@ use Modules\VenueBookings\Application\Services\ModuleIntegrationServiceInterface
  * lookup offers and checks the tables and campaigns (types `game-table` and `campaign`), the
  * activity reader names them on the public detail. Both fail closed, so with game-tables
  * disabled, missing or failing nothing is offered and nothing is named.
+ *
+ * Bound scoped: the types offered and what each person organizes are read once per request or
+ * job (the booking form asks for every space, and saving builds the fields twice).
  */
-final readonly class ModuleIntegrationService implements ModuleIntegrationServiceInterface
+final class ModuleIntegrationService implements ModuleIntegrationServiceInterface
 {
     /** Linkable record types game-tables offers */
     private const string GAME_TABLE_TYPE = 'game-table';
@@ -33,14 +36,30 @@ final readonly class ModuleIntegrationService implements ModuleIntegrationServic
     /** How many tables or campaigns a select offers at most */
     private const int OFFERED = LinkableRecordLookupInterface::MAX_SEARCH_LIMIT;
 
+    /** @var array<string, string>|null Linkable record types offered right now, read once */
+    private ?array $types = null;
+
+    /** @var array<string, list<array{id: string, label: string}>> What each person organizes, by type and account */
+    private array $organized = [];
+
     public function __construct(
-        private LinkableRecordLookupInterface $linkableRecords,
-        private ActivityReaderInterface $activity,
+        private readonly LinkableRecordLookupInterface $linkableRecords,
+        private readonly ActivityReaderInterface $activity,
     ) {}
 
     public function isGameTablesModuleAvailable(): bool
     {
         return function_exists('module_enabled') && module_enabled('game-tables');
+    }
+
+    public function offersGameTables(): bool
+    {
+        return $this->offers(self::GAME_TABLE_TYPE);
+    }
+
+    public function offersCampaigns(): bool
+    {
+        return $this->offers(self::CAMPAIGN_TYPE);
     }
 
     public function isTournamentsModuleAvailable(): bool
@@ -106,7 +125,7 @@ final readonly class ModuleIntegrationService implements ModuleIntegrationServic
      */
     private function search(string $type, string $query, ?Authenticatable $viewer): array
     {
-        if (! $this->isGameTablesModuleAvailable()) {
+        if (! $this->offers($type)) {
             return [];
         }
 
@@ -118,16 +137,18 @@ final readonly class ModuleIntegrationService implements ModuleIntegrationServic
      */
     private function organizedBy(string $type, Authenticatable $organizer): array
     {
-        if (! $this->isGameTablesModuleAvailable()) {
+        if (! $this->offers($type)) {
             return [];
         }
 
-        return $this->options($this->linkableRecords->organizedBy($type, $organizer, self::OFFERED));
+        $key = $type.'|'.$this->viewerId($organizer);
+
+        return $this->organized[$key] ??= $this->options($this->linkableRecords->organizedBy($type, $organizer, self::OFFERED));
     }
 
     private function label(string $type, string $id, ?Authenticatable $viewer): ?string
     {
-        if (! $this->isGameTablesModuleAvailable()) {
+        if (! $this->offers($type)) {
             return null;
         }
 
@@ -144,6 +165,13 @@ final readonly class ModuleIntegrationService implements ModuleIntegrationServic
             static fn (LinkableRecordDTO $record): array => ['id' => $record->id, 'label' => $record->title],
             $records,
         );
+    }
+
+    private function offers(string $type): bool
+    {
+        $this->types ??= $this->linkableRecords->types();
+
+        return isset($this->types[$type]);
     }
 
     private function viewerId(?Authenticatable $viewer): string

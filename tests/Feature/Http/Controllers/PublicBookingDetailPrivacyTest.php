@@ -78,6 +78,11 @@ final class PublicBookingDetailPrivacyTest extends ModuleTestCase
             'game-tables.campaign' => [self::CAMPAIGN_ID => self::CAMPAIGN_TITLE],
         ]));
 
+        // game-tables offers its tables and campaigns as linkable records
+        $lookup = $this->createStub(LinkableRecordLookupInterface::class);
+        $lookup->method('types')->willReturn(['game-table' => 'Mesa de rol', 'campaign' => 'Campaña']);
+        $this->app->instance(LinkableRecordLookupInterface::class, $lookup);
+
         foreach (['game_tables', 'campaigns'] as $association) {
             config()->set("modules.settings.venue-bookings.associations.{$association}_enabled", true);
             config()->set("modules.settings.venue-bookings.associations.{$association}_visibility", 'public');
@@ -193,6 +198,7 @@ final class PublicBookingDetailPrivacyTest extends ModuleTestCase
     {
         // Listing goes through the core's linkable record lookup: the detail never asks it
         $lookup = $this->createMock(LinkableRecordLookupInterface::class);
+        $lookup->method('types')->willReturn(['game-table' => 'Mesa de rol', 'campaign' => 'Campaña']);
         $lookup->expects($this->never())->method('search');
         $lookup->expects($this->never())->method('organizedBy');
         $this->app->instance(LinkableRecordLookupInterface::class, $lookup);

@@ -13,7 +13,23 @@ use Illuminate\Contracts\Auth\Authenticatable;
  */
 interface ModuleIntegrationServiceInterface
 {
+    /**
+     * Whether game-tables is enabled: the public detail names a table or campaign through its
+     * activity sources only then.
+     */
     public function isGameTablesModuleAvailable(): bool;
+
+    /**
+     * Whether some module offers game tables as linkable records right now (type `game-table`):
+     * decided by the type, not by a module name, so an older game-tables without them offers no
+     * field, and a required association never blocks a booking.
+     */
+    public function offersGameTables(): bool;
+
+    /**
+     * Whether some module offers campaigns as linkable records right now (type `campaign`).
+     */
+    public function offersCampaigns(): bool;
 
     public function isTournamentsModuleAvailable(): bool;
 

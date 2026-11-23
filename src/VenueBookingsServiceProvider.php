@@ -110,7 +110,7 @@ final class VenueBookingsServiceProvider extends ModuleServiceProvider
             $app->make(BookingRules::class),
         ));
         $this->app->bind(BookingFieldConfigServiceInterface::class, BookingFieldConfigService::class);
-        $this->app->bind(ModuleIntegrationServiceInterface::class, ModuleIntegrationService::class);
+        $this->app->scoped(ModuleIntegrationServiceInterface::class, ModuleIntegrationService::class);
     }
 
     public function boot(): void

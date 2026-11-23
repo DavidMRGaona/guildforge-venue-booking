@@ -32,8 +32,17 @@ final class ModuleIntegrationServiceTest extends TestCase
         $this->lookup = $this->createMock(LinkableRecordLookupInterface::class);
     }
 
+    /**
+     * @param  array<string, string>  $types
+     */
+    private function offering(array $types = ['game-table' => 'Mesa de rol', 'campaign' => 'Campaña']): void
+    {
+        $this->lookup->method('types')->willReturn($types);
+    }
+
     public function test_the_team_is_offered_the_tables_and_campaigns_it_may_see(): void
     {
+        $this->offering();
         $viewer = $this->account(self::VIEWER);
         $this->lookup->expects($this->exactly(2))->method('search')->willReturnCallback(
             fn (string $type, string $query, string $viewerId, int $limit): array => match ([$type, $query, $viewerId, $limit]) {
@@ -49,6 +58,7 @@ final class ModuleIntegrationServiceTest extends TestCase
 
     public function test_a_visitor_is_asked_for_as_one(): void
     {
+        $this->offering();
         $this->lookup->expects($this->once())->method('search')
             ->with('game-table', '', LinkableRecordSourceInterface::VISITOR, LinkableRecordLookupInterface::MAX_SEARCH_LIMIT)
             ->willReturn([]);
@@ -58,6 +68,7 @@ final class ModuleIntegrationServiceTest extends TestCase
 
     public function test_a_person_is_offered_only_what_they_organize_asked_with_their_own_account(): void
     {
+        $this->offering();
         $organizer = $this->account(self::VIEWER);
         $this->lookup->expects($this->exactly(2))->method('organizedBy')->willReturnCallback(
             fn (string $type, UserModel $who, int $limit): array => $who === $organizer && $limit === LinkableRecordLookupInterface::MAX_SEARCH_LIMIT
@@ -72,6 +83,7 @@ final class ModuleIntegrationServiceTest extends TestCase
 
     public function test_a_chosen_table_or_campaign_is_named_as_the_viewer_may_see_it(): void
     {
+        $this->offering();
         $this->lookup->expects($this->exactly(4))->method('find')->willReturnCallback(
             fn (string $type, string $id, string $viewerId): ?LinkableRecordDTO => $viewerId === self::VIEWER && $id === 'seen'
                 ? $this->record($type, $id, "Título de {$type}")
@@ -84,14 +96,32 @@ final class ModuleIntegrationServiceTest extends TestCase
         $this->assertNull($this->service()->getCampaignLabel('hidden', $this->account(self::VIEWER)));
     }
 
-    public function test_nothing_is_asked_while_game_tables_is_disabled(): void
+    public function test_nothing_is_listed_while_nobody_offers_the_types(): void
     {
-        $this->enableGameTables(false);
-        $this->lookup->expects($this->never())->method($this->anything());
+        // game-tables disabled or older than its linkable records: decided by the type
+        $this->lookup->expects($this->once())->method('types')->willReturn(['event' => 'Evento']);
+        $this->lookup->expects($this->never())->method('search');
+        $this->lookup->expects($this->never())->method('organizedBy');
+        $this->lookup->expects($this->never())->method('find');
+        $service = $this->service();
 
-        $this->assertSame([], $this->service()->getAvailableGameTables($this->account(self::VIEWER)));
-        $this->assertSame([], $this->service()->getUserCampaigns($this->account(self::VIEWER)));
-        $this->assertNull($this->service()->getGameTableLabel('any', null));
+        $this->assertFalse($service->offersGameTables());
+        $this->assertFalse($service->offersCampaigns());
+        $this->assertSame([], $service->getAvailableGameTables($this->account(self::VIEWER)));
+        $this->assertSame([], $service->getUserCampaigns($this->account(self::VIEWER)));
+        $this->assertNull($service->getGameTableLabel('any', null));
+    }
+
+    public function test_what_a_person_organizes_is_asked_once_per_request(): void
+    {
+        $this->lookup->expects($this->once())->method('types')->willReturn(['game-table' => 'Mesa de rol']);
+        $this->lookup->expects($this->once())->method('organizedBy')->willReturn([$this->record('game-table', 'mine', 'Mi mesa')]);
+        $organizer = $this->account(self::VIEWER);
+        $service = $this->service();
+
+        $service->getUserGameTables($organizer);
+
+        $this->assertSame([['id' => 'mine', 'label' => 'Mi mesa']], $service->getUserGameTables($organizer));
     }
 
     private function service(): ModuleIntegrationService

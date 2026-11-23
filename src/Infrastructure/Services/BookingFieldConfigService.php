@@ -40,6 +40,14 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
     /**
      * @return array<BookingFieldConfig>
      */
+    public function getFieldsWithoutOptions(string $resourceId): array
+    {
+        return $this->fieldsFor($resourceId, null, withOptions: false);
+    }
+
+    /**
+     * @return array<BookingFieldConfig>
+     */
     public function getVisibleFields(string $resourceId, ?UserModel $user): array
     {
         return $this->onlyVisibleTo($this->getEnabledFields($resourceId, $user), $user);
@@ -129,23 +137,24 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
     }
 
     /**
-     * Every association turned on in the settings whose module is enabled, in a fixed order.
-     * Its options are only listed when asked for: a signed-in user is offered the game tables and
-     * campaigns they organize, and nothing else (the validation rules are built from these very
-     * options, so a forged id is refused when saving); a guest sees the upcoming ones.
+     * Every association turned on in the settings that some module offers right now (decided by
+     * the linkable record type, so a required one never blocks bookings when nobody offers it),
+     * in a fixed order. Its options are only listed when asked for: a signed-in user is offered
+     * the game tables and campaigns they organize, and nothing else (the validation rules are
+     * built from these very options, so a forged id is refused when saving); a visitor, none.
      *
      * @return list<BookingFieldConfig>
      */
     private function associationFields(?UserModel $user, bool $withOptions): array
     {
-        $gameTables = $this->moduleIntegration->isGameTablesModuleAvailable();
+        // A visitor cannot book: the select is drawn, but nothing is listed for them
         $associations = [
-            [BookingFieldConfig::GAME_TABLE_KEY, 'game_tables', 'game_table', $gameTables, fn (): array => $user instanceof UserModel
+            [BookingFieldConfig::GAME_TABLE_KEY, 'game_tables', 'game_table', $this->moduleIntegration->offersGameTables(), fn (): array => $user instanceof UserModel
                 ? $this->moduleIntegration->getUserGameTables($user)
-                : $this->moduleIntegration->getAvailableGameTables()],
-            [BookingFieldConfig::CAMPAIGN_KEY, 'campaigns', 'campaign', $gameTables, fn (): array => $user instanceof UserModel
+                : []],
+            [BookingFieldConfig::CAMPAIGN_KEY, 'campaigns', 'campaign', $this->moduleIntegration->offersCampaigns(), fn (): array => $user instanceof UserModel
                 ? $this->moduleIntegration->getUserCampaigns($user)
-                : $this->moduleIntegration->getAvailableCampaigns()],
+                : []],
             [BookingFieldConfig::TOURNAMENT_KEY, 'tournaments', 'tournament', $this->moduleIntegration->isTournamentsModuleAvailable(),
                 $this->moduleIntegration->getAvailableTournaments(...)],
         ];
