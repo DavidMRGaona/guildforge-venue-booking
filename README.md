@@ -14,7 +14,7 @@ Sistema de reservas del local para gestionar espacios y horarios, con calendario
 - **Cierre a la hora de inicio**: desde la web no se puede reservar un día pasado ni una franja que ya ha empezado, ni cancelar una reserva empezada. El panel no tiene ese límite
 - **Completado automático**: las reservas confirmadas pasan a completadas cuando ha pasado su hora de fin más un margen configurable
 - **Peticiones en las propuestas de evento**: quien propone un evento desde la web puede pedir un espacio («¿Necesitas reservar un espacio?», con el espacio y una nota opcional). Al aprobar la propuesta se reserva a nombre de quien la propuso, enlazada al evento y **Confirmada** aunque el modo de aprobación pida aprobar las reservas, con el día y las horas del evento en la zona del local. Valen el horario del espacio, los solapes y su estado, no las reglas de la configuración. Solo para eventos de un día; si el espacio está ocupado, la franja no encaja o el evento dura más, la aprobación no sigue y el panel dice por qué
-- **Integración con módulos**: asociación de la reserva con una mesa de rol, una campaña o un torneo (configurable en el panel). En la web se elige entre las que se le ofrecen al usuario y se guarda su id; en el panel cada una tiene su propio selector
+- **Integración con módulos**: asociación de la reserva con una mesa de rol, una campaña o un torneo (configurable en el panel), siempre por los contratos del core y sin depender de ningún otro módulo. En la web, quien reserva solo puede elegir las mesas y campañas que organiza (las que creó o dirige, según el contrato de registros enlazables, `organizedBy()`), y se vuelve a comprobar en el servidor al guardar; se guarda su id. En el panel cada una tiene su propio selector, con las que el equipo puede ver (`search()` / `find()`), también comprobado al guardar: una ya guardada que el equipo deja de ver se conserva, pero no se puede volver a elegir. Necesita la versión de game-tables que registra sus registros enlazables (game-tables#333); con una anterior no se ofrece ninguna
 - **Notificaciones por email**: creación, confirmación, cancelación, rechazo, cambio de espacio, fecha u horario desde el panel y recordatorio antes del inicio. Los mismos avisos salen en la campana de la web (centro de avisos del core): a quien reservó, con enlace a «Mis reservas», y a quien gestiona, un solo aviso agrupado de reservas nuevas mientras no se lea, con enlace a la reserva en el panel; se comprueba al entregarlos, y desaparecen si se borra la reserva
 - **Fuente de actividad**: cada reserva completada se ofrece, con quien reservó, al contrato de actividad del core (lo lee el módulo de logros), solo para contar (ver [Actividad para los logros](#actividad-para-los-logros))
 - **Panel de administración**: espacios, reservas, configuración y dos widgets para el escritorio
@@ -375,7 +375,7 @@ Análisis estático, también desde `src/`. `phpstan.neon` incluye la configurac
 vendor/bin/phpstan analyse -c modules/venue-bookings/phpstan.neon
 ```
 
-Necesita el módulo game-tables instalado al lado, porque `ModuleIntegrationService` usa sus clases.
+No necesita ningún otro módulo instalado al lado: las mesas y campañas llegan por los contratos del core.
 
 Los componentes Vue tienen sus propios tests en `tests/js` (Vitest, Vue Test Utils y happy-dom). Se ejecutan con el módulo dentro del core y con las herramientas del core (`vitest.config.ts` usa `defineModuleTestConfig`), porque los componentes importan sus fuentes con `@/`:
 

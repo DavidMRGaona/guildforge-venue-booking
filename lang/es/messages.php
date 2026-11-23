@@ -67,6 +67,7 @@ return [
         'game_table' => 'Mesa de juego',
         'campaign' => 'Campaña',
         'tournament' => 'Torneo',
+        'association_unavailable' => 'Ya no disponible',
         'resource' => 'Espacio',
         'user' => 'Usuario',
         'name' => 'Nombre',

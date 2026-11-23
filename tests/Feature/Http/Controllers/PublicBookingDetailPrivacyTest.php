@@ -7,13 +7,13 @@ namespace Modules\VenueBookings\Tests\Feature\Http\Controllers;
 use App\Application\Activity\DTOs\ActivityDescriptionsResultDTO;
 use App\Application\Activity\DTOs\ActivitySubjectDTO;
 use App\Application\Activity\Services\ActivityReaderInterface;
+use App\Application\Linking\Services\LinkableRecordLookupInterface;
 use App\Application\Modules\Services\ModuleContextServiceInterface;
 use App\Infrastructure\Persistence\Eloquent\Models\UserModel;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Modules\VenueBookings\Application\DTOs\Response\BookingResponseDTO;
-use Modules\VenueBookings\Application\Services\ModuleIntegrationServiceInterface;
 use Modules\VenueBookings\Domain\Repositories\BookingRepositoryInterface;
 use Modules\VenueBookings\Domain\ValueObjects\BookingId;
 use Modules\VenueBookings\Infrastructure\Persistence\Eloquent\Models\BookableResourceModel;
@@ -191,68 +191,11 @@ final class PublicBookingDetailPrivacyTest extends ModuleTestCase
     #[DataProvider('everyViewer')]
     public function test_the_detail_never_lists_the_tables_or_campaigns_a_form_would_offer(string $viewer): void
     {
-        $listed = new \ArrayObject;
-        $real = $this->app->make(ModuleIntegrationServiceInterface::class);
-        $this->app->instance(ModuleIntegrationServiceInterface::class, new readonly class($real, $listed) implements ModuleIntegrationServiceInterface
-        {
-            /** @param \ArrayObject<int, string> $listed */
-            public function __construct(private ModuleIntegrationServiceInterface $real, private \ArrayObject $listed) {}
-
-            public function isGameTablesModuleAvailable(): bool
-            {
-                return $this->real->isGameTablesModuleAvailable();
-            }
-
-            public function isTournamentsModuleAvailable(): bool
-            {
-                return $this->real->isTournamentsModuleAvailable();
-            }
-
-            public function getAvailableGameTables(): array
-            {
-                $this->listed->append(__FUNCTION__);
-
-                return [];
-            }
-
-            public function getAvailableTournaments(): array
-            {
-                $this->listed->append(__FUNCTION__);
-
-                return [];
-            }
-
-            public function getAvailableCampaigns(): array
-            {
-                $this->listed->append(__FUNCTION__);
-
-                return [];
-            }
-
-            public function getUserGameTables(string $userId): array
-            {
-                $this->listed->append(__FUNCTION__);
-
-                return [];
-            }
-
-            public function getUserCampaigns(string $userId): array
-            {
-                $this->listed->append(__FUNCTION__);
-
-                return [];
-            }
-
-            public function getGameTableNameVisibleTo(string $id, ?Authenticatable $viewer): ?string
-            {
-                return $this->real->getGameTableNameVisibleTo($id, $viewer);
-            }
-
-            public function getCampaignNameVisibleTo(string $id, ?Authenticatable $viewer): ?string
-            {
-                return $this->real->getCampaignNameVisibleTo($id, $viewer);
-            }
-        });
+        // Listing goes through the core's linkable record lookup: the detail never asks it
+        $lookup = $this->createMock(LinkableRecordLookupInterface::class);
+        $lookup->expects($this->never())->method('search');
+        $lookup->expects($this->never())->method('organizedBy');
+        $this->app->instance(LinkableRecordLookupInterface::class, $lookup);
         $this->actAs($viewer);
 
         $this->detail($this->booking(['game_table_id' => self::TABLE_ID, 'campaign_id' => self::CAMPAIGN_ID]))
@@ -260,7 +203,6 @@ final class PublicBookingDetailPrivacyTest extends ModuleTestCase
             ->assertJsonPath('game_table_name', self::TABLE_TITLE)
             ->assertJsonPath('campaign_name', self::CAMPAIGN_TITLE);
 
-        $this->assertCount(0, $listed, implode(', ', $listed->getArrayCopy()));
     }
 
     public function test_the_viewer_is_the_one_the_module_is_asked_about(): void

@@ -9,6 +9,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
+use Modules\VenueBookings\Application\Services\ModuleIntegrationServiceInterface;
 use Modules\VenueBookings\Filament\Resources\BookingResource;
 use Modules\VenueBookings\Filament\Resources\BookingResource\Pages\CreateBooking;
 use Modules\VenueBookings\Filament\Resources\BookingResource\Pages\EditBooking;
@@ -267,6 +268,34 @@ final class BookingResourceMoveTest extends ModuleTestCase
 
         Livewire::test(CreateBooking::class)
             ->assertFormFieldDoesNotExist('notify_owner');
+    }
+
+    public function test_a_stored_game_table_the_team_no_longer_sees_is_kept_but_cannot_be_chosen_again(): void
+    {
+        $gone = (string) Str::uuid();
+        $other = (string) Str::uuid();
+        $integration = $this->createStub(ModuleIntegrationServiceInterface::class);
+        $integration->method('isGameTablesModuleAvailable')->willReturn(true);
+        $integration->method('getGameTableLabel')->willReturn(null);
+        $this->app->instance(ModuleIntegrationServiceInterface::class, $integration);
+        $booking = $this->createBookingOf($this->member, '2026-03-16', '10:00', '12:00');
+        BookingModel::query()->whereKey($booking)->update(['game_table_id' => $gone]);
+        $this->actingAs($this->admin);
+
+        Livewire::test(EditBooking::class, ['record' => $booking])
+            ->assertFormSet(['game_table_id' => $gone])
+            ->fillForm(['admin_notes' => 'Sigue enlazada'])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $this->assertSame($gone, BookingModel::query()->findOrFail($booking)->game_table_id);
+
+        Livewire::test(EditBooking::class, ['record' => $booking])
+            ->fillForm(['game_table_id' => $other])
+            ->call('save')
+            ->assertHasFormErrors(['game_table_id']);
+
+        $this->assertSame($gone, BookingModel::query()->findOrFail($booking)->game_table_id);
     }
 
     private function createResource(string $slug, string $status = 'active'): BookableResourceModel

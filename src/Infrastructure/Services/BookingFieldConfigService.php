@@ -130,8 +130,9 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
 
     /**
      * Every association turned on in the settings whose module is enabled, in a fixed order.
-     * Its options are only listed when asked for: a signed-in user is offered their own game
-     * tables and campaigns, a guest the upcoming ones.
+     * Its options are only listed when asked for: a signed-in user is offered the game tables and
+     * campaigns they organize, and nothing else (the validation rules are built from these very
+     * options, so a forged id is refused when saving); a guest sees the upcoming ones.
      *
      * @return list<BookingFieldConfig>
      */
@@ -140,10 +141,10 @@ final readonly class BookingFieldConfigService implements BookingFieldConfigServ
         $gameTables = $this->moduleIntegration->isGameTablesModuleAvailable();
         $associations = [
             [BookingFieldConfig::GAME_TABLE_KEY, 'game_tables', 'game_table', $gameTables, fn (): array => $user instanceof UserModel
-                ? $this->moduleIntegration->getUserGameTables((string) $user->id)
+                ? $this->moduleIntegration->getUserGameTables($user)
                 : $this->moduleIntegration->getAvailableGameTables()],
             [BookingFieldConfig::CAMPAIGN_KEY, 'campaigns', 'campaign', $gameTables, fn (): array => $user instanceof UserModel
-                ? $this->moduleIntegration->getUserCampaigns((string) $user->id)
+                ? $this->moduleIntegration->getUserCampaigns($user)
                 : $this->moduleIntegration->getAvailableCampaigns()],
             [BookingFieldConfig::TOURNAMENT_KEY, 'tournaments', 'tournament', $this->moduleIntegration->isTournamentsModuleAvailable(),
                 $this->moduleIntegration->getAvailableTournaments(...)],

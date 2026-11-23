@@ -248,6 +248,8 @@ final class BookingResourceCreateTest extends ModuleTestCase
         $integration->method('isGameTablesModuleAvailable')->willReturn(true);
         $integration->method('getAvailableGameTables')->willReturn([['id' => $tableId, 'label' => 'La tumba de los horrores']]);
         $integration->method('getAvailableCampaigns')->willReturn([['id' => $campaignId, 'label' => 'La maldición de Strahd']]);
+        $integration->method('getGameTableLabel')->willReturnCallback(fn (string $id): ?string => $id === $tableId ? 'La tumba de los horrores' : null);
+        $integration->method('getCampaignLabel')->willReturnCallback(fn (string $id): ?string => $id === $campaignId ? 'La maldición de Strahd' : null);
         $integration->method('isTournamentsModuleAvailable')->willReturn(true);
         $integration->method('getAvailableTournaments')->willReturn([['id' => $tournamentId, 'label' => 'Torneo de primavera']]);
         $this->app->instance(ModuleIntegrationServiceInterface::class, $integration);
@@ -270,6 +272,28 @@ final class BookingResourceCreateTest extends ModuleTestCase
         $this->assertSame($campaignId, $booking->campaign_id);
         $this->assertSame($tournamentId, $booking->tournament_id);
         $this->assertSame([], $booking->field_values ?? []);
+    }
+
+    public function test_a_game_table_or_campaign_the_team_may_not_see_is_refused(): void
+    {
+        config()->set('modules.settings.venue-bookings.associations.game_tables_enabled', true);
+        config()->set('modules.settings.venue-bookings.associations.campaigns_enabled', true);
+
+        // A forged id, or one the lookup does not show this person (a draft, another module's)
+        $integration = $this->createStub(ModuleIntegrationServiceInterface::class);
+        $integration->method('isGameTablesModuleAvailable')->willReturn(true);
+        $integration->method('getGameTableLabel')->willReturn(null);
+        $integration->method('getCampaignLabel')->willReturn(null);
+        $this->app->instance(ModuleIntegrationServiceInterface::class, $integration);
+
+        $this->actingAs($this->admin);
+
+        Livewire::test(CreateBooking::class)
+            ->fillForm($this->formFor('2026-03-16', '10:00', '12:00') + ['game_table_id' => (string) Str::uuid(), 'campaign_id' => (string) Str::uuid()])
+            ->call('create')
+            ->assertHasFormErrors(['game_table_id', 'campaign_id']);
+
+        $this->assertSame(0, BookingModel::query()->count());
     }
 
     public function test_the_number_of_participants_cannot_exceed_the_capacity_of_the_space(): void
